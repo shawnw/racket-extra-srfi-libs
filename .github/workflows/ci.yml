@@ -24,6 +24,6 @@ jobs:
       - name: Installing extra-srfi-libs and its dependencies
         run: raco pkg install --no-docs --auto --name extra-srfi-libs
       - name: Compiling extra-srfi-libs and building its docs
-        run: raco setup --check-pkg-deps --unused-pkg-deps extra-srfi-libs
+        run: raco setup --check-pkg-deps --unused-pkg-deps --pkgs extra-srfi-libs srfi
       - name: Testing extra-srfi-libs
         run: raco test -x -p extra-srfi-libs
