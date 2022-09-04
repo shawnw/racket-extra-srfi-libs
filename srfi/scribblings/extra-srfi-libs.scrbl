@@ -14,7 +14,7 @@ A note on licensings: Most of the included SRFIs are the reference implementatio
 
 @defmodule[srfi/151]
 
-@hyperlink["https://srfi.schemers.org/srfi-151/srfi-151.html"]{Reference Documentation}
+@hyperlink["https://srfi.schemers.org/srfi-151/srfi-151.html"]{Reference documentation}.
 
 @bold{Notes:}
 
@@ -28,12 +28,26 @@ routines should also be written in Typed Racket.}
 
 ]
 
+@section{SRFI-175 ASCII character library}
+
+@defmodule[srfi/175]
+
+@hyperlink["https://srfi.schemers.org/srfi-175/srfi-175.html"]{Reference documentation}.
+
+@bold{Notes:}
+
+What the SRFI calls a bytevector is what Racket calls a byte string.
+
 @section{SRFI-208 NaN Procedures}
 
 @defmodule[srfi/208]
 
-@hyperlink["https://srfi.schemers.org/srfi-208/srfi-208.html"]{Reference Documentation}
+@hyperlink["https://srfi.schemers.org/srfi-208/srfi-208.html"]{Reference documentation}.
 
-Currently only works with double-precision flonums. While Racket BC
-supports single precision flonums, Racket CS doesn't, and I don't have
-a version of CS installed that supports extflonums for testing.
+@bold{Notes:}
+
+Currently only works with double-precision flonums, though the SRFI
+allows for other floating point types. While Racket BC supports single
+precision flonums, Racket CS doesn't, and I don't have a version of CS
+installed that supports extflonums for testing. If either changes I
+might go back and add support for those types.
