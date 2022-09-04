@@ -21,9 +21,9 @@ jobs:
           distribution: full
           variant: ${{ matrix.racket-variant }}
           version: ${{ matrix.racket-version }}
-      - name: Installing racket-extra-srfi-libs and its dependencies
-        run: raco pkg install --no-docs --auto --name racket-extra-srfi-libs
-      - name: Compiling racket-extra-srfi-libs and building its docs
-        run: raco setup --check-pkg-deps --unused-pkg-deps racket-extra-srfi-libs
-      - name: Testing racket-extra-srfi-libs
-        run: raco test -x -p racket-extra-srfi-libs
+      - name: Installing extra-srfi-libs and its dependencies
+        run: raco pkg install --no-docs --auto --name extra-srfi-libs
+      - name: Compiling extra-srfi-libs and building its docs
+        run: raco setup --check-pkg-deps --unused-pkg-deps extra-srfi-libs
+      - name: Testing extra-srfi-libs
+        run: raco test -x -p extra-srfi-libs
