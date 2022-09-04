@@ -27,3 +27,13 @@ routines should also be written in Typed Racket.}
 @item{The @code{make-bitwise-generator} routine is currently not supported.}
 
 ]
+
+@section{SRFI-208 NaN Procedures}
+
+@defmodule[srfi/208]
+
+@hyperlink["https://srfi.schemers.org/srfi-208/srfi-208.html"]{Reference Documentation}
+
+Currently only works with double-precision flonums. While Racket BC
+supports single precision flonums, Racket CS doesn't, and I don't have
+a version of CS installed that supports extflonums for testing.
