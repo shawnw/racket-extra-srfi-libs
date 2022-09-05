@@ -10,6 +10,20 @@ While Racket comes with a number of SRFI libraries, it's missing quite a lot of 
 
 A note on licensings: Most of the included SRFIs are the reference implementations adapted to Racket, and retain the original licenses.
 
+@section{SRFI-141 Integer division}
+
+@defmodule[srfi/141]
+
+@defmodule[typed/srfi/141]
+
+@hyperlink["https://srfi.schemers.org/srfi-141/srfi-141.html"]{Reference documentation}.
+
+@bold{Notes:}
+
+The functions in the typed version are constrained to only take and
+return exact integers. The regular package's will accept inexact
+integers.
+
 @section{SRFI-151 Bitwise Operations}
 
 @defmodule[srfi/151]
