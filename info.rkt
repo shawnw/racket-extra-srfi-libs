@@ -1,7 +1,7 @@
 #lang info
 (define collection 'multi)
 (define deps '("base" "typed-racket-lib" ("racket" #:version "8.6")))
-(define build-deps '("scribble-lib" "racket-doc" "rackunit-lib" "rackunit-typed"))
+(define build-deps '("scribble-lib" "racket-doc" "rackunit-lib" "rackunit-typed" "srfi-lib"))
 (define pkg-desc "Ports of more SRFIs to Racket")
 (define version "0.0")
 (define pkg-authors '(shawnw))

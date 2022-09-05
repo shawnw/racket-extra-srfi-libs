@@ -65,3 +65,27 @@ allows for other floating point types. While Racket BC supports single
 precision flonums, Racket CS doesn't, and I don't have a version of CS
 installed that supports extflonums for testing. If either changes I
 might go back and add support for those types.
+
+@section{SRFI-223 Generalized binary search procedures}
+
+@defmodule[srfi/223]
+
+@hyperlink["https://srfi.schemers.org/srfi-223/srfi-223.html"]{Reference documentation}.
+
+@defmodule[srfi/223/bytes]
+
+SRFI-223 procedures specialized for byte strings.
+
+@defproc[(bytes-bisect-left [bs bytes?] [val byte?] [less? (-> byte? byte? any/c)] [lo integer? 0] [hi integer? (bytes-length bs)])
+         integer?]{
+
+Do a binary search in @code{bs} for @code{val} per SRFI-223 @code{bisect-left}.
+
+}
+
+@defproc[(bytes-bisect-right [bs bytes?] [val byte?] [less? (-> byte? byte? any/c)] [lo integer? 0] [hi integer? (bytes-length bs)])
+         integer?]{
+
+Do a binary search in @code{bs} for @code{val} per SRFI-223 @code{bisect-right}.
+
+}
