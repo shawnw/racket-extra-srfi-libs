@@ -246,13 +246,13 @@
         (proc (bit-set? n i))
         (loop (+ n 1))))))
 
-(: bitwise-unfold (-> (-> Exact-Nonnegative-Integer Any) (-> Exact-Nonnegative-Integer Boolean) (-> Exact-Nonnegative-Integer Exact-Nonnegative-Integer) Exact-Nonnegative-Integer Integer))
+(: bitwise-unfold (-> (-> Exact-Nonnegative-Integer Any) (-> Exact-Nonnegative-Integer Any) (-> Exact-Nonnegative-Integer Exact-Nonnegative-Integer) Exact-Nonnegative-Integer Integer))
 (define (bitwise-unfold stop? mapper successor seed)
   (let loop ((n : Exact-Nonnegative-Integer 0) (result : Integer 0) (state : Exact-Nonnegative-Integer seed))
     (if (stop? state)
       result
         (loop (+ n 1)
-              (copy-bit n result (mapper state))
+              (copy-bit n result (if (mapper state) #t #f))
               (successor state)))))
 
 (module+ test
