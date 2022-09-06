@@ -18,7 +18,7 @@
       ((_ . body)
        #'(make-coroutine-generator
           (lambda (%yield)
-            (syntax-parameterize ([yield (syntax-rules () ((_ value) (%yield value)))])
+            (syntax-parameterize ([yield (lambda (stx) (syntax-case stx () ((_ value) #'(%yield value))))])
               . body)))))))
 
 (define-syntax define-coroutine-generator
