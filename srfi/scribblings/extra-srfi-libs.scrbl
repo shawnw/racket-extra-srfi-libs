@@ -1,5 +1,5 @@
 #lang scribble/manual
-@require[@for-label[racket/base srfi/151]]
+@require[@for-label[racket/base srfi/151 racket/generator]]
 
 @title{Extra SRFI Libraries}
 @author[@author+email["Shawn Wagner" "shawnw.mobile@gmail.com"]]
@@ -41,6 +41,27 @@ routines should also be written in Typed Racket.}
 @item{The @code{make-bitwise-generator} routine is currently not supported.}
 
 ]
+
+@section{SRFI-158 Generators and Accumulators}
+
+@defmodule[srfi/158]
+
+@hyperlink["https://srfi.schemers.org/srfi-158/srfi-158.html"]{Reference
+documentation}. Also includes
+@hyperlink["https://srfi.schemers.org/srfi-221/srfi-221.html"]{SRFI-221
+Generator/accumulator sub-library} routines.
+
+These generators are @bold{not} compatible with the ones in
+@racket{racket/generator}. There is an adaptor function provided to
+wrap Racket generators in SRFI-158 ones, but beware of conflicting
+@code{generator} identifiers in the two modules.
+
+@defproc[(rkt-generator->srfi-generator [g generator?]) (-> any/c)]{
+
+Adapt a Racket generator to a SRFI-158 generator. Generators that are
+called with arguments are not supported.
+
+}
 
 @section{SRFI-175 ASCII character library}
 
