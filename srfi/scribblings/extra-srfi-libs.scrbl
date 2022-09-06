@@ -32,15 +32,9 @@ integers.
 
 @bold{Notes:}
 
-@itemlist[
-
-@item{Written in Typed Racket. Hopefully the type signatures should be
+Written in Typed Racket. Hopefully the type signatures should be
 obvious and intuitive. If performance matters, code that uses these
-routines should also be written in Typed Racket.}
-
-@item{The @code{make-bitwise-generator} routine is currently not supported.}
-
-]
+routines should also be written in Typed Racket.
 
 @section{SRFI-158 Generators and Accumulators}
 

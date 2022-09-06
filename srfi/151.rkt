@@ -4,6 +4,7 @@
 (require/typed racket/unsafe/ops
   [unsafe-fxpopcount (-> Nonnegative-Fixnum Exact-Nonnegative-Integer)])
 
+
 (module+ test (require typed/rackunit))
 
 ;;; In racket/base:
@@ -15,7 +16,8 @@
          bit-field bit-field-any? bit-field-every? bit-field-clear
          bit-field-set bit-field-replace bit-field-replace-same
          bit-field-rotate bit-field-reverse bits->list bits->vector list->bits
-         vector->bits bits bitwise-fold bitwise-for-each bitwise-unfold)
+         vector->bits bits bitwise-fold bitwise-for-each bitwise-unfold
+         make-bitwise-generator)
 
 (: bit-set? (-> Exact-Nonnegative-Integer Integer Boolean))
 (define (bit-set? index i)
@@ -254,6 +256,13 @@
         (loop (+ n 1)
               (copy-bit n result (if (mapper state) #t #f))
               (successor state)))))
+
+(: make-bitwise-generator (-> Integer (-> Boolean)))
+(define (make-bitwise-generator i)
+  (lambda ()
+    (let ((bit (bit-set? 0 i)))
+       (set! i (arithmetic-shift i -1))
+       bit)))
 
 (module+ test
   (test-equal? "test-1" -1 (bitwise-not 0))
@@ -578,7 +587,7 @@
                  count))
   (test-equal? "test-114" #b101010101
                (bitwise-unfold (lambda (i) (= i 10)) even? (lambda (i) (+ i 1)) 0))
-  #;(let ((g (make-bitwise-generator #b110)))
+  (let ((g (make-bitwise-generator #b110)))
       (test-equal? "test-244a" #f (g))
       (test-equal? "test-244b" #t (g))
       (test-equal? "test-244c" #t (g))
