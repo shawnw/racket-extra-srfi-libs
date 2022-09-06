@@ -10,7 +10,7 @@
   [circular-generator (-> any/c ... (-> any/c))]
   [make-iota-generator (->* (exact-nonnegative-integer?) (number? number?) (-> number?))]
   [make-range-generator (->* (number?) (number? number?) (-> number?))]
-  [make-coroutine-generator (-> (-> continuation? any/c) (-> any/c))]
+  [make-coroutine-generator (-> (-> procedure? any/c) (-> any/c))]
   [list->generator (-> list? (-> any/c))]
   [vector->generator (->* (vector?) (exact-nonnegative-integer? exact-nonnegative-integer?) (-> any/c))]
   [reverse-vector->generator (->* (vector?) (exact-nonnegative-integer? exact-nonnegative-integer?) (-> any/c))]

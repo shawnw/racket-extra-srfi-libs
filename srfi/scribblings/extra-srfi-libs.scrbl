@@ -14,7 +14,7 @@ A note on licensings: Most of the included SRFIs are the reference implementatio
 
 @defmodule[srfi/112]
 
-@hypderlink["https://srfi.schemers.org/srfi-112/srfi-112.html"]{Reference documentation}.
+@hyperlink["https://srfi.schemers.org/srfi-112/srfi-112.html"]{Reference documentation}.
 
 @bold{Notes:} @code{(os-version)} always returns @code{#f}, but the other functions are all implemented.
 
@@ -74,6 +74,14 @@ called with arguments are not supported.
 @bold{Notes:}
 
 What the SRFI calls a bytevector is what Racket calls a byte string.
+
+@section{SRFI-190 Coroutine Generators}
+
+@defmodule[srfi/190]
+
+@hyperlink["https://srfi.schemers.org/srfi-190/srfi-190.html"]{Reference documentation}.
+
+@bold{Notes:} The @code{yield} syntax conflicts with @code{racket/generator}.
 
 @section{SRFI-208 NaN Procedures}
 

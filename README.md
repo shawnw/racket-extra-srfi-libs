@@ -14,6 +14,7 @@ Currently includes:
 * [SRFI-151 Bitwise Operations](https://srfi.schemers.org/srfi-151/srfi-151.html)
 * [SRFI-158 Generators and Accumulators](https://srfi.schemers.org/srfi-158/srfi-158.html)
 * [SRFI-175 ASCII character library](https://srfi.schemers.org/srfi-175/srfi-175.html)
+* [SRFI-190 Coroutine Generators](https://srfi.schemers.org/srfi-190/srfi-190.html)
 * [SRFI-208 NaN procedures](https://srfi.schemers.org/srfi-208/srfi-208.html)
 * [SRFI-221 Generator/accumulator sub-library](https://srfi.schemers.org/srfi-221/srfi-221.html)
 * [SRFI-223 Generalized binary search procedures](https://srfi.schemers.org/srfi-223/srfi-223.html)
