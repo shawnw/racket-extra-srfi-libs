@@ -10,6 +10,14 @@ While Racket comes with a number of SRFI libraries, it's missing quite a lot of 
 
 A note on licensings: Most of the included SRFIs are the reference implementations adapted to Racket, and retain the original licenses.
 
+@section{SRFI-112 Environment Inquiry}
+
+@defmodule[srfi/112]
+
+@hypderlink["https://srfi.schemers.org/srfi-112/srfi-112.html"]{Reference documentation}.
+
+@bold{Notes:} @code{(os-version)} always returns @code{#f}, but the other functions are all implemented.
+
 @section{SRFI-141 Integer division}
 
 @defmodule[srfi/141]
