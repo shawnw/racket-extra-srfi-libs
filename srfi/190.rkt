@@ -8,9 +8,7 @@
 (provide yield coroutine-generator define-coroutine-generator)
 
 (define-syntax-parameter yield
-  (lambda (stx)
-    (syntax-case stx ()
-      (_ (error "yield used outside coroutine generator" stx)))))
+  (lambda (stx) (raise-syntax-error #f "yield used outside coroutine generator" stx)))
 
 (define-syntax coroutine-generator
   (lambda (stx)
@@ -18,7 +16,7 @@
       ((_ . body)
        #'(make-coroutine-generator
           (lambda (%yield)
-            (syntax-parameterize ([yield (lambda (stx) (syntax-case stx () ((_ value) #'(%yield value))))])
+            (syntax-parameterize ([yield (make-rename-transformer #'%yield)])
               . body)))))))
 
 (define-syntax define-coroutine-generator
