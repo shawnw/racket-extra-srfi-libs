@@ -1,51 +1,39 @@
-#lang racket/base
+#lang typed/racket/base
 ;;; SRFI-208: NaN Procedures
 
 ;;; Original code by Shawn; Released under the MIT and Apache
 ;;; licenses; your choice.
 
+;;; For now, only support double flonums; bc supports single flonums
+;;; too, but it's legacy. Won't add unless requested.  Consider adding
+;;; extflonum support too, when I can find a Racket build that
+;;; supports it - my x86-64 one reports (extflonum-available?) as #f
 
-;;; For now, only support double flonums; bc supports single flonums too, but
-;;; it's legacy. Won't add unless requested. Consider adding extflonum support
-;;; too, when I can find a Racket build that supports it - my x86-64 one
-;;; reports (extflonum-available?) as #f
-
-(require racket/require racket/contract (only-in math/flonum flnan?)
-         (for-syntax racket/base (only-in racket/string string-prefix?)))
-(require (filtered-in
-          (lambda (name)
-            (and (or
-                  (string-prefix? name "unsafe-fx")
-                  (string-prefix? name "unsafe-bytes"))
-                 (substring name 7)))
-            racket/unsafe/ops))
+(require (only-in math/flonum flnan?))
+(require/typed racket/unsafe/ops
+  [(unsafe-fxior fxior) (-> Fixnum Fixnum Fixnum)]
+  [(unsafe-fxand fxand) (-> Fixnum Fixnum Fixnum)]
+  [(unsafe-fx> fx>) (-> Fixnum Fixnum Boolean)]
+  [(unsafe-fx= fx=) (-> Fixnum Fixnum Boolean)])
 
 (module+ test
-  (require rackunit))
+  (require typed/rackunit))
 
-(define nan/c (and/c flonum? flnan?))
-(provide
- (contract-out
-  [make-nan (->* (boolean? boolean? exact-nonnegative-integer?) (real?) nan/c)]
-  [nan-negative? (-> nan/c boolean?)]
-  [nan-quiet? (-> nan/c boolean?)]
-  [nan-payload (-> nan/c exact-nonnegative-integer?)]
-  [nan=? (-> nan/c nan/c boolean?)]))
+(provide make-nan nan-negative? nan-quiet? nan-payload nan=?)
 
 ;;; Use a per-thread byte buffer to hold representations of numbers
 ;;; instead of allocating ones on every call.
-(define byte-buffer (make-thread-cell #f))
+(define byte-buffer ((inst make-thread-cell (U Bytes False)) #f))
 
+(: make-nan (->* (Boolean Boolean Exact-Nonnegative-Integer) (Flonum)
+                 Flonum))
 (define (make-nan negative? quiet? payload [float 0.0])
   (let ([bv (thread-cell-ref byte-buffer)])
     (cond
       ((eq? bv #f)
        (thread-cell-set! byte-buffer (make-bytes 16))
        (make-nan negative? quiet? payload float))
-      ((not (double-flonum? float))
-       (raise-argument-error 'make-nan "double-flonum?" float))
-      ((or (< payload 0)
-           (> payload (- (arithmetic-shift 1 51) 1)))
+      ((> payload (- (arithmetic-shift 1 51) 1))
        (raise-argument-error 'make-nan "(integer-in 0 (- (arithmetic-shift 1 51) 1))" payload))
       ((and (= payload 0) (not quiet?))
        (error "Signalling NaN needs a non-0 payload"))
@@ -62,50 +50,64 @@
        (bytes-copy! bv 2 bv 10 16)
        (floating-point-bytes->real bv #t 0 8)))))
 
+(: nan-negative? (-> (U Flonum Flonum-Nan) Boolean))
 (define (nan-negative? nan)
   (let ([bv (thread-cell-ref byte-buffer)])
     (cond
       ((eq? bv #f)
        (thread-cell-set! byte-buffer (make-bytes 16))
        (nan-negative? nan))
-      (else
+      ((flnan? nan)
        (real->floating-point-bytes nan 8 #t bv)
-       (fx> (fxand (bytes-ref bv 0) #b10000000) 0)))))
+       (fx> (fxand (bytes-ref bv 0) #b10000000) 0))
+      (else
+       (raise-argument-error 'nan-negative? "nan?" nan)))))
 
+(: nan-quiet? (->  (U Flonum Flonum-Nan) Boolean))
 (define (nan-quiet? nan)
   (let ([bv (thread-cell-ref byte-buffer)])
     (cond
       ((eq? bv #f)
        (thread-cell-set! byte-buffer (make-bytes 16))
        (nan-quiet? nan))
-      (else
+      ((flnan? nan)
        (real->floating-point-bytes nan 8 #t bv)
-       (fx> (fxand (bytes-ref bv 1) #b00001000) 0)))))
+       (fx> (fxand (bytes-ref bv 1) #b00001000) 0))
+      (else
+       (raise-argument-error 'nan-quiet? "nan?" nan)))))
 
+(: nan-payload (->  (U Flonum Flonum-Nan) Exact-Nonnegative-Integer))
 (define (nan-payload nan)
   (let ([bv (thread-cell-ref byte-buffer)])
     (cond
       ((eq? bv #f)
        (thread-cell-set! byte-buffer (make-bytes 16))
        (nan-payload nan))
-      (else
+      ((flnan? nan)
        (real->floating-point-bytes nan 8 #t bv)
        (bytes-set! bv 8 0)
        (bytes-set! bv 9 (fxand (bytes-ref bv 1) #b00000111))
        (bytes-copy! bv 10 bv 2 8)
-       (integer-bytes->integer bv #f #t 8 16)))))
+       (integer-bytes->integer bv #f #t 8 16))
+      (else
+       (raise-argument-error 'nan-payload "nan?" nan)))))
 
+(: nan=? (->  (U Flonum Flonum-Nan) (U Flonum Flonum-Nan) Boolean))
 (define (nan=? a b)
   (let ([bv (thread-cell-ref byte-buffer)])
     (cond
       ((eq? bv #f)
        (thread-cell-set! byte-buffer (make-bytes 16))
        (nan=? a b))
-      (else
+      ((and (flnan? a) (flnan? b))
        (real->floating-point-bytes a 8 (system-big-endian?) bv 0)
        (real->floating-point-bytes b 8 (system-big-endian?) bv 8)
        (for/and ([i (in-range 8)])
-         (fx= (bytes-ref bv i) (bytes-ref bv (+ i 8))))))))
+         (fx= (bytes-ref bv i) (bytes-ref bv (+ i 8)))))
+      (else
+       (if (flnan? b)
+           (raise-argument-error 'nan=? "nan?" a)
+           (raise-argument-error 'nan=? "nan?" b))))))
 
 (module+ test
   (define q+NaN (make-nan #f #t 0))

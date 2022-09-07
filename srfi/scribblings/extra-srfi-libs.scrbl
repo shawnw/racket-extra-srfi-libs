@@ -87,15 +87,23 @@ What the SRFI calls a bytevector is what Racket calls a byte string.
 
 @defmodule[srfi/208]
 
+@defmodule[typed/srfi/208]
+
 @hyperlink["https://srfi.schemers.org/srfi-208/srfi-208.html"]{Reference documentation}.
 
 @bold{Notes:}
 
-Currently only works with double-precision flonums, though the SRFI
-allows for other floating point types. While Racket BC supports single
-precision flonums, Racket CS doesn't, and I don't have a version of CS
-installed that supports extflonums for testing. If either changes I
-might go back and add support for those types.
+Currently only works with double-precision flonums, though the SRFI allows for
+other floating point types. While Racket BC supports single precision flonums,
+Racket CS doesn't, and I don't have a version of CS installed that supports
+extflonums (maybe it doesn't support them at all either?). If either condition
+changes I might go back and add support for those types.
+
+The main difference between the untyped and typed versions are that the former
+includes NaN checking of arguments in the contracts; the typed one has an
+explicit check to raise an error if passed a non-NaN number. I might remove
+that check in the future and just say it's undefined what happens when they're
+passed a non-NaN.
 
 @section{SRFI-223 Generalized binary search procedures}
 
