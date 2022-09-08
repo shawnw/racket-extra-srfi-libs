@@ -41,6 +41,12 @@ The functions in the typed version are constrained to only take and
 return exact integers. The regular package's will accept inexact
 integers.
 
+@section{SRFI-145 Assumptions}
+
+@defmodule[srfi/145]
+
+@hyperlink["https://srfi.schemers.org/srfi-145/srfi-145.html"]{Reference documentation}.
+
 @section{SRFI-151 Bitwise Operations}
 
 @defmodule[srfi/151]
