@@ -13,6 +13,7 @@ Currently includes:
 * [SRFI-141 Integer division](https://srfi.schemers.org/srfi-141/srfi-141.html)
 * [SRFI-151 Bitwise Operations](https://srfi.schemers.org/srfi-151/srfi-151.html)
 * [SRFI-158 Generators and Accumulators](https://srfi.schemers.org/srfi-158/srfi-158.html)
+* [SRFI-162 Comparators sublibrary](https://srfi.schemers.org/srfi-162/srfi-162.html)
 * [SRFI-175 ASCII character library](https://srfi.schemers.org/srfi-175/srfi-175.html)
 * [SRFI-190 Coroutine Generators](https://srfi.schemers.org/srfi-190/srfi-190.html)
 * [SRFI-208 NaN procedures](https://srfi.schemers.org/srfi-208/srfi-208.html)

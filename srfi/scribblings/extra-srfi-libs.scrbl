@@ -18,6 +18,15 @@ A note on licensings: Most of the included SRFIs are the reference implementatio
 
 @bold{Notes:} @code{(os-version)} always returns @code{#f}, but the other functions are all implemented.
 
+@section{SRFI-128 Comparators (reduced)}
+
+@defmodule[srif/128]
+
+@hyperlink["https://srfi.schemers.org/srfi-128/srfi-128.html"]{Reference
+documentation}. Also includes
+@hyperlink["https://srfi.schemers.org/srfi-162/srfi-162.html"]{SRFI-162
+Comparators sublibrary} routines and variables.
+
 @section{SRFI-141 Integer division}
 
 @defmodule[srfi/141]
