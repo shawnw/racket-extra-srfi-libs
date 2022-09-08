@@ -14,18 +14,17 @@
 (module+ test (require rackunit))
 
 (define (validate-args kvs)
-  (let loop ([lst kvs])
-    (cond
-      ((null? lst) #t)
-      ((null? (cdr lst)) #f)
-      ((fixnum? (car lst)) (loop (cddr lst)))
-      (else #f))))
+  (cond
+    ((null? kvs) #t)
+    ((null? (cdr kvs)) (format "missing value for key ~S" (car kvs)))
+    ((fixnum? (car kvs)) (validate-args (cddr kvs)))
+    (else (format "key ~S isn't a fixnum" (car kvs)))))
 
 (provide
  (contract-out
   [fxmapping? predicate/c]
   [fxmapping (->i ([k1 fixnum?] [v1 any/c]) () #:rest [kvs any/c]
-                  #:pre (kvs) (validate-args kvs)
+                  #:pre/desc (kvs) (validate-args kvs)
              [_ fxmapping?])]
   [fxmapping-unfold (->* ((->* (any/c) () #:rest any/c any/c) (->* (any/c) () #:rest any/c (values fixnum? any/c)) (->* (any/c) () #:rest any/c any) any/c) ()
                          #:rest any/c fxmapping?)]
@@ -40,14 +39,14 @@
   [fxmapping-min (-> fxmapping? (values fixnum? any/c))]
   [fxmapping-max (-> fxmapping? (values fixnum? any/c))]
   (fxmapping-adjoin (->i ([fx fxmapping?] [k1 fixnum?] [v1 any/c]) () #:rest [kvs any/c]
-                         #:pre (kvs) (validate-args kvs)
+                         #:pre/desc (kvs) (validate-args kvs)
                          [_ fxmapping?]))
   (fxmapping-adjoin/combinator (->i ([fx fxmapping?] [p procedure?] [k1 fixnum?] [v1 any/c]) () #:rest [kvs any/c]
-                                    #:pre (kvs) (validate-args kvs)
+                                    #:pre/desc (kvs) (validate-args kvs)
                                     [_ fxmapping?]))
 
   (fxmapping-set (->i ([fx fxmapping?] [k1 fixnum?] [v1 any/c]) () #:rest [kvs any/c]
-                      #:pre (kvs) (validate-args kvs)
+                      #:pre/desc (kvs) (validate-args kvs)
                       [_ fxmapping?]))
   [fxmapping-adjust (-> fxmapping? fixnum? (-> fixnum? any/c any/c) fxmapping?)]
   [fxmapping-delete (->* (fxmapping? fixnum?) () #:rest fixnum? fxmapping?)]
