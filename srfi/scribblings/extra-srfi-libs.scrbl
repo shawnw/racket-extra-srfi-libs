@@ -143,3 +143,9 @@ Do a binary search in @code{bs} for @code{val} per SRFI-223 @code{bisect-left}.
 Do a binary search in @code{bs} for @code{val} per SRFI-223 @code{bisect-right}.
 
 }
+
+@section{SRFI-224 Integer Mappings}
+
+@defmodule[srfi/224]
+
+@hyperlink["https://srfi.schemers.org/srfi-224/srfi-224.html"]{Reference documentation}.
