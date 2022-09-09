@@ -27,6 +27,26 @@ documentation}. Also includes
 @hyperlink["https://srfi.schemers.org/srfi-162/srfi-162.html"]{SRFI-162
 Comparators sublibrary} routines and variables.
 
+@section{SRFI-132 Sort Libraries}
+
+@defmodule[srif/132]
+
+@hyperlink["https://srfi.schemers.org/srfi-132/srfi-132.html"]{Reference
+documentation}.
+
+@bold{Notes:}
+
+@code{vector-sort} and @code{vector-sort!} conflict with
+the ones in @code{racket/vector} - the order of the vector and
+ordering predicate is reversed.
+
+The side-effect-enabled list functions @code{list-merge!} and
+@code{list-delete-neighbor-dups!} currently use
+@code{unsafe-immutable-set-cdr!} to modify the lists in place. The
+test cases pass, but if this becomes an issue in practice (The
+function has lots of warnings attached), I'll switch them to just
+being aliases for the non-side-effect versions.
+
 @section{SRFI-141 Integer division}
 
 @defmodule[srfi/141]

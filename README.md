@@ -10,6 +10,8 @@ beyond what's included in the standard srfi-lib collection.
 Currently includes:
 
 * [SRFI-112 Environment Inquiry](https://srfi.schemers.org/srfi-112/srfi-112.html)
+* [SRFI-128 Comparators (reduced)](https://srfi.schemers.org/srfi-128/srfi-128.html)
+* [SRFI-132 Sort Libraries](https://srfi.schemers.org/srfi-132/srfi-132.html)
 * [SRFI-141 Integer division](https://srfi.schemers.org/srfi-141/srfi-141.html)
 * [SRFI-145 Assumptions](https://srfi.schemers.org/srfi-145/srfi-145.html)
 * [SRFI-151 Bitwise Operations](https://srfi.schemers.org/srfi-151/srfi-151.html)
