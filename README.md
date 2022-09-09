@@ -19,6 +19,7 @@ Currently includes:
 * [SRFI-162 Comparators sublibrary](https://srfi.schemers.org/srfi-162/srfi-162.html)
 * [SRFI-175 ASCII character library](https://srfi.schemers.org/srfi-175/srfi-175.html)
 * [SRFI-190 Coroutine Generators](https://srfi.schemers.org/srfi-190/srfi-190.html)
+* [SRFI_194 Random data generators](https://srfi.schemers.org/srfi-194/srfi-194.html)
 * [SRFI-208 NaN procedures](https://srfi.schemers.org/srfi-208/srfi-208.html)
 * [SRFI-221 Generator/accumulator sub-library](https://srfi.schemers.org/srfi-221/srfi-221.html)
 * [SRFI-223 Generalized binary search procedures](https://srfi.schemers.org/srfi-223/srfi-223.html)

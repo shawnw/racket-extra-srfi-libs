@@ -118,6 +118,14 @@ What the SRFI calls a bytevector is what Racket calls a byte string.
 
 @bold{Notes:} The @code{yield} syntax conflicts with @code{racket/generator}.
 
+@section{SRFI-194 Random data generators}
+
+@defmodule[srif/194]
+
+@hyperlink["https://srfi.schemers.org/srfi-194/srfi-194.html"]{Reference documentation}.
+
+@bold{Notes:} The @code{make-random-string-generator} function isn't implemented.
+
 @section{SRFI-208 NaN Procedures}
 
 @defmodule[srfi/208]
