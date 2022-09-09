@@ -23,14 +23,14 @@
 (provide
  (contract-out
   [fxmapping? predicate/c]
-  [fxmapping (->i ([k1 fixnum?] [v1 any/c]) () #:rest [kvs any/c]
+  [fxmapping (->i ([k1 fixnum?] [v1 any/c]) () #:rest [kvs list?]
                   #:pre/desc (kvs) (validate-args kvs)
              [_ fxmapping?])]
-  [fxmapping-unfold (->* ((->* (any/c) () #:rest any/c any/c) (->* (any/c) () #:rest any/c (values fixnum? any/c)) (->* (any/c) () #:rest any/c any) any/c) ()
-                         #:rest any/c fxmapping?)]
-  [fxmapping-accumulate (->* (procedure? any/c) () #:rest any/c fxmapping?)]
+  [fxmapping-unfold (->* ((->* (any/c) () #:rest list? any/c) (->* (any/c) () #:rest list? (values fixnum? any/c)) (->* (any/c) () #:rest list? any) any/c) ()
+                         #:rest list? fxmapping?)]
+  [fxmapping-accumulate (->* (procedure? any/c) () #:rest list? fxmapping?)]
   [alist->fxmapping (-> (listof (cons/c fixnum? any/c)) fxmapping?)]
-  [alist->fxmapping/combinator (-> (->* (fixnum? any/c) () #:rest any/c any/c) (listof (cons/c fixnum? any/c)) fxmapping?)]
+  [alist->fxmapping/combinator (-> (->* (fixnum? any/c) () #:rest list? any/c) (listof (cons/c fixnum? any/c)) fxmapping?)]
   [fxmapping-contains? (-> fxmapping? fixnum? boolean?)]
   [fxmapping-empty? (-> fxmapping? boolean?)]
   [fxmapping-disjoint? (-> fxmapping? fxmapping? boolean?)]
@@ -38,14 +38,14 @@
   [fxmapping-ref/default (-> fxmapping? fixnum? any/c any/c)]
   [fxmapping-min (-> fxmapping? (values fixnum? any/c))]
   [fxmapping-max (-> fxmapping? (values fixnum? any/c))]
-  (fxmapping-adjoin (->i ([fx fxmapping?] [k1 fixnum?] [v1 any/c]) () #:rest [kvs any/c]
+  (fxmapping-adjoin (->i ([fx fxmapping?] [k1 fixnum?] [v1 any/c]) () #:rest [kvs list?]
                          #:pre/desc (kvs) (validate-args kvs)
                          [_ fxmapping?]))
-  (fxmapping-adjoin/combinator (->i ([fx fxmapping?] [p procedure?] [k1 fixnum?] [v1 any/c]) () #:rest [kvs any/c]
+  (fxmapping-adjoin/combinator (->i ([fx fxmapping?] [p procedure?] [k1 fixnum?] [v1 any/c]) () #:rest [kvs list?]
                                     #:pre/desc (kvs) (validate-args kvs)
                                     [_ fxmapping?]))
 
-  (fxmapping-set (->i ([fx fxmapping?] [k1 fixnum?] [v1 any/c]) () #:rest [kvs any/c]
+  (fxmapping-set (->i ([fx fxmapping?] [k1 fixnum?] [v1 any/c]) () #:rest [kvs list?]
                       #:pre/desc (kvs) (validate-args kvs)
                       [_ fxmapping?]))
   [fxmapping-adjust (-> fxmapping? fixnum? (-> fixnum? any/c any/c) fxmapping?)]
@@ -77,17 +77,17 @@
   [fxmapping-keys (-> fxmapping? (listof fixnum?))]
   [fxmapping-values (-> fxmapping? (listof any/c))]
   [fxmapping->generator (-> fxmapping? (-> (cons/c fixnum? any/c)))]
-  [fxmapping=? (->* (comparator? fxmapping? fxmapping?) () #:rest fxmapping? boolean?)]
-  [fxmapping<? (->* (comparator? fxmapping? fxmapping?) () #:rest fxmapping? boolean?)]
-  [fxmapping<=? (->* (comparator? fxmapping? fxmapping?) () #:rest fxmapping? boolean?)]
-  [fxmapping>? (->* (comparator? fxmapping? fxmapping?) () #:rest fxmapping? boolean?)]
-  [fxmapping>=? (->* (comparator? fxmapping? fxmapping?) () #:rest fxmapping? boolean?)]
-  [fxmapping-union (->* (fxmapping? fxmapping?) () #:rest fxmapping? fxmapping?)]
-  [fxmapping-intersection (->* (fxmapping? fxmapping?) () #:rest fxmapping? fxmapping?)]
-  [fxmapping-difference (->* (fxmapping? fxmapping?) () #:rest fxmapping? fxmapping?)]
+  [fxmapping=? (->* (comparator? fxmapping? fxmapping?) () #:rest (listof fxmapping?) boolean?)]
+  [fxmapping<? (->* (comparator? fxmapping? fxmapping?) () #:rest (listof fxmapping?) boolean?)]
+  [fxmapping<=? (->* (comparator? fxmapping? fxmapping?) () #:rest (listof fxmapping?) boolean?)]
+  [fxmapping>? (->* (comparator? fxmapping? fxmapping?) () #:rest (listof fxmapping?) boolean?)]
+  [fxmapping>=? (->* (comparator? fxmapping? fxmapping?) () #:rest (listof fxmapping?) boolean?)]
+  [fxmapping-union (->* (fxmapping? fxmapping?) () #:rest (listof fxmapping?) fxmapping?)]
+  [fxmapping-intersection (->* (fxmapping? fxmapping?) () #:rest (listof fxmapping?) fxmapping?)]
+  [fxmapping-difference (->* (fxmapping? fxmapping?) () #:rest (listof fxmapping?) fxmapping?)]
   [fxmapping-xor (-> fxmapping? fxmapping? fxmapping?)]
-  [fxmapping-union/combinator (->* ((-> fixnum? any/c any/c any/c) fxmapping? fxmapping?) () #:rest fxmapping? fxmapping?)]
-  [fxmapping-intersection/combinator (->* ((-> fixnum? any/c any/c any/c) fxmapping? fxmapping?) () #:rest fxmapping? fxmapping?)]
+  [fxmapping-union/combinator (->* ((-> fixnum? any/c any/c any/c) fxmapping? fxmapping?) () #:rest (listof fxmapping?) fxmapping?)]
+  [fxmapping-intersection/combinator (->* ((-> fixnum? any/c any/c any/c) fxmapping? fxmapping?) () #:rest (listof fxmapping?) fxmapping?)]
   [fxmapping-open-interval (-> fxmapping? fixnum? fixnum? fxmapping?)]
   [fxmapping-closed-interval (-> fxmapping? fixnum? fixnum? fxmapping?)]
   [fxmapping-open-closed-interval (-> fxmapping? fixnum? fixnum? fxmapping?)]
