@@ -24,15 +24,21 @@
 ;;; Use a per-thread byte buffer to hold representations of numbers
 ;;; instead of allocating ones on every call.
 (define byte-buffer ((inst make-thread-cell (U Bytes False)) #f))
+(: get-buffer (-> Bytes))
+(define (get-buffer)
+  (let ([buffer (thread-cell-ref byte-buffer)])
+    (cond
+      ((bytes? buffer) buffer)
+      (else
+       (let ([buf (make-bytes 16)])
+         (thread-cell-set! byte-buffer buf)
+         buf)))))
 
 (: make-nan (->* (Boolean Boolean Exact-Nonnegative-Integer) (Flonum)
                  Flonum))
 (define (make-nan negative? quiet? payload [float 0.0])
-  (let ([bv (thread-cell-ref byte-buffer)])
+  (let ([bv (get-buffer)])
     (cond
-      ((eq? bv #f)
-       (thread-cell-set! byte-buffer (make-bytes 16))
-       (make-nan negative? quiet? payload float))
       ((> payload (- (arithmetic-shift 1 51) 1))
        (raise-argument-error 'make-nan "(integer-in 0 (- (arithmetic-shift 1 51) 1))" payload))
       ((and (= payload 0) (not quiet?))
@@ -52,11 +58,8 @@
 
 (: nan-negative? (-> (U Flonum Flonum-Nan) Boolean))
 (define (nan-negative? nan)
-  (let ([bv (thread-cell-ref byte-buffer)])
+  (let ([bv (get-buffer)])
     (cond
-      ((eq? bv #f)
-       (thread-cell-set! byte-buffer (make-bytes 16))
-       (nan-negative? nan))
       ((flnan? nan)
        (real->floating-point-bytes nan 8 #t bv)
        (fx> (fxand (bytes-ref bv 0) #b10000000) 0))
@@ -65,11 +68,8 @@
 
 (: nan-quiet? (->  (U Flonum Flonum-Nan) Boolean))
 (define (nan-quiet? nan)
-  (let ([bv (thread-cell-ref byte-buffer)])
+  (let ([bv (get-buffer)])
     (cond
-      ((eq? bv #f)
-       (thread-cell-set! byte-buffer (make-bytes 16))
-       (nan-quiet? nan))
       ((flnan? nan)
        (real->floating-point-bytes nan 8 #t bv)
        (fx> (fxand (bytes-ref bv 1) #b00001000) 0))
@@ -78,11 +78,8 @@
 
 (: nan-payload (->  (U Flonum Flonum-Nan) Exact-Nonnegative-Integer))
 (define (nan-payload nan)
-  (let ([bv (thread-cell-ref byte-buffer)])
+  (let ([bv (get-buffer)])
     (cond
-      ((eq? bv #f)
-       (thread-cell-set! byte-buffer (make-bytes 16))
-       (nan-payload nan))
       ((flnan? nan)
        (real->floating-point-bytes nan 8 #t bv)
        (bytes-set! bv 8 0)
@@ -94,11 +91,8 @@
 
 (: nan=? (->  (U Flonum Flonum-Nan) (U Flonum Flonum-Nan) Boolean))
 (define (nan=? a b)
-  (let ([bv (thread-cell-ref byte-buffer)])
+  (let ([bv (get-buffer)])
     (cond
-      ((eq? bv #f)
-       (thread-cell-set! byte-buffer (make-bytes 16))
-       (nan=? a b))
       ((and (flnan? a) (flnan? b))
        (real->floating-point-bytes a 8 (system-big-endian?) bv 0)
        (real->floating-point-bytes b 8 (system-big-endian?) bv 8)
