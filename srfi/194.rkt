@@ -29,13 +29,13 @@
                                 (-> complex? positive? positive? real? real? (-> complex?)))]
   [make-random-boolean-generator (-> (-> boolean?))]
   [make-random-char-generator (-> string? (-> char?))]
-  [make-bernoulli-generator (-> real? (-> byte?))]
+  [make-bernoulli-generator (-> (between/c 0.0 1.0) (-> byte?))]
   [make-categorical-generator (-> (vectorof positive?) (-> exact-nonnegative-integer?))]
   [make-normal-generator (->* () (real? real?) (-> real?))]
   [make-exponential-generator (-> positive? (-> real?))]
-  [make-geometric-generator (-> flonum? (-> integer?))]
+  [make-geometric-generator (-> (and/c flonum? (>/c 0.0) (<=/c 1.0)) (-> integer?))]
   [make-poisson-generator (-> positive? (-> integer?))]
-  [make-binomial-generator (-> exact-positive-integer? real? (-> integer?))]
+  [make-binomial-generator (-> exact-positive-integer? (between/c 0.0 1.0) (-> integer?))]
   [make-zipf-generator (->* (integer?) (real? real?) (-> integer?))]
   [make-sphere-generator (-> exact-positive-integer? (-> (vectorof real?)))]
   [make-ellipsoid-generator (-> (vectorof real?) (-> (vectorof real?)))]
@@ -75,7 +75,8 @@
 
 (define (make-random-integer-generator low-bound up-bound)
   (unless (< low-bound up-bound)
-    (error "upper bound should be greater than lower bound"))
+    (raise-arguments-error 'make-random-integer-generator "Upper bound should be greater than lower bound"
+                           "low-bound" low-bound "up-bound" up-bound))
   (let ((rand-int-proc (random-source-make-integers (current-random-source)))
         (range (- up-bound low-bound)))
     (lambda ()
@@ -103,7 +104,8 @@
 (define (clamp-real-number lower-bound upper-bound value)
   (cond
     ((not (<= lower-bound upper-bound))
-     (error "lower bound must be <= upper bound"))
+     (raise-arguments-error 'clamp-real-number "lower bound must be <= upper bound" "lower-bound"
+                            lower-bound "upper-bound" upper-bound))
     ((< value lower-bound) lower-bound)
     ((> value upper-bound) upper-bound)
     (else value)))
@@ -111,12 +113,13 @@
 (define (make-random-real-generator low-bound up-bound)
   (unless (and ;(real? low-bound)
                (finite? low-bound))
-    (error "expected finite real number for lower bound"))
+    (raise-argument-error 'make-random-real-generator "(and/c real? finite?)" low-bound))
   (unless (and ;(real? up-bound)
                (finite? up-bound))
-     (error "expected finite real number for upper bound"))
+    (raise-argument-error 'make-random-real-generator "(and/c real? finite?)" up-bound))
   (unless (< low-bound up-bound)
-     (error "lower bound must be < upper bound"))
+     (raise-arguments-error 'make-random-real-generator "lower bound must be < upper bound"
+                            "low-bound" low-bound "up-bound" up-bound))
   (let ((rand-real-proc (random-source-make-reals (current-random-source))))
    (lambda ()
      (define t (rand-real-proc))
@@ -144,9 +147,11 @@
      (make-random-polar-generator 0+0i magnitude-lower-bound magnitude-upper-bound angle-lower-bound angle-upper-bound))
     ((origin magnitude-lower-bound magnitude-upper-bound angle-lower-bound angle-upper-bound)
      (unless (< magnitude-lower-bound magnitude-upper-bound)
-       (error "magnitude lower bound should be less than upper bound"))
+       (raise-arguments-error 'make-random-polar-generator "magnitude lower bound should be less than upper bound"
+                              "magnitude-lower-bound" magnitude-lower-bound "magnitude-upper-bound" magnitude-upper-bound))
      (when (= angle-lower-bound angle-upper-bound)
-       (error "angle bounds shouldn't be equal"))
+       (raise-arguments-error 'make-random-polar-generator "angle bounds shouldn't be equal"
+                              "angle-lower-bound" angle-lower-bound "angle-upper-bound" angle-upper-bound))
      (let* ((b (sqr magnitude-lower-bound))
             (m (- (sqr magnitude-upper-bound) b))
             (t-gen (make-random-real-generator 0. 1.))
@@ -164,7 +169,7 @@
 
 (define (make-random-char-generator str)
   (unless (> (string-length str) 0)
-    (error "given string is of length 0"))
+    (raise-argument-error 'make-random-char-generator "(not/c string-empty?)" str))
   (let* ((int-gen (make-random-integer-generator 0 (string-length str))))
    (lambda ()
      (string-ref str (int-gen)))))
@@ -182,8 +187,8 @@
 (define PI pi)
 
 (define (make-bernoulli-generator p)
-  (unless (<= 0 p 1)
-    (error "expected 0 <= p <= 1"))
+  #;(unless (<= 0 p 1)
+    (raise-argument-error 'make-bernoulli-generator "(between/c 0 1)" p))
   (let ((rand-real-proc (random-source-make-reals (current-random-source))))
    (lambda ()
      (if (<= (rand-real-proc) p)
@@ -231,11 +236,11 @@
            (state #f))
        (unless (and ;(real? mean)
                     (finite? mean))
-         (error "expected mean to be finite real number"))
+         (raise-argument-error 'make-normal-generator "(and/c real? finite?)" mean))
        (unless (and ;(real? deviation)
                     (finite? deviation)
                     (> deviation 0))
-         (error "expected deviation to be positive finite real number"))
+         (raise-argument-error 'make-normal-generator "(and/c real? finite? positive?)" deviation))
        (lambda ()
          (if state
              (let ((result state))
@@ -250,16 +255,16 @@
   (unless (and ;(real? mean)
                (finite? mean)
                #;(positive? mean))
-    (error "expected mean to be finite positive real number"))
+    (raise-argument-error 'make-exponential-generator "(and/c real? finite? positive?)" mean))
   (let ((rand-real-proc (random-source-make-reals (current-random-source))))
    (lambda ()
      (- (* mean (log (rand-real-proc)))))))
 
 (define (make-geometric-generator p)
-  (unless (and ;(real? p)
+  #;(unless (and ;(real? p)
                (> p 0)
                (<= p 1))
-          (error "expected p to be real number, 0 < p <= 1"))
+          (raise-argument-error 'make-geometric-generator "(and/c (>/c 0) (<=/c 1))" p))
   (if (zero? (fl- p 1.))
       ;; p is indistinguishable from 1.
       (lambda () 1)
@@ -282,7 +287,7 @@
   (unless (and ;(real? L)
                (finite? L)
                #;(> L 0))
-    (error "expected L to be finite positive real number"))
+    (raise-argument-error 'make-poisson-generator "(and/c real? finite? positive?)" L))
   (let ((rand-real-proc (random-source-make-reals (current-random-source))))
    (if (< L 30)
        (make-poisson/small rand-real-proc L)
@@ -450,21 +455,21 @@
              inexact-k+1)))))
 
 (define (make-binomial-generator n p)
-  (if (not (and ;(real? p)
+#|  (if (not (and ;(real? p)
                 (<= 0 p 1)
                 ;(exact-integer? n)
                 #;(positive? n)))
-       (error "make-binomial-generator: Bad parameters: " n p)
-       (cond ((< 1/2 p)
-              (let ((complement (make-binomial-generator n (- 1 p))))
-                (lambda ()
-                  (- n (complement)))))
-             ((zero? p)
-              (lambda () 0))
-             ((< (* n p) 10)
-              (binomial-geometric n p))
-             (else
-              (binomial-rejection n p)))))
+       (error "make-binomial-generator: Bad parameters: " n p) |#
+  (cond ((< 1/2 p)
+         (let ((complement (make-binomial-generator n (- 1 p))))
+           (lambda ()
+             (- n (complement)))))
+        ((zero? p)
+         (lambda () 0))
+        ((< (* n p) 10)
+         (binomial-geometric n p))
+        (else
+         (binomial-rejection n p))))
 
 (define (binomial-geometric n p)
   (let ((geom (make-geometric-generator p)))
@@ -836,7 +841,7 @@
     (cond
       ((integer? arg) (make-vector (+ 2 arg) 1.0))
       ((vector? arg) (vector-append arg (vector-immutable 1.0 1.0)))
-      (else (error "expected argument to either be a number (dimension), or vector (axis length for the dimensions)"))))
+      (else (raise-argument-error 'make-ball-generator "(or/c integer? (vectorof real?))" arg))))
   (define N (- (vector-length dim-sizes) 2))
   (define sphereg (make-sphere-generator (+ N 2)))
   ; Create a vector of N+2 values, and drop the last two.
