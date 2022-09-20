@@ -42,7 +42,7 @@
       ((> payload (- (arithmetic-shift 1 51) 1))
        (raise-argument-error 'make-nan "(integer-in 0 (- (arithmetic-shift 1 51) 1))" payload))
       ((and (= payload 0) (not quiet?))
-       (error "Signalling NaN needs a non-0 payload"))
+       (raise-argument-error 'make-nan "(and/c (not/c quiet?) (>/c 0))" payload))
       (else
        (if negative?
            (bytes-set! bv 0 #b11111111)
