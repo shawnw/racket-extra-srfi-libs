@@ -10,6 +10,9 @@ While Racket comes with a number of SRFI libraries, it's missing quite a lot of 
 
 A note on licensings: Most of the included SRFIs are the reference implementations adapted to Racket, and retain the original licenses.
 
+Typical changes to the reference versions include adding contracts and removing now-redundant type checking, avoiding things Scheme allows
+that Racket doesn't like @code{if} missing an else clause, reorganization of source files, etc.
+
 @section{SRFI-112 Environment Inquiry}
 
 @defmodule[srfi/112]
@@ -42,7 +45,7 @@ ordering predicate is reversed.
 
 The side-effect-enabled list functions @code{list-merge!} and
 @code{list-delete-neighbor-dups!} currently use
-@code{unsafe-immutable-set-cdr!} to modify the lists in place. The
+@racket{unsafe-immutable-set-cdr!} to modify the lists in place. The
 test cases pass, but if this becomes an issue in practice (The
 function has lots of warnings attached), I'll switch them to just
 being aliases for the non-side-effect versions.
@@ -169,6 +172,42 @@ Do a binary search in @code{bs} for @code{val} per SRFI-223 @code{bisect-left}.
          integer?]{
 
 Do a binary search in @code{bs} for @code{val} per SRFI-223 @code{bisect-right}.
+
+}
+
+@defmodule[srfi/223/flvector]
+
+SRFI-223 procedures specialized for flvectors.
+
+@defproc[(flvector-bisect-left [fv flvector?] [val flonum?] [less? (-> flonum? flonum? any/c)] [lo integer? 0] [hi integer? (flvector-length fv)])
+         integer?]{
+
+Do a binary search in @code{fv} for @code{val} per SRFI-223 @code{bisect-left}.
+
+}
+
+@defproc[(flvector-bisect-right [fv flvector?] [val flonum?] [less? (-> flonum? flonum? any/c)] [lo integer? 0] [hi integer? (flvector-length fv)])
+         integer?]{
+
+Do a binary search in @code{fv} for @code{val} per SRFI-223 @code{bisect-right}.
+
+}
+
+@defmodule[srfi/223/fxvector]
+
+SRFI-223 procedures specialized for fxvectors.
+
+@defproc[(fxvector-bisect-left [fv fxvector?] [val fixnum?] [less? (-> fixnum? fixnum? any/c)] [lo integer? 0] [hi integer? (fxvector-length fv)])
+         integer?]{
+
+Do a binary search in @code{fv} for @code{val} per SRFI-223 @code{bisect-left}.
+
+}
+
+@defproc[(fxvector-bisect-right [fv fxvector?] [val fixnum?] [less? (-> fixnum? fixnum? any/c)] [lo integer? 0] [hi integer? (fxvector-length fv)])
+         integer?]{
+
+Do a binary search in @code{fv} for @code{val} per SRFI-223 @code{bisect-right}.
 
 }
 
