@@ -1,10 +1,10 @@
 #lang racket/base
 ;;; Integer Mappings
 
-(require racket/contract racket/require "145.rkt" srfi/9
+(require racket/contract racket/require racket/dict srfi/41 "145.rkt"
          (only-in srfi/1 fold unfold every iota partition)
          (only-in "128.rkt" comparator? =? make-default-comparator)
-         (only-in "158.rkt" make-coroutine-generator)
+         (only-in "158.rkt" make-coroutine-generator generator->stream)
          (for-syntax racket/base (only-in racket/string string-prefix?)))
 (require (filtered-in
           (lambda (name)
@@ -23,7 +23,7 @@
 (provide
  (contract-out
   [fxmapping? predicate/c]
-  [fxmapping (->i ([k1 fixnum?] [v1 any/c]) () #:rest [kvs list?]
+  [fxmapping (->i () () #:rest [kvs list?]
                   #:pre/desc (kvs) (validate-args kvs)
              [_ fxmapping?])]
   [fxmapping-unfold (->* ((->* (any/c) () #:rest list? any/c) (->* (any/c) () #:rest list? (values fixnum? any/c)) (->* (any/c) () #:rest list? any) any/c) ()
@@ -76,7 +76,7 @@
   [fxmapping->decreasing-alist (-> fxmapping? (listof (cons/c fixnum? any/c)))]
   [fxmapping-keys (-> fxmapping? (listof fixnum?))]
   [fxmapping-values (-> fxmapping? (listof any/c))]
-  [fxmapping->generator (-> fxmapping? (-> (cons/c fixnum? any/c)))]
+  [fxmapping->generator (-> fxmapping? (-> (or/c (cons/c fixnum? any/c) eof-object?)))]
   [fxmapping=? (->* (comparator? fxmapping? fxmapping?) () #:rest (listof fxmapping?) boolean?)]
   [fxmapping<? (->* (comparator? fxmapping? fxmapping?) () #:rest (listof fxmapping?) boolean?)]
   [fxmapping<=? (->* (comparator? fxmapping? fxmapping?) () #:rest (listof fxmapping?) boolean?)]
@@ -289,19 +289,10 @@
 
 (define (trie-empty? t) (not t))
 
-(define-record-type <leaf>
-  (leaf key value)
-  leaf?
-  (key leaf-key)
-  (value leaf-value))
-
-(define-record-type <branch>
-  (raw-branch prefix branching-bit left right)
-  branch?
-  (prefix branch-prefix)
-  (branching-bit branch-branching-bit)
-  (left branch-left)
-  (right branch-right))
+(struct leaf (key value))
+(struct branch (prefix branching-bit left right)
+  #:name <branch>
+  #:constructor-name raw-branch)
 
 (define (valid-integer? x) (fixnum? x))
 
@@ -1137,10 +1128,70 @@
 
 ;;;; Type
 
-(define-record-type <fxmapping>
-  (raw-fxmapping trie)
-  fxmapping?
-  (trie fxmapping-trie))
+;; Functions to use with the gen:dict struct interface
+(define (fx-dict-ref d key [failure (lambda () (raise-arguments-error 'dict-ref "No value found for key" "key" key))])
+  (if (procedure? failure)
+      (fxmapping-ref d key failure)
+      (fxmapping-ref/default d key failure)))
+(define (fx-dict-set d key v) (fxmapping-set d key v))
+(define (fx-dict-set* d . kvs) (apply fxmapping-set d kvs))
+(define (fx-dict-remove d key) (fxmapping-delete d key))
+(define (fx-dict-has-key? d key) (fxmapping-contains? d key))
+(define (fx-dict-map d proc) (fxmapping-map->list proc d))
+(define (fx-dict-map/copy d proc) (fxmapping-relation-map proc d))
+(define (fx-dict-for-each d proc) (fxmapping-for-each proc d))
+(define (fx-dict-empty? d) (fxmapping-empty? d))
+(define (fx-dict-count d) (fxmapping-size d))
+(define (fx-dict-clear d) (fxmapping))
+(define (fx-dict-keys d) (fxmapping-keys d))
+(define (fx-dict-values d) (fxmapping-values d))
+(define (fx-dict->list d) (fxmapping->alist d))
+
+(struct fx-dict-iter (mapping stream))
+(define (fx-dict-iterate-first d)
+  (if (fxmapping-empty? d)
+      #f
+      (fx-dict-iter d (generator->stream (fxmapping->generator d)))))
+(define (fx-dict-iterate-next d pos)
+  (assume (eq? d (fx-dict-iter-mapping pos)) "iterator from a different fxmapping")
+  (let ([nxt (stream-cdr (fx-dict-iter-stream pos))])
+    (if (stream-null? nxt)
+        #f
+        (struct-copy fx-dict-iter pos [stream nxt]))))
+(define (fx-dict-iterate-key d pos)
+  (assume (eq? d (fx-dict-iter-mapping pos)) "iterator from a different fxmapping")
+  (car (stream-car (fx-dict-iter-stream pos))))
+(define (fx-dict-iterate-value d pos)
+  (assume (eq? d (fx-dict-iter-mapping pos)) "iterator from a different fxmapping")
+  (cdr (stream-car (fx-dict-iter-stream pos))))
+
+(struct fxmapping (trie)
+  #:name <fxmapping>
+  #:constructor-name raw-fxmapping
+  ; Unfortunately you can't combine prop:dict/contract and gen:dict
+  ;#:property prop:dict/contract
+  #;(list
+   (vector-immutable fx-dict-ref #f fx-dict-set #f fx-dict-remove fx-dict-count
+                     fx-dict-iterate-first fx-dict-iterate-next fx-dict-iterate-key fx-dict-iterate-value)
+   (vector-immutable fixnum? any/c stream? #f #f #f))
+  #:methods gen:dict
+  [(define dict-ref fx-dict-ref)
+   (define dict-iterate-first fx-dict-iterate-first)
+   (define dict-iterate-next fx-dict-iterate-next)
+   (define dict-iterate-key fx-dict-iterate-key)
+   (define dict-iterate-value fx-dict-iterate-value)
+   (define dict-set fx-dict-set)
+   (define dict-set* fx-dict-set*)
+   (define dict-remove fx-dict-remove)
+   (define dict-has-key? fx-dict-has-key?)
+   (define dict-map fx-dict-map)
+   (define dict-map/copy fx-dict-map/copy)
+   (define dict-for-each fx-dict-for-each)
+   (define dict-empty? fx-dict-empty?)
+   (define dict-clear fx-dict-clear)
+   (define dict-keys fx-dict-keys)
+   (define dict-values fx-dict-values)
+   (define dict->list fx-dict->list)])
 
 ;;;; Constructors
 
@@ -1222,9 +1273,7 @@
     ((fxmap key)
      (fxmapping-ref fxmap
                     key
-                    (lambda () (error "fxmapping-ref: key not found"
-                                      key
-                                      fxmap))
+                    (lambda () (raise-arguments-error 'fxmapping-ref "key not found" "key" key))
                     values))
     ((fxmap key failure)
      (fxmapping-ref fxmap key failure values))
@@ -1307,7 +1356,7 @@
                        key
                        success
                        (lambda ()
-                         (error "fxmapping-update: key not found" key fxmap))))
+                         (raise-arguments-error 'fxmapping-update "key not found" "key" key))))
     ((fxmap key success failure)
      (trie-update (fxmapping-trie fxmap) key success failure raw-fxmapping))))
 

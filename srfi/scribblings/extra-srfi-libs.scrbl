@@ -1,5 +1,5 @@
 #lang scribble/manual
-@require[@for-label[racket/base srfi/151 racket/generator]]
+@require[@for-label[racket/base racket/generator racket/dict racket/unsafe/ops]]
 
 @title{Extra SRFI Libraries}
 @author[@author+email["Shawn Wagner" "shawnw.mobile@gmail.com"]]
@@ -119,7 +119,7 @@ What the SRFI calls a bytevector is what Racket calls a byte string.
 
 @hyperlink["https://srfi.schemers.org/srfi-190/srfi-190.html"]{Reference documentation}.
 
-@bold{Notes:} The @code{yield} syntax conflicts with @code{racket/generator}.
+@bold{Notes:} The @code{yield} syntax conflicts with @racket{racket/generator}.
 
 @section{SRFI-194 Random data generators}
 
@@ -216,3 +216,5 @@ Do a binary search in @code{fv} for @code{val} per SRFI-223 @code{bisect-right}.
 @defmodule[srfi/224]
 
 @hyperlink["https://srfi.schemers.org/srfi-224/srfi-224.html"]{Reference documentation}.
+
+@bold{Notes}: @code{fxmapping} objects also support the @racket{gen:dict} interface and can be used with @racket{racket/dict} functions.
