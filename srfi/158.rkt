@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/contract (only-in racket/list make-list) srfi/41
+(require racket/contract (only-in racket/list make-list) srfi/41 racket/format
          (only-in racket/generator [generator? rkt-generator?] [generator-state rkt-generator-state]))
 (module+ test (require rackunit))
 (provide
@@ -282,7 +282,7 @@
 ;; gmerge
 (define gmerge
   (case-lambda
-    ((<) (error "wrong number of arguments for gmerge"))
+    ((<) (raise-arity-error 'gmerge (make-arity-at-least 2)))
     ((< gen) gen)
     ((< genleft genright)
      (let ((left (genleft))
@@ -310,7 +310,7 @@
 ;; gmap
 (define gmap
   (case-lambda
-    ((proc) (error "wrong number of arguments for gmap"))
+    ((proc) (raise-arity-error 'gmap (make-arity-at-least 2) proc))
     ((proc gen)
      (lambda ()
        (let ((item (gen)))
@@ -692,12 +692,12 @@
   (define source-gens-v (list->vector source-gens))
   (define l (vector-length source-gens-v))
   (define exhausted-count 0)
-  (unless (procedure? choice-gen)
-    (error "choice-gen must be a generator"))
-  (for-each
+  #;(unless (procedure? choice-gen)
+    (raise-argument-error 'gchoice "procedure?" choice-gen))
+  #;(for-each
     (lambda (g)
       (unless (procedure? g)
-        (error "source-gens must be generators")))
+        (raise-argument-error 'gchoice "(listof procedure?)" source-gens)))
     source-gens)
   (lambda ()
     (let loop ((i (choice-gen)))
@@ -710,8 +710,7 @@
       ((or (not (integer? i))
            (< i 0)
            (>= i l))
-       (error (string-append "choice-gen didn't return an integer in range 0 to "
-                             (number->string (- l 1)))))
+       (raise-result-error 'gchoice (~a "choice-gen didn't return an integer in range 0 to " (- l 1)) i))
       (else
         (let ((gen (vector-ref source-gens-v i)))
          (if (not gen)
