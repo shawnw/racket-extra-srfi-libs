@@ -1,7 +1,7 @@
 #lang racket/base
 ;;; SRFI-132 Sort
 
-(require racket/contract
+(require racket/contract (for-syntax racket/base)
          (only-in racket/vector [vector-sort rkt-vector-sort] [vector-sort! rkt-vector-sort!] vector-copy)
          (only-in racket/unsafe/ops [unsafe-set-immutable-cdr! set-cdr!])         )
 (module+ test (require rackunit))
@@ -47,29 +47,23 @@
 (define (vector-stable-sort! < v [start 0] [end (vector-length v)]) (rkt-vector-sort! v < start end))
 
 
-(define-syntax-rule (check-vector-range name v start end)
-  (cond
-    ((or (< start 0)
-         (> start end))
-     (raise-argument-error name "(integer-in 0 end)" start))
-    ((> end (vector-length v))
-     (raise-argument-error name "(<=/c (vector-length v))" end))
-    (else (void))))
+(define-syntax (check-vector-range stx)
+  (syntax-case stx ()
+    [(_ name v idx)
+     #'(when (or (< idx 0) (>= idx (vector-length v)))
+          (raise-range-error name "vector" "" idx v 0 (- (vector-length v) 1)))]
+    [(_ name v start end)
+     #'(cond
+         ((< start 0)
+          (raise-range-error name "vector" "starting " start v 0 (vector-length v)))
+         ((or (< end start) (> end (vector-length v)))
+          (raise-range-error name "vector" "ending " end v start (vector-length v) 0))
+         (else (void)))]))
 
 (define-syntax-rule (check-vector-ranges name v1 v2 start1 end1 start2 end2)
-  (cond
-    ((or (< start1 0)
-         (> start1 end1))
-     (raise-argument-error name "(integer-in 0 end1)" start1))
-    ((> end1 (vector-length v1))
-     (raise-argument-error name "(<=/c (vector-length v1))" end1))
-    ((or (< start2 0)
-         (> start2 end2))
-     (raise-argument-error name "(integer-in 0 end2)" start2))
-    ((> end2 (vector-length v2))
-     (raise-argument-error name "(<=/c (vector-length v2))" end2))
-    (else (void))))
-
+  (begin
+    (check-vector-range name v1 start1 end1)
+    (check-vector-range name v2 start2 end2)))
 
 ;;; The sort package -- sorted predicates
 ;;; Olin Shivers 10/98.
@@ -86,6 +80,7 @@
 		   (lp next (cdr tail))))))))
 
 (define (vector-sorted? elt< v [start 0] [end (vector-length v)])
+  ;(check-vector-range 'vector-sorted? v start end)
   (or (>= start end)			; Empty range
       (let lp ((i (+ start 1)) (vi-1 (vector-ref v start)))
         (or (>= i end)
@@ -267,8 +262,7 @@
     ans))
 
 (define (vector-merge! < v v1 v2 [start 0] [start1 0] [end1 (vector-length v1)] [start2 0] [end2 (vector-length v2)])
-  (unless (and (>= start 0) (<= start (vector-length v)))
-    (raise-argument-error 'vector-merge! "x(integer-in 0 (vector-length v))" start))
+  (check-vector-range 'vector-merge! v start)
   (check-vector-ranges 'vector-merge! v1 v2 start1 end1 start2 start2)
   (%vector-merge! < v v1 v2 start start1 end1 start2 end2))
 
@@ -600,12 +594,13 @@
 ;;;     (vector-ref (vector-sort <? (vector-copy v start end)) (+ start k))
 ;;; but is usually faster than that.
 
-(define-syntax-rule (assert test)
+#;(define-syntax-rule (assert test)
   (unless test
     (error "assertion failed")))
 
-(define (%vector-select <? v k start end)
-  (assert (and 'vector-select
+(define/contract (%vector-select <? v k start end)
+  (-> (-> any/c any/c any/c) vector? exact-nonnegative-integer? exact-nonnegative-integer? exact-nonnegative-integer? any/c)
+  #;(assert (and 'vector-select
                (procedure? <?)
                (vector? v)
                (exact-integer? k)
@@ -613,6 +608,8 @@
                (exact-integer? end)
                (<= 0 k (- end start 1))
                (<= 0 start end (vector-length v))))
+  (when (or (< k 0) (> k (- end start 1)))
+    (raise-range-error 'vector-select "vector" "" k v 0 (- end start 1)))
   (%%vector-select <? v k start end))
 
 ;;; Given
@@ -629,15 +626,19 @@
 ;;;     (vector-ref (vector-sort <? (vector-copy v start end)) (+ start k 1))
 ;;; but is usually faster than that.
 
-(define (%vector-select2 <? v k start end)
-  (assert (and 'vector-select
-;               (procedure? <?)
-;               (vector? v)
-;               (exact-integer? k)
-;               (exact-integer? start)
-;               (exact-integer? end)
+(define/contract (%vector-select2 <? v k start end)
+  (-> (-> any/c any/c any/c) vector? exact-nonnegative-integer? exact-nonnegative-integer? exact-nonnegative-integer? (values any/c any/c))
+  #;(assert (and 'vector-select
+               (procedure? <?)
+               (vector? v)
+               (exact-integer? k)
+               (exact-integer? start)
+               (exact-integer? end)
                (<= 0 k (- end start 1 1))
                (<= 0 start end (vector-length v))))
+  (check-vector-range 'vector-find-median v start end)
+  (when (or (< k 0) (> k (- end start 1)))
+    (raise-range-error 'vector-find-median "vector" "" k v 0 (- end start 1)))
   (%%vector-select2 <? v k start end))
 
 ;;; Like %vector-select, but its preconditions have been checked.
