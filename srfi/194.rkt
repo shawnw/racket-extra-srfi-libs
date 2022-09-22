@@ -1,6 +1,18 @@
 #lang racket/base
 
-(require srfi/27 (only-in srfi/43 vector-fold) racket/vector racket/math math/flonum racket/contract)
+(require srfi/27 (only-in srfi/43 vector-fold)
+         (only-in racket/vector vector-map vector-append)
+         (only-in racket/math infinite? sqr pi exact-ceiling exact-floor)
+         racket/contract racket/require
+         (for-syntax racket/base (only-in racket/string string-prefix?)))
+;(require math/flonum)
+(require (filtered-in
+          (lambda (name)
+            (and (string-prefix? name "unsafe-fl")
+                 (substring name 7)))
+          racket/unsafe/ops)
+         (only-in racket/unsafe/ops unsafe-make-flrectangular)
+         (only-in math/flonum ->fl fl fllog1p flvector make-flvector))
 (module+ test (require rackunit))
 
 (provide
@@ -10,17 +22,17 @@
   [with-random-source (-> random-source? (-> any) any)]
   [make-random-source-generator (-> exact-nonnegative-integer? random-source?)]
   [make-random-integer-generator (-> integer? integer? (-> integer?))]
-  [make-random-u1-generator (-> (-> byte?))]
+  [make-random-u1-generator (-> (-> (integer-in 0 1)))]
   [make-random-u8-generator (-> (-> byte?))]
   [make-random-s8-generator (-> (-> fixnum?))]
   [make-random-u16-generator (-> (-> exact-nonnegative-integer?))]
-  [make-random-s16-generator (-> (-> exact-integer?))]
+  [make-random-s16-generator (-> (-> fixnum?))]
   [make-random-u32-generator (-> (-> exact-nonnegative-integer?))]
   [make-random-s32-generator (-> (-> exact-integer?))]
   [make-random-u64-generator (-> (-> exact-nonnegative-integer?))]
   [make-random-s64-generator (-> (-> exact-integer?))]
   [clamp-real-number (-> real? real? real? real?)]
-  [make-random-real-generator (-> real? real? (-> real?))]
+  [make-random-real-generator (-> real? real? (-> flonum?))]
   [make-random-rectangular-generator (-> real? real? real? real? (-> complex?))]
   [make-random-polar-generator (case->
                                 (-> positive? positive? (-> complex?))
@@ -29,17 +41,17 @@
                                 (-> complex? positive? positive? real? real? (-> complex?)))]
   [make-random-boolean-generator (-> (-> boolean?))]
   [make-random-char-generator (-> string? (-> char?))]
-  [make-bernoulli-generator (-> (between/c 0.0 1.0) (-> byte?))]
+  [make-bernoulli-generator (-> (between/c 0 1) (-> (integer-in 0 1)))]
   [make-categorical-generator (-> (vectorof positive?) (-> exact-nonnegative-integer?))]
-  [make-normal-generator (->* () (real? real?) (-> real?))]
-  [make-exponential-generator (-> positive? (-> real?))]
+  [make-normal-generator (->* () (real? real?) (-> flonum?))]
+  [make-exponential-generator (-> positive? (-> flonum?))]
   [make-geometric-generator (-> (and/c flonum? (>/c 0.0) (<=/c 1.0)) (-> integer?))]
   [make-poisson-generator (-> positive? (-> integer?))]
-  [make-binomial-generator (-> exact-positive-integer? (between/c 0.0 1.0) (-> integer?))]
+  [make-binomial-generator (-> exact-positive-integer? (between/c 0 1) (-> integer?))]
   [make-zipf-generator (->* (integer?) (real? real?) (-> integer?))]
-  [make-sphere-generator (-> exact-positive-integer? (-> (vectorof real?)))]
-  [make-ellipsoid-generator (-> (vectorof real?) (-> (vectorof real?)))]
-  [make-ball-generator (-> (or/c integer? (vectorof real?)) (-> (vectorof real?)))]))
+  [make-sphere-generator (-> exact-positive-integer? (-> (vectorof flonum?)))]
+  [make-ellipsoid-generator (-> (vectorof real?) (-> (vectorof flonum?)))]
+  [make-ball-generator (-> (or/c integer? (vectorof real?)) (-> (vectorof flonum?)))]))
 
 (define (finite? x) (not (infinite? x)))
 
@@ -120,14 +132,16 @@
   (unless (< low-bound up-bound)
      (raise-arguments-error 'make-random-real-generator "lower bound must be < upper bound"
                             "low-bound" low-bound "up-bound" up-bound))
-  (let ((rand-real-proc (random-source-make-reals (current-random-source))))
+  (let ([rand-real-proc (random-source-make-reals (current-random-source))]
+        [low-bound (fl low-bound)]
+        [up-bound (fl up-bound)])
    (lambda ()
      (define t (rand-real-proc))
      ;; alternative way of doing lowbound + t * (up-bound - low-bound)
      ;; is susceptible to rounding errors and would require clamping to be safe
      ;; (which in turn requires 144 for adjacent float function)
-     (+ (* t low-bound)
-        (* (- 1.0 t) up-bound)))))
+     (fl+ (fl* t low-bound)
+          (fl* (fl- 1.0 t) up-bound)))))
 
 (define (make-random-rectangular-generator
           real-lower-bound real-upper-bound
@@ -135,31 +149,31 @@
   (let ((real-gen (make-random-real-generator real-lower-bound real-upper-bound))
         (imag-gen (make-random-real-generator imag-lower-bound imag-upper-bound)))
     (lambda ()
-      (make-rectangular (real-gen) (imag-gen)))))
+      (unsafe-make-flrectangular (real-gen) (imag-gen)))))
 
 (define make-random-polar-generator
   (case-lambda
     ((magnitude-lower-bound magnitude-upper-bound)
-     (make-random-polar-generator 0+0i magnitude-lower-bound magnitude-upper-bound 0 (* 2 PI)))
+     (make-random-polar-generator 0+0i magnitude-lower-bound magnitude-upper-bound 0 (fl* 2.0 PI)))
     ((origin magnitude-lower-bound magnitude-upper-bound)
-     (make-random-polar-generator origin magnitude-lower-bound magnitude-upper-bound 0 (* 2 PI)))
+     (make-random-polar-generator origin magnitude-lower-bound magnitude-upper-bound 0 (fl* 2.0 PI)))
     ((magnitude-lower-bound magnitude-upper-bound angle-lower-bound angle-upper-bound)
      (make-random-polar-generator 0+0i magnitude-lower-bound magnitude-upper-bound angle-lower-bound angle-upper-bound))
-    ((origin magnitude-lower-bound magnitude-upper-bound angle-lower-bound angle-upper-bound)
+     ((origin magnitude-lower-bound magnitude-upper-bound angle-lower-bound angle-upper-bound)
      (unless (< magnitude-lower-bound magnitude-upper-bound)
        (raise-arguments-error 'make-random-polar-generator "magnitude lower bound should be less than upper bound"
                               "magnitude-lower-bound" magnitude-lower-bound "magnitude-upper-bound" magnitude-upper-bound))
      (when (= angle-lower-bound angle-upper-bound)
        (raise-arguments-error 'make-random-polar-generator "angle bounds shouldn't be equal"
                               "angle-lower-bound" angle-lower-bound "angle-upper-bound" angle-upper-bound))
-     (let* ((b (sqr magnitude-lower-bound))
-            (m (- (sqr magnitude-upper-bound) b))
+     (let* ((b (fl (sqr magnitude-lower-bound)))
+            (m (fl- (fl (sqr magnitude-upper-bound)) b))
             (t-gen (make-random-real-generator 0. 1.))
             (phi-gen (make-random-real-generator angle-lower-bound angle-upper-bound)))
        (lambda ()
          (let* ((t (t-gen))
                 (phi (phi-gen))
-                (r (sqrt (+ (* m t) b))))
+                (r (flsqrt (fl+ (fl* m t) b))))
           (+ origin (make-polar r phi))))))))
 
 (define (make-random-boolean-generator)
@@ -170,7 +184,8 @@
 (define (make-random-char-generator str)
   (unless (> (string-length str) 0)
     (raise-argument-error 'make-random-char-generator "(not/c string-empty?)" str))
-  (let* ((int-gen (make-random-integer-generator 0 (string-length str))))
+  (let* ([str (string->immutable-string str)]
+         [int-gen (make-random-integer-generator 0 (string-length str))])
    (lambda ()
      (string-ref str (int-gen)))))
 
@@ -232,24 +247,26 @@
     ((mean)
      (make-normal-generator mean 1.0))
     ((mean deviation)
-     (let ((rand-real-proc (random-source-make-reals (current-random-source)))
-           (state #f))
-       (unless (and ;(real? mean)
-                    (finite? mean))
-         (raise-argument-error 'make-normal-generator "(and/c real? finite?)" mean))
-       (unless (and ;(real? deviation)
-                    (finite? deviation)
-                    (> deviation 0))
-         (raise-argument-error 'make-normal-generator "(and/c real? finite? positive?)" deviation))
+     (unless (and ;(real? mean)
+              (finite? mean))
+       (raise-argument-error 'make-normal-generator "(and/c real? finite?)" mean))
+     (unless (and ;(real? deviation)
+              (finite? deviation)
+              (> deviation 0))
+       (raise-argument-error 'make-normal-generator "(and/c real? finite? positive?)" deviation))
+     (let ([rand-real-proc (random-source-make-reals (current-random-source))]
+           [state #f]
+           [mean (fl mean)]
+           [deviation (fl deviation)])
        (lambda ()
          (if state
              (let ((result state))
               (set! state #f)
               result)
-             (let ((r (sqrt (* -2 (log (rand-real-proc)))))
-                   (theta (* 2 PI (rand-real-proc))))
-               (set! state (+ mean (* deviation r (cos theta))))
-               (+ mean (* deviation r (sin theta))))))))))
+             (let ((r (flsqrt (fl* -2.0 (fllog (rand-real-proc)))))
+                   (theta (fl* 2.0 PI (rand-real-proc))))
+               (set! state (fl+ mean (fl* deviation r (flcos theta))))
+               (fl+ mean (fl* deviation r (flsin theta))))))))))
 
 (define (make-exponential-generator mean)
   (unless (and ;(real? mean)
@@ -258,14 +275,14 @@
     (raise-argument-error 'make-exponential-generator "(and/c real? finite? positive?)" mean))
   (let ((rand-real-proc (random-source-make-reals (current-random-source))))
    (lambda ()
-     (- (* mean (log (rand-real-proc)))))))
+     (fl- (fl* (fl mean) (fllog (rand-real-proc)))))))
 
 (define (make-geometric-generator p)
   #;(unless (and ;(real? p)
                (> p 0)
                (<= p 1))
           (raise-argument-error 'make-geometric-generator "(and/c (>/c 0) (<=/c 1))" p))
-  (if (zero? (fl- p 1.))
+  (if (fl= (fl- p 1.) 0.0)
       ;; p is indistinguishable from 1.
       (lambda () 1)
       (let ((c (fl/ (fllog1p (fl- p))))
@@ -290,35 +307,35 @@
     (raise-argument-error 'make-poisson-generator "(and/c real? finite? positive?)" L))
   (let ((rand-real-proc (random-source-make-reals (current-random-source))))
    (if (< L 30)
-       (make-poisson/small rand-real-proc L)
-       (make-poisson/large rand-real-proc L))))
+       (make-poisson/small rand-real-proc (fl L))
+       (make-poisson/large rand-real-proc (fl L)))))
 
 ;; private
 (define (make-poisson/small rand-real-proc L)
   (lambda ()
-    (do ((exp-L (exp (- L)))
+    (do ((exp-L (flexp (fl- L)))
          (k 0 (+ k 1))
-         (p 1.0 (* p (rand-real-proc))))
-        ((<= p exp-L) (- k 1)))))
+         (p 1.0 (fl* p (rand-real-proc))))
+        ((fl<= p exp-L) (- k 1)))))
 
 ;; private
 (define (make-poisson/large rand-real-proc L)
-  (let* ((c (- 0.767 (/ 3.36 L)))
-         (beta (/ PI (sqrt (* 3 L))))
-         (alpha (* beta L))
-         (k (- (log c) L (log beta))))
+  (let* ((c (fl- 0.767 (fl/ 3.36 L)))
+         (beta (fl/ PI (flsqrt (fl* 3.0 L))))
+         (alpha (fl* beta L))
+         (k (fl- (fllog c) L (fllog beta))))
     (define (loop)
       (let* ((u (rand-real-proc))
-             (x (/ (- alpha (log (/ (- 1.0 u) u))) beta))
-             (n (exact-floor (+ x 0.5))))
+             (x (fl/ (fl- alpha (fllog (fl/ (fl- 1.0 u) u))) beta))
+             (n (exact-floor (fl+ x 0.5))))
         (if (< n 0)
             (loop)
             (let* ((v (rand-real-proc))
-                   (y (- alpha (* beta x)))
-                   (t (+ 1.0 (exp y)))
-                   (lhs (+ y (log (/ v (* t t)))))
-                   (rhs (+ k (* n (log L)) (- (log-of-fact n)))))
-              (if (<= lhs rhs)
+                   (y (fl- alpha (fl* beta x)))
+                   (t (fl+ 1.0 (flexp y)))
+                   (lhs (fl+ y (fllog (fl/ v (fl* t t)))))
+                   (rhs (fl+ k (fl* (->fl n) (fllog L)) (fl- (log-of-fact n)))))
+              (if (fl<= lhs rhs)
                   n
                   (loop))))))
     loop))
@@ -332,12 +349,12 @@
 ;; computes log-fact-table
 ;; log(n!) = log((n-1)!) + log(n)
 (define (make-log-fact-table!)
-  (define table (make-vector 256))
-  (vector-set! table 0 0)
+  (define table (make-flvector 256))
+  (flvector-set! table 0 0.0)
   (do ((i 1 (+ i 1)))
       ((> i 255) #t)
-      (vector-set! table i (+ (vector-ref table (- i 1))
-                              (log (+ i 1)))))
+    (flvector-set! table i (fl+ (flvector-ref table (- i 1))
+                                (fllog1p (->fl i)))))
   (set! log-fact-table table))
 
 ;; private
@@ -347,15 +364,15 @@
   (when (not log-fact-table)
     (make-log-fact-table!))
   (cond
-    ((<= n 1) 0)
-    ((<= n 256) (vector-ref log-fact-table (- n 1)))
-    (else (let ((x (+ n 1)))
-           (+ (* (- x 0.5)
-                 (log x))
-              (- x)
-              (* 0.5
-                 (log (* 2 PI)))
-              (/ 1.0 (* x 12.0)))))))
+    ((<= n 1) 0.0)
+    ((<= n 256) (flvector-ref log-fact-table (- n 1)))
+    (else (let ((x (->fl (+ n 1))))
+           (fl+ (fl* (fl- x 0.5)
+                     (fllog x))
+                (fl- x)
+                (fl* 0.5
+                     (fllog (fl* 2.0 PI)))
+                (fl/ 1.0 (fl* x 12.0)))))))
 
 
 
@@ -422,37 +439,38 @@
          ;; Computed using computable reals package
          ;; Matches values in paper, which are given
          ;; for 0\leq k < 10
-         '#(.08106146679532726
-            .0413406959554093
-            .02767792568499834
-            .020790672103765093
-            .016644691189821193
-            .013876128823070748
-            .01189670994589177
-            .010411265261972096
-            .009255462182712733
-            .00833056343336287
-            .007573675487951841
-            .00694284010720953
-            .006408994188004207
-            .0059513701127588475
-            .005554733551962801
-            .0052076559196096404
-            .004901395948434738
-            .004629153749334028
-            .004385560249232324
-            .004166319691996922)))
+         (flvector
+          .08106146679532726
+          .0413406959554093
+          .02767792568499834
+          .020790672103765093
+          .016644691189821193
+          .013876128823070748
+          .01189670994589177
+          .010411265261972096
+          .009255462182712733
+          .00833056343336287
+          .007573675487951841
+          .00694284010720953
+          .006408994188004207
+          .0059513701127588475
+          .005554733551962801
+          .0052076559196096404
+          .004901395948434738
+          .004629153749334028
+          .004385560249232324
+          .004166319691996922)))
     (if (< k 20)
-        (vector-ref small-k-table k)
+        (flvector-ref small-k-table k)
         ;; the correction term (+ (/ (* 12 (+ k 1))) ...)
         ;; in Stirling's approximation to log(k!)
-        (let* ((inexact-k+1 (exact->inexact (+ k 1)))
-               (inexact-k+1^2 (sqr inexact-k+1)))
-          (/ (- #i1/12
-                (/ (- #i1/360
-                      (/ #i1/1260 inexact-k+1^2))
-                   inexact-k+1^2))
-             inexact-k+1)))))
+        (let* ((inexact-k+1 (->fl (+ k 1)))
+               (inexact-k+1^2 (fl* inexact-k+1 inexact-k+1)))
+          (fl/ (fl- #i1/12
+                (fl/ (fl- #i1/360
+                          (fl/ #i1/1260 inexact-k+1^2))
+                     inexact-k+1^2))
+               inexact-k+1)))))
 
 (define (make-binomial-generator n p)
 #|  (if (not (and ;(real? p)
@@ -467,9 +485,9 @@
         ((zero? p)
          (lambda () 0))
         ((< (* n p) 10)
-         (binomial-geometric n p))
+         (binomial-geometric n (fl p)))
         (else
-         (binomial-rejection n p))))
+         (binomial-rejection n (fl p)))))
 
 (define (binomial-geometric n p)
   (let ((geom (make-geometric-generator p)))
@@ -485,70 +503,70 @@
   ;; call when p <= 1/2 and np >= 10
   ;; Use notation from the paper
   (let* ((spq
-          (exact->inexact (sqrt (* n p (- 1 p)))))
+          (flsqrt (fl* (->fl n) p (fl- 1.0 p))))
          (b
-          (+ 1.15 (* 2.53 spq)))
+          (fl+ 1.15 (fl* 2.53 spq)))
          (a
-          (+ -0.0873
-             (* 0.0248 b)
-             (* 0.01 p)))
+          (fl+ -0.0873
+             (fl* 0.0248 b)
+             (fl* 0.01 p)))
          (c
-          (+ (* n p) 0.5))
+          (fl+ (fl* (->fl n) p) 0.5))
          (v_r
-          (- 0.92
-             (/ 4.2 b)))
+          (fl- 0.92
+             (fl/ 4.2 b)))
          (alpha
           ;; The formula in BTRS has 1.5 instead of 5.1;
           ;; The formula for alpha in algorithm BTRD and Table 1
           ;; and the tensorflow code uses 5.1, so we use 5.1
-          (* (+ 2.83 (/ 5.1 b)) spq))
+          (fl* (fl+ 2.83 (fl/ 5.1 b)) spq))
          (lpq
-          (log (/ p (- 1 p))))
+          (fllog (fl/ p (fl- 1.0 p))))
          (m
-          (exact-floor (* (+ n 1) p)))
+          (exact-floor (fl* (->fl (+ n 1)) p)))
          (rand-real-proc
           (random-source-make-reals (current-random-source))))
     (lambda ()
       (let loop ((u (rand-real-proc))
                  (v (rand-real-proc)))
         (let* ((u
-                (- u 0.5))
+                (fl- u 0.5))
                (us
-                (- 0.5 (abs u)))
+                (fl- 0.5 (flabs u)))
                (k
                 (exact-floor
-                  (+ (* (+ (* 2. (/ a us)) b) u) c))))
+                  (fl+ (fl* (fl+ (fl* 2. (fl/ a us)) b) u) c))))
           (cond ((or (< k 0)
                      (< n k))
-                 (loop (random-real)
-                       (random-real)))
-                ((and (<= 0.07 us)
-                      (<= v v_r))
+                 (loop (rand-real-proc)
+                       (rand-real-proc)))
+                ((and (fl<= 0.07 us)
+                      (fl<= v v_r))
                  k)
                 (else
                  (let ((v
                         ;; The tensorflow code notes that BTRS doesn't have
                         ;; this logarithm; BTRS is incorrect (see BTRD, step 3.2)
-                        (log (* v (/ alpha
-                                     (+ (/ a (sqr us)) b))))))
-                   (if (<=  v
-                            (+ (* (+ m 0.5)
-                                  (log (* (/ (+ m 1.)
-                                             (- n m -1.)))))
-                               (* (+ n 1.)
-                                  (log (/ (- n m -1.)
-                                          (- n k -1.))))
-                               (* (+ k 0.5)
-                                  (log (* (/ (- n k -1.)
-                                             (+ k 1.)))))
-                               (* (- k m) lpq)
-                               (- (+ (stirling-tail m)
-                                     (stirling-tail (- n m)))
-                                  (+ (stirling-tail k)
-                                     (stirling-tail (- n k))))))
+                        (fllog (fl* v (fl/ alpha
+                                     (fl+ (fl/ a (fl* us us)) b))))))
+                   (if (fl<=  v
+                              (fl+ (fl* (fl+ (->fl m) 0.5)
+                                        (fllog (fl* (fl/ (fl+ (->fl m) 1.)
+                                                         (fl- (->fl n) (->fl m) -1.)))))
+                                   (fl* (fl+ (->fl n) 1.)
+                                        (fllog (fl/ (fl- (->fl n) (->fl m) -1.)
+                                                    (fl- (->fl n) (->fl k) -1.))))
+                                   (fl* (fl+ (->fl k) 0.5)
+                                        (fllog (fl* (fl/ (fl- (->fl n) (->fl k) -1.)
+                                                         (fl+ (->fl k) 1.)))))
+                                   (fl* (fl- (->fl k) (->fl m)) lpq)
+                                   (fl- (fl+ (stirling-tail m)
+                                             (stirling-tail (- n m)))
+                                        (fl+ (stirling-tail k)
+                                             (stirling-tail (- n k))))))
                        k
-                       (loop (random-real)
-                             (random-real)))))))))))
+                       (loop (rand-real-proc)
+                             (rand-real-proc)))))))))))
 
 
 ;
@@ -583,28 +601,28 @@
 
   ; The hat function h(x) = 1 / (x+q)^s
   (define (hat x)
-    (expt (+ x q) (- s)))
+    (flexpt (fl+ x q) (fl- s)))
 
-  (define _1-s (- 1 s))
-  (define oms (/ 1 _1-s))
+  (define _1-s (fl- 1.0 s))
+  (define oms (fl/ 1.0 _1-s))
 
   ; The integral of hat(x)
   ; H(x) = (x+q)^{1-s} / (1-s)
   ; Note that H(x) is always negative.
   (define (big-h x)
-    (/ (expt (+ q x) _1-s) _1-s))
+    (fl/ (flexpt (fl+ q x) _1-s) _1-s))
 
   ; The inverse function of H(x)
   ; H^{-1}(y) = -q + (y(1-s))^{1/(1-s)}
   (define (big-h-inv y)
-    (- (expt (* y _1-s) oms) q))
+    (fl- (flexpt (fl* y _1-s) oms) q))
 
   ; Lower and upper bounds for the uniform random generator.
-  (define big-h-half (- (big-h 1.5) (hat 1)))
-  (define big-h-n (big-h (+ n 0.5)))
+  (define big-h-half (fl- (big-h 1.5) (hat 1)))
+  (define big-h-n (big-h (fl+ (->fl n) 0.5)))
 
   ; Rejection cut
-  (define cut (- 1 (big-h-inv (- (big-h 1.5) (hat 1)))))
+  (define cut (fl- 1.0 (big-h-inv (fl- (big-h 1.5) (hat 1.0)))))
 
   ; Uniform distribution
   (define dist (make-random-real-generator big-h-half big-h-n))
@@ -614,12 +632,12 @@
   (define (try)
     (define u (dist))
     (define x (big-h-inv u))
-    (define kflt (floor (+ x 0.5)))
-    (define k (exact->inexact kflt))
+    (define kflt (flfloor (fl+ x 0.5)))
+    (define k (inexact->exact kflt))
     (if (and (< 0 k)
              (or
-               (<= (- k x) cut)
-               (>= u (- (big-h (+ k 0.5)) (hat k))))) k #f))
+               (fl<= (- kflt x) cut)
+               (fl>= u (fl- (big-h (fl+ kflt 0.5)) (hat kflt))))) k #f))
 
   ; Did we hit the dartboard? If not, try again.
   (define (loop-until)
@@ -641,13 +659,13 @@
 ; This handles the special case of s==1 perfectly.
 (define (make-zipf-generator/one n s q)
 
-  (define _1-s (- 1 s))
+  (define _1-s (fl- 1.0 s))
 
   ; The hat function h(x) = 1 / (x+q)^s
   ; Written for s->1 i.e. 1/(x+q)(x+q)^{s-1}
   (define (hat x)
-    (define xpq (+ x q))
-    (/ (expt xpq _1-s) xpq))
+    (define xpq (fl+ x q))
+    (fl/ (flexpt xpq _1-s) xpq))
 
   ; Expansion of exn(y) = [exp(y(1-s))-1]/(1-s) for s->1
   ; Expanded to 4th order.
@@ -655,8 +673,8 @@
   ;;; (define (exn lg) (/ (- (exp (* _1-s lg)) 1) _1-s))
   ; but more accurate for s near 1.0
   (define (exn lg)
-    (define (trm n u lg) (* lg (+ 1 (/ (* _1-s u) n))))
-    (trm 2 (trm 3 (trm 4 1 lg) lg) lg))
+    (define (trm n u lg) (fl* lg (fl+ 1.0 (fl/ (fl* _1-s u) (->fl n)))))
+    (trm 2.0 (trm 3.0 (trm 4.0 1.0 lg) lg) lg))
 
   ; Expansion of lg(y) = [log(1 + y(1-s))] / (1-s) for s->1
   ; Expanded to 4th order.
@@ -674,7 +692,7 @@
   ;;;  (define (big-h x) (/ (- (exp (* _1-s (log (+ q x)))) 1)  _1-s))
   ; but expanded so that it's more accurate for s near 1.0
   (define (big-h x)
-    (exn (log (+ q x))))
+    (exn (fllog (fl+ q x))))
 
   ; The inverse function of H(x)
   ; H^{-1}(y) = -q + (1 + y(1-s))^{1/(1-s)}
@@ -682,15 +700,15 @@
   ;;; (define (big-h-inv y) (- (expt (+ 1 (* y _1-s)) (/ 1 _1-s)) q ))
   ; but expanded so that it's more accurate for s near 1.0
   (define (big-h-inv y)
-    (- (exp (lg y)) q))
+    (fl- (flexp (lg y)) q))
 
   ; Lower and upper bounds for the uniform random generator.
-  (define big-h-half (- (big-h 1.5) (hat 1)))
+  (define big-h-half (fl- (big-h 1.5) (hat 1.0)))
 
-  (define big-h-n (big-h (+ n 0.5)))
+  (define big-h-n (big-h (fl+ (->fl n) 0.5)))
 
   ; Rejection cut
-  (define cut (- 1 (big-h-inv (- (big-h 1.5) (/ 1 (+ 1 q))))))
+  (define cut (fl- 1.0 (big-h-inv (fl- (big-h 1.5) (fl/ 1.0 (fl+ 1.0 q))))))
 
   ; Uniform distribution
   (define dist (make-random-real-generator big-h-half big-h-n))
@@ -700,12 +718,12 @@
   (define (try)
     (define u (dist))
     (define x (big-h-inv u))
-    (define kflt (floor (+ x 0.5)))
-    (define k (exact->inexact kflt))
+    (define kflt (flfloor (fl+ x 0.5)))
+    (define k (inexact->exact kflt))
     (if (and (< 0 k)
              (or
-               (<= (- k x) cut)
-               (>= u (- (big-h (+ k 0.5)) (hat k))))) k #f))
+               (fl<= (fl- kflt x) cut)
+               (fl>= u (fl- (big-h (fl+ kflt 0.5)) (hat kflt))))) k #f))
 
   ; Did we hit the dartboard? If not, try again.
   (define (loop-until)
@@ -786,9 +804,9 @@
 
   ; Banach l2-norm of a vector
   (define (l2-norm VEC)
-    (sqrt (vector-fold
-            (lambda (i sum x) (+ sum (* x x)))
-            0
+    (flsqrt (vector-fold
+            (lambda (i sum x) (fl+ sum (fl* x x)))
+            0.0
             VEC)))
 
   ; Generate one point on a sphere
@@ -797,20 +815,20 @@
     (define point
       (vector-map (lambda (gaussg) (gaussg)) gaussg-vec))
     ; Project it to the unit sphere (make it unit length)
-    (define norm (/ 1.0 (l2-norm point)))
-    (vector-map (lambda (x) (* x norm)) point))
+    (define norm (fl/ 1.0 (l2-norm point)))
+    (vector-map (lambda (x) (fl* x norm)) point))
 
   ; Distance from origin to the surface of the
   ; ellipsoid along direction RAY.
   (define (ellipsoid-dist RAY)
-    (sqrt (vector-fold
-            (lambda (i sum x a) (+ sum (/ (* x x) (* a a))))
-            0 RAY axes)))
+    (flsqrt (vector-fold
+             (lambda (i sum x a) (fl+ sum (fl/ (fl* x x) (fl* a a))))
+             0.0 RAY axes)))
 
   ; Find the shortest axis.
   (define minor
     (vector-fold
-        (lambda (i mino l) (if (< l mino) l mino))
+        (lambda (i mino l) (if (fl< l mino) l mino))
         1e308 axes))
 
   ; Uniform generator [0,1)
@@ -818,7 +836,7 @@
 
   ; Return #t if the POINT can be kept; else must resample.
   (define (keep POINT)
-    (< (uni) (* minor (ellipsoid-dist POINT))))
+    (fl< (uni) (fl* minor (ellipsoid-dist POINT))))
 
   ; Sample until a good point is found. The returned sample is a
   ; vector of unit length (we already normed up above).
@@ -1615,6 +1633,4 @@
 
     ; (test-end "srfi-194-zipf")
     )
-
-
   )
