@@ -3,7 +3,7 @@
 
 (require racket/contract racket/require racket/dict srfi/41 "145.rkt"
          (only-in srfi/1 fold unfold every iota partition)
-         (only-in "128.rkt" comparator? =? make-default-comparator)
+         (only-in "128.rkt" comparator? =? make-comparator make-default-comparator)
          (only-in "158.rkt" make-coroutine-generator generator->stream)
          (for-syntax racket/base (only-in racket/string string-prefix?)))
 (require (filtered-in
@@ -289,10 +289,11 @@
 
 (define (trie-empty? t) (not t))
 
-(struct leaf (key value))
+(struct leaf (key value) #:transparent)
 (struct branch (prefix branching-bit left right)
   #:name <branch>
-  #:constructor-name raw-branch)
+  #:constructor-name raw-branch
+  #:transparent)
 
 (define (valid-integer? x) (fixnum? x))
 
@@ -1191,7 +1192,17 @@
    (define dict-clear fx-dict-clear)
    (define dict-keys fx-dict-keys)
    (define dict-values fx-dict-values)
-   (define dict->list fx-dict->list)])
+   (define dict->list fx-dict->list)]
+
+  #:methods gen:equal+hash
+  [(define (equal-proc a b my-equal?)
+     (or (eqv? a b)
+         (trie=? (make-comparator (lambda (x) #t) my-equal? #f #f) (fxmapping-trie a) (fxmapping-trie b))))
+   (define (hash-proc a my-hash-code)
+     (my-hash-code (fxmapping-trie a)))
+   (define (hash2-proc a my-hash-code)
+     (my-hash-code (fxmapping-trie a)))]
+  )
 
 ;;;; Constructors
 
@@ -1722,6 +1733,9 @@
   ;;; constructor.
 
   (test-group "Equality"
+              (test-equal? "Custom equal? empty maps" empty-fxmap (fxmapping))
+              (test-equal? "Custom equal? populated maps" (fxmapping 10 'a) (fxmapping 10 'a))
+              (test-false "Custom equal? fail" (equal? (fxmapping 10 'a) (fxmapping 10 'b)))
               (test-eqv #t (fxmapping=? default-comp empty-fxmap (fxmapping)))
               (test-eqv #t (fxmapping=? default-comp (fxmapping 10 'a) (fxmapping 10 'a)))
               (test-eqv #f (fxmapping=? default-comp empty-fxmap (fxmapping 10 'a)))

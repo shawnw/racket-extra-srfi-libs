@@ -217,4 +217,6 @@ Do a binary search in @code{fv} for @code{val} per SRFI-223 @code{bisect-right}.
 
 @hyperlink["https://srfi.schemers.org/srfi-224/srfi-224.html"]{Reference documentation}.
 
-@bold{Notes}: @code{fxmapping} objects also support the @racket{gen:dict} interface and can be used with @racket{racket/dict} functions.
+@bold{Notes}: @code{fxmapping} objects support the @racket{gen:dict} interface and can thus be used with @racket{racket/dict} functions.
+They also support @racket{equal?} and are hashable so they can be used as keys in hash tables and sets. The usual warnings about mutating
+values stored in such mappings apply.
