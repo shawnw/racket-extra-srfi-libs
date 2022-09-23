@@ -1131,13 +1131,37 @@
 
 ;; Functions to use with the gen:dict struct interface
 (define (fx-dict-ref d key [failure (lambda () (raise-arguments-error 'dict-ref "No value found for key" "key" key))])
+  (unless (fixnum? key)
+    (raise-argument-error 'dict-ref "fixnum?" key))
   (if (procedure? failure)
       (fxmapping-ref d key failure)
       (fxmapping-ref/default d key failure)))
-(define (fx-dict-set d key v) (fxmapping-set d key v))
-(define (fx-dict-set* d . kvs) (apply fxmapping-set d kvs))
-(define (fx-dict-remove d key) (fxmapping-delete d key))
-(define (fx-dict-has-key? d key) (fxmapping-contains? d key))
+(define (fx-dict-set d key v)
+  (unless (fixnum? key)
+    (raise-argument-error 'dict-set "fixnum?" key))
+  (fxmapping-set d key v))
+
+(define (check-keys kvs [index 0])
+  (cond
+    ((null? kvs) #f)
+    ((fixnum? (car kvs))
+     (check-keys (cddr kvs) (+ index 2)))
+    (else index)))
+(define (fx-dict-set* d . kvs)
+  (unless (even? (length kvs))
+    (raise-arguments-error 'dict-set* "An even number of key + value arguments is needed."))
+  (let ([bad-pos (check-keys kvs 1)])
+    (when bad-pos
+      (apply raise-argument-error 'dict-set* "fixnum?" bad-pos d kvs)))
+  (apply fxmapping-set d kvs))
+(define (fx-dict-remove d key)
+    (unless (fixnum? key)
+      (raise-argument-error 'dict-remove "fixnum?" key))
+  (fxmapping-delete d key))
+(define (fx-dict-has-key? d key)
+  (unless (fixnum? key)
+    (raise-argument-error 'dict-has-key? "fixnum?" key))
+  (fxmapping-contains? d key))
 (define (fx-dict-map d proc) (fxmapping-map->list proc d))
 (define (fx-dict-map/copy d proc) (fxmapping-relation-map proc d))
 (define (fx-dict-for-each d proc) (fxmapping-for-each proc d))
@@ -1154,16 +1178,28 @@
       #f
       (fx-dict-iter d (generator->stream (fxmapping->generator d)))))
 (define (fx-dict-iterate-next d pos)
-  (assume (eq? d (fx-dict-iter-mapping pos)) "iterator from a different fxmapping")
+  (unless (fx-dict-iter? pos)
+    (raise-argument-error 'dict-iterate-next "fx-dict-iter?" pos))
+  (unless (eq? d (fx-dict-iter-mapping pos))
+    (raise-arguments-error 'dict-iterate-next "iterator from a different fxmapping"
+                           "fxmapping" d "iterator" pos))
   (let ([nxt (stream-cdr (fx-dict-iter-stream pos))])
     (if (stream-null? nxt)
         #f
         (struct-copy fx-dict-iter pos [stream nxt]))))
 (define (fx-dict-iterate-key d pos)
-  (assume (eq? d (fx-dict-iter-mapping pos)) "iterator from a different fxmapping")
+  (unless (fx-dict-iter? pos)
+    (raise-argument-error 'dict-iterate-key "fx-dict-iter?" pos))
+  (unless (eq? d (fx-dict-iter-mapping pos))
+    (raise-arguments-error 'dict-iterate-key "iterator from a different fxmapping"
+                           "fxmapping" d "iterator" pos))
   (car (stream-car (fx-dict-iter-stream pos))))
 (define (fx-dict-iterate-value d pos)
-  (assume (eq? d (fx-dict-iter-mapping pos)) "iterator from a different fxmapping")
+  (unless (fx-dict-iter? pos)
+    (raise-argument-error 'dict-iterate-value "fx-dict-iter?" pos))
+  (unless (eq? d (fx-dict-iter-mapping pos))
+    (raise-arguments-error 'dict-iterate-value "iterator from a different fxmapping"
+                           "fxmapping" d "iterator" pos))
   (cdr (stream-car (fx-dict-iter-stream pos))))
 
 (struct fxmapping (trie)
@@ -1194,15 +1230,17 @@
    (define dict-values fx-dict-values)
    (define dict->list fx-dict->list)]
 
+  ;;; Compare/hash the keys and contents, not the underlying structure of the trie
   #:methods gen:equal+hash
   [(define (equal-proc a b my-equal?)
      (or (eqv? a b)
          (trie=? (make-comparator (lambda (x) #t) my-equal? #f #f) (fxmapping-trie a) (fxmapping-trie b))))
    (define (hash-proc a my-hash-code)
-     (my-hash-code (fxmapping-trie a)))
-   (define (hash2-proc a my-hash-code)
-     (my-hash-code (fxmapping-trie a)))]
-  )
+     (trie-fold-left (lambda (k v hash)
+                       (+ hash (bitwise-xor (my-hash-code k) (my-hash-code v)))) 0 (fxmapping-trie a)))
+   (define (hash2-proc a my-hash2-code)
+     (trie-fold-left (lambda (k v hash)
+                       (+ hash (bitwise-xor (my-hash2-code k) (my-hash2-code v)))) 0 (fxmapping-trie a)))])
 
 ;;;; Constructors
 
