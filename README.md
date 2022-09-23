@@ -21,6 +21,7 @@ Currently includes:
 * [SRFI-190 Coroutine Generators](https://srfi.schemers.org/srfi-190/srfi-190.html)
 * [SRFI-194 Random data generators](https://srfi.schemers.org/srfi-194/srfi-194.html)
 * [SRFI-208 NaN procedures](https://srfi.schemers.org/srfi-208/srfi-208.html)
+* [SRFI-217 Integer Sets](https://srfi.schemers.org/srfi-217/srfi-217.html)
 * [SRFI-221 Generator/accumulator sub-library](https://srfi.schemers.org/srfi-221/srfi-221.html)
 * [SRFI-223 Generalized binary search procedures](https://srfi.schemers.org/srfi-223/srfi-223.html)
 * [SRFI-224 Integer Mappings](https://srfi.schemers.org/srfi-224/srfi-224.html)

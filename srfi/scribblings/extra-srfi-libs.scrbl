@@ -1,5 +1,5 @@
 #lang scribble/manual
-@require[@for-label[racket/base racket/generator racket/dict racket/unsafe/ops]]
+@require[@for-label[racket/base racket/generator racket/dict racket/set racket/unsafe/ops]]
 
 @title{Extra SRFI Libraries}
 @author[@author+email["Shawn Wagner" "shawnw.mobile@gmail.com"]]
@@ -45,7 +45,7 @@ ordering predicate is reversed.
 
 The side-effect-enabled list functions @code{list-merge!} and
 @code{list-delete-neighbor-dups!} currently use
-@racket{unsafe-immutable-set-cdr!} to modify the lists in place. The
+@code{unsafe-immutable-set-cdr!} to modify the lists in place. The
 test cases pass, but if this becomes an issue in practice (The
 function has lots of warnings attached), I'll switch them to just
 being aliases for the non-side-effect versions.
@@ -151,6 +151,27 @@ explicit check to raise an error if passed a non-NaN number. I might remove
 that check in the future and just say it's undefined what happens when they're
 passed a non-NaN.
 
+@section{SRFI-217 Integer Sets}
+
+@defmodule[srfi/217]
+
+@hyperlink["https://srfi.schemers.org/srfi-217/srfi-217.html"]{Reference documentation}.
+
+@bold{Notes}:
+
+@racket{iset} objects also support the Racket @code{gen:set} interface
+and can be used with @racket{racket/set} functions. The set-theory
+functions like @code{set-union} only work when all sets are isets (The
+same restriction applies to other types of sets).
+
+They also support @code{equal?} and are hashable so they can be used
+as keys in hash tables and sets. The usual warnings about mutating
+such sets apply.
+
+The reference implementation, using Patricia trees, is currently being
+used. I'm considering replacing it with one that can more compactly
+store ranges of numbers.
+
 @section{SRFI-223 Generalized binary search procedures}
 
 @defmodule[srfi/223]
@@ -217,6 +238,8 @@ Do a binary search in @code{fv} for @code{val} per SRFI-223 @code{bisect-right}.
 
 @hyperlink["https://srfi.schemers.org/srfi-224/srfi-224.html"]{Reference documentation}.
 
-@bold{Notes}: @code{fxmapping} objects support the @racket{gen:dict} interface and can thus be used with @racket{racket/dict} functions.
-They also support @racket{equal?} and are hashable so they can be used as keys in hash tables and sets. The usual warnings about mutating
+@bold{Notes}: @racket{fxmapping} objects support the @code{gen:dict}
+interface and can thus be used with @racket{racket/dict} functions.
+They also support @code{equal?} and are hashable so they can be used
+as keys in hash tables and sets. The usual warnings about mutating
 values stored in such mappings apply.
