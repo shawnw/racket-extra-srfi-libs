@@ -156,6 +156,11 @@
     ((fv i x) (gvector-insert! fv i x))
     ((fv i . xs) (flexvector-add-all! fv i xs))))
 
+(define flexvector-add-front!
+  (case-lambda
+    ((fv x) (gvector-insert! fv 0 x))
+    ((fv . xs) (flexvector-add-all! fv 0 xs))))
+
 (define (flexvector-add-back! fv . elems)
   (apply gvector-add! fv elems)
   fv)
@@ -226,23 +231,55 @@
       (gvector-add! new-fv (gvector-ref fv i)))
     new-fv))
 
+(define/clamped (flexvector-reverse-copy fv start end)
+  (let ([new-fv (make-gvector #:capacity (- end start))])
+    (for ([i (in-inclusive-range (- end 1) start -1)])
+      (gvector-add! new-fv (gvector-ref fv i)))
+    new-fv))
+
 (define (flexvector-copy! to at from [start 0] [end (flexvector-length from)])
   (clamp-ranges ('flexvector-copy! from start end)
                 (when (or (< at 0) (> at (flexvector-length to)))
-                  (raise-range-error 'flexvector-copy! "flexvector" "" at to 0 (flexvector-length to)))
-                (if (eq? from to)
-                    (let ([tmp (flexvector-copy from start end)]) ;; Possibly overlapping copy
-                      (let loop ([i 0]
-                                 [at at])
-                        (when (< i (flexvector-length tmp))
-                          (gvector-set! to at (gvector-ref tmp i))
-                          (loop (+ i 1) (+ at 1)))))
-                    (let loop ([i start] ;; Fast path
-                               [at at])
-                      (when (< i end)
-                        (gvector-set! to at (gvector-ref from i))
-                        (loop (+ i 1) (+ at 1)))))
+                  (raise-range-error 'flexvector-copy! "flexvector" "at " at to 0 (flexvector-length to)))
+                (%flexvector-copy! to at from start end)
                 to))
+
+;;; Version with no range validation or return value
+(define (%flexvector-copy! to at from start end)
+  (if (eq? from to)
+      (let ([tmp (%flexvector->vector from start end)]) ;; Possibly overlapping copy
+        (let loop ([i 0]
+                   [at at])
+          (when (< i (vector-length tmp))
+            (gvector-set! to at (vector-ref tmp i))
+            (loop (+ i 1) (+ at 1)))))
+      (let loop ([i start] ;; Fast path
+                 [at at])
+        (when (< i end)
+          (gvector-set! to at (gvector-ref from i))
+          (loop (+ i 1) (+ at 1))))))
+
+(define (flexvector-reverse-copy! to at from [start 0] [end (flexvector-length from)])
+  (clamp-ranges ('flexvector-reverse-copy! from start end)
+                (when (or (< at 0) (> at (flexvector-length to)))
+                  (raise-range-error 'flexvector-reverse-copy! "flexvector" "at " at to 0 (flexvector-length to)))
+                (%flexvector-copy! to at from start end)
+                (%flexvector-reverse! to at (+ at (- end start)))
+                to))
+
+(define/clamped (flexvector-reverse! fv start end)
+  (%flexvector-reverse! fv start end)
+  fv)
+
+;;; Version with no range checking or return value
+(define (%flexvector-reverse! fv start end)
+  (let lp ([left start]
+           [right (- end 1)])
+    (cond
+      ((>= left right) (void))
+      (else
+        (%flexvector-swap! fv left right)
+        (lp (+ left 1) (- right 1))))))
 
 (define (flexvector-concatenate fvs)
   (for*/gvector ([fv (in-list fvs)]
@@ -282,7 +319,10 @@
     (for/gvector ([elem (in-vector v start end)]) elem))
 
 (define/clamped (flexvector->vector fv start end)
-  (build-vector (- end start) (lambda (i) (flexvector-ref fv (+ i start)))))
+  (%flexvector->vector fv start end))
+
+(define (%flexvector->vector fv start end)
+  (build-vector (- end start) (lambda (i) (gvector-ref fv (+ i start)))))
 
 (define/clamped (string->flexvector s start end #:length string-length #:type string)
     (for/gvector ([ch (in-string s start end)]) ch))
@@ -314,7 +354,62 @@
 (define (generator->flexvector g)
   (for/gvector ([elem (in-producer g eof)]) elem))
 
+(define (flexvector-append! fv . fvs)
+  (for* ([afv (in-list fvs)]
+         [elem (in-gvector afv)])
+    (gvector-add! fv elem)))
+
+(define (flexvector-fill! fv fill [start 0] [end (flexvector-length fv)])
+  (clamp-ranges ('flexvector-fill! fv start end)
+                (do ((i start (+ i 1)))
+                    ((>= i end))
+                  (gvector-set! fv i fill))))
+
+(define (flexvector-unfold-right . args)
+  (define fv (apply flexvector-unfold args))
+  (%flexvector-reverse! fv 0 (flexvector-length fv))
+  fv)
+
+(define (reverse-list->flexvector ls)
+  (let ((fv (list->flexvector ls)))
+    (%flexvector-reverse! fv 0 (flexvector-length fv))
+    fv))
+
+(define/clamped (reverse-flexvector->list fv start end)
+  (for/fold ([res '()])
+            ([i (in-range start end)])
+    (cons (gvector-ref fv i) res)))
+
+(define (flexvector-binary-search fv value cmp [start 0] [end (flexvector-length fv)])
+  (clamp-ranges ('flexvector-binary-search fv start end)
+                (let lp ([lo start]
+                         [hi (- end 1)])
+                  (and (<= lo hi)
+                       (let* ((mid (quotient (+ lo hi) 2))
+                              (x (gvector-ref fv mid))
+                              (y (cmp value x)))
+                         (cond
+                           ((< y 0) (lp lo (- mid 1)))
+                           ((> y 0) (lp (+ mid 1) hi))
+                           (else mid)))))))
+
+(define (flexvector-swap! fv i j)
+  (let ([last-index (- (flexvector-length fv) 1)])
+    (when (or (< i 0) (> i last-index))
+      (raise-range-error 'flexvector-swap! "flexvector" "first " i fv 0 last-index))
+    (when (or (< j 0) (> j last-index))
+      (raise-range-error 'flexvector-swap! "flexvector" "second " j fv 0 last-index))
+    (%flexvector-swap! fv i j)
+    fv))
+
+;;; Version without range checking or returning the flexvector
+(define (%flexvector-swap! fv i j)
+  (let ((tmp (gvector-ref fv i)))
+    (gvector-set! fv i (gvector-ref fv j))
+    (gvector-set! fv j tmp)))
+
 ;; Other stuff lifted from the reference implementation
+;; With rackety error throwing
 
 ;; © Adam Nelson 2020-2021.
 
@@ -343,48 +438,6 @@
           ((apply p seeds) fv)
         (flexvector-add-back! fv (apply f seeds))))))
 
-(define (flexvector-unfold-right . args)
-  (define fv (apply flexvector-unfold args))
-  (flexvector-reverse! fv)
-  fv)
-
-(define flexvector-fill!
-  (case-lambda
-    ((fv fill)
-      (flexvector-fill! fv fill 0 (flexvector-length fv)))
-    ((fv fill start)
-      (flexvector-fill! fv fill start (flexvector-length fv)))
-    ((fv fill start end)
-      (let ((actual-end (min end (flexvector-length fv))))
-        (do ((i (max 0 start) (+ i 1)))
-            ((>= i actual-end))
-          (flexvector-set! fv i fill))))))
-
-(define (flexvector-reverse-copy . args)
-  (define fv (apply flexvector-copy args))
-  (flexvector-reverse! fv)
-  fv)
-
-(define flexvector-reverse-copy!
-  (case-lambda
-    ((to at from)
-      #;(assume (flexvector? from))
-      (flexvector-reverse-copy! to at from 0 (flexvector-length from)))
-    ((to at from start)
-      #;(assume (flexvector? from))
-      (flexvector-reverse-copy! to at from start (flexvector-length from)))
-    ((to at from start end)
-      (flexvector-copy! to at from start end)
-      (flexvector-reverse! to at (+ at (- end start))))))
-
-(define (flexvector-append! fv . fvs)
-  #;(assume (flexvector? fv))
-  #;(assume (every flexvector? fvs))
-  (for-each
-    (lambda (fv2) (flexvector-copy! fv (flexvector-length fv) fv2))
-    fvs)
-  fv)
-
 (define (flexvector-front fv)
   #;(assume (flexvector? fv))
   #;(assume (not (flexvector-empty? fv)))
@@ -398,11 +451,6 @@
   (when (flexvector-empty? fv)
     (raise-argument-error 'flexvector-back "(not/c flexvector-empty?)" fv))
   (flexvector-ref fv (- (flexvector-length fv) 1)))
-
-(define flexvector-add-front!
-  (case-lambda
-    ((fv x) (flexvector-add! fv 0 x))
-    ((fv . xs) (apply flexvector-add! fv 0 xs))))
 
 (define (flexvector-remove-front! fv)
   #;(assume (flexvector? fv))
@@ -532,30 +580,6 @@
   #;(assume (flexvector? fv1))
   (apply flexvector-index-right (complement pred?) fv1 o))
 
-(define flexvector-binary-search
-  (case-lambda
-    ((fv value cmp)
-      (flexvector-binary-search fv value cmp 0 (flexvector-length fv)))
-    ((fv value cmp start)
-      (flexvector-binary-search fv value cmp start (flexvector-length fv)))
-    ((fv value cmp start end)
-      #;(assume (flexvector? fv))
-      #;(assume (procedure? cmp))
-      #;(assume (integer? start))
-      #;(assume (integer? end))
-      #;(assume (<= start end))
-      (unless (and (<= start end) (<= end (flexvector-length fv)))
-        (raise-range-error 'flexvector-binary-search "flexvector" "ending " end fv start (flexvector-length fv) 0))
-      (let lp ((lo (max start 0))
-               (hi (- (min end (flexvector-length fv)) 1)))
-        (and (<= lo hi)
-             (let* ((mid (quotient (+ lo hi) 2))
-                    (x (flexvector-ref fv mid))
-                    (y (cmp value x)))
-               (cond
-                 ((< y 0) (lp lo (- mid 1)))
-                 ((> y 0) (lp (+ mid 1) hi))
-                 (else mid))))))))
 
 (define (flexvector-any pred? fv . o)
   #;(assume (procedure? pred?))
@@ -580,27 +604,6 @@
           (if (= i (- len 1))
               x
               (and x (lp (+ i 1)))))))))
-
-(define (flexvector-swap! fv i j)
-  #;(assume (flexvector? fv))
-  #;(assume (integer? i))
-  #;(assume (integer? j))
-  (let ((tmp (flexvector-ref fv i)))
-    (flexvector-set! fv i (flexvector-ref fv j))
-    (flexvector-set! fv j tmp)))
-
-(define (flexvector-reverse! fv . o)
-  #;(assume (flexvector? fv))
-  (let lp ((left (if (pair? o) (car o) 0))
-           (right (- (if (and (pair? o) (pair? (cdr o)))
-                         (cadr o)
-                         (flexvector-length fv))
-                     1)))
-    (cond
-      ((>= left right) (void))
-      (else
-        (flexvector-swap! fv left right)
-        (lp (+ left 1) (- right 1))))))
 
 (define (flexvector-append-subvectors . o)
   (let lp ((ls o) (vecs '()))
@@ -641,16 +644,6 @@
       (lambda (x) (flexvector-add-back! (if (pred? x) left right) x))
       fv)
     (values left right)))
-
-(define (reverse-flexvector->list fv . o)
-  #;(assume (flexvector? fv))
-  (flexvector->list (apply flexvector-reverse-copy fv o)))
-
-(define (reverse-list->flexvector ls)
-  #;(assume (list? ls))
-  (let ((fv (list->flexvector ls)))
-    (flexvector-reverse! fv)
-    fv))
 
 (module+ test
   (define-syntax-rule (test-equal name expected tst)
