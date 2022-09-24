@@ -1,5 +1,6 @@
 #lang scribble/manual
-@require[@for-label[racket/base racket/generator racket/dict racket/set racket/unsafe/ops]]
+@require[@for-label[racket/base racket/generator racket/dict racket/set racket/unsafe/ops
+                    data/gvector]]
 
 @title{Extra SRFI Libraries}
 @author[@author+email["Shawn Wagner" "shawnw.mobile@gmail.com"]]
@@ -137,7 +138,7 @@ What the SRFI calls a bytevector is what Racket calls a byte string.
 
 @hyperlink["https://srfi.schemers.org/srfi-208/srfi-208.html"]{Reference documentation}.
 
-@bold{Notes:}
+@bold{Notes}:
 
 Currently only works with double-precision flonums, though the SRFI allows for
 other floating point types. While Racket BC supports single precision flonums,
@@ -150,6 +151,56 @@ includes NaN checking of arguments in the contracts; the typed one has an
 explicit check to raise an error if passed a non-NaN number. I might remove
 that check in the future and just say it's undefined what happens when they're
 passed a non-NaN.
+
+@section{SRFI-214 Flexvectors}
+
+@defmodule[srfi/214]
+
+@hyperlink["https://srfi.schemers.org/srfi-214/srfi-214.html"]{Reference documentation}.
+
+@bold{Notes}: The impelmentation is built on @racket{data/gvector} and
+flexvectors are also @code{gvector}s.
+
+@subsection{Additional functions}
+
+@defproc[(flexvectorof [c contract?] [#:flat-contract boolean? #f]) contract?]{
+
+Returns a contract that validates flexvectors whose every element satisfies @code{c}.
+
+}
+
+@defproc[(build-flexvector [len exact-nonnegative-integer?] [proc (-> exact-nonnegative-integer? any/c)]) flexvector?]{
+
+Return a new flexvector @code{len} elements long, populated with the results of calling @code{proc} for each index.
+
+}
+
+@defproc[(flexvector->bytes [fv (flexvectorof byte?)] [start exact-integer? 0] [end exact-integer? (flexvector-length fv)]) bytes?] {
+
+Convert a flexvector of bytes to a byte string.
+
+}
+
+@defproc[(bytes->flexvector [bs bytes?] [start exact-integer? 0] [end exact-integer? (bytes-length bs)]) (flexvectorof byte?)]{
+
+Convert a byte string to a flexvector.
+
+}
+
+@defproc[(flexvector-bisect-left [fv flexvector?] [val any/c] [less? (-> any/c? any/c? any/c)] [lo integer? 0] [hi integer? (flexvector-length fv)])
+         integer?]{
+
+Do a binary search in @code{fv} for @code{val} per SRFI-223 @code{bisect-left}.
+
+}
+
+@defproc[(flexvector-bisect-right [fv flexvector?] [val any/c] [less? (-> any/c? any/c? any/c)] [lo integer? 0] [hi integer? (flexvector-length fv)])
+         integer?]{
+
+Do a binary search in @code{fv} for @code{val} per SRFI-223 @code{bisect-right}.
+
+}
+
 
 @section{SRFI-217 Integer Sets}
 
