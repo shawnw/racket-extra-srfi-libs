@@ -128,8 +128,6 @@ What the SRFI calls a bytevector is what Racket calls a byte string.
 
 @hyperlink["https://srfi.schemers.org/srfi-194/srfi-194.html"]{Reference documentation}.
 
-@bold{Notes:} The @code{make-random-string-generator} function isn't implemented.
-
 @section{SRFI-208 NaN Procedures}
 
 @defmodule[srfi/208]

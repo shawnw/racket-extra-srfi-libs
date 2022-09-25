@@ -41,6 +41,7 @@
                                 (-> complex? positive? positive? real? real? (-> complex?)))]
   [make-random-boolean-generator (-> (-> boolean?))]
   [make-random-char-generator (-> string? (-> char?))]
+  [make-random-string-generator (-> exact-nonnegative-integer? string? (-> string?))]
   [make-bernoulli-generator (-> (between/c 0 1) (-> (integer-in 0 1)))]
   [make-categorical-generator (-> (vectorof positive?) (-> exact-nonnegative-integer?))]
   [make-normal-generator (->* () (real? real?) (-> flonum?))]
@@ -189,11 +190,11 @@
    (lambda ()
      (string-ref str (int-gen)))))
 
-#;(define (make-random-string-generator k str)
+(define (make-random-string-generator k str)
   (let ((char-gen (make-random-char-generator str))
         (int-gen (make-random-integer-generator 0 k)))
     (lambda ()
-      (generator->string char-gen (int-gen)))))
+      (build-string (int-gen) (lambda (i) (char-gen))))))
 
 ;;
 ;; Non-uniform distributions
@@ -1131,7 +1132,7 @@
                   (equal? v #\b))
                 (make-random-char-generator "ab"))))
 
-  #;(test-group "Test random string"
+  (test-group "Test random string"
               (reset-source!)
               (test-assert
                (generator-every
