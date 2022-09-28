@@ -4,15 +4,16 @@
          (only-in racket/vector vector-map vector-append)
          (only-in racket/math infinite? sqr pi exact-ceiling exact-floor)
          racket/contract racket/require
-         (for-syntax racket/base (only-in racket/string string-prefix?)))
-;(require math/flonum)
+         (for-syntax racket/base (only-in racket/string string-prefix?))
+         "private/194-kernel.rkt")
 (require (filtered-in
           (lambda (name)
             (and (string-prefix? name "unsafe-fl")
                  (substring name 7)))
           racket/unsafe/ops)
          (only-in racket/unsafe/ops unsafe-make-flrectangular)
-         (only-in math/flonum ->fl fl fllog1p flvector make-flvector))
+         (only-in math/flonum ->fl fl flvector? flvector make-flvector inline-flvector-map
+                  vector->flvector flvector->vector flvector-copy!))
 (module+ test (require rackunit))
 
 (provide
@@ -50,11 +51,12 @@
   [make-poisson-generator (-> positive? (-> integer?))]
   [make-binomial-generator (-> exact-positive-integer? (between/c 0 1) (-> integer?))]
   [make-zipf-generator (->* (integer?) (real? real?) (-> integer?))]
-  [make-sphere-generator (-> exact-positive-integer? (-> (vectorof flonum?)))]
-  [make-ellipsoid-generator (-> (vectorof real?) (-> (vectorof flonum?)))]
-  [make-ball-generator (-> (or/c integer? (vectorof real?)) (-> (vectorof flonum?)))]))
+  [make-sphere-generator (->* (exact-positive-integer?) (boolean?) (or/c (-> (vectorof flonum?)) (-> flvector?)))]
+  [make-ellipsoid-generator (-> (or/c (vectorof real?) flvector?) (or/c (-> (vectorof flonum?)) (-> flvector?)))]
+  [make-ball-generator (-> (or/c integer? (vectorof real?) flvector?) (or/c (-> (vectorof flonum?)) (-> flvector?)))]))
 
 (define (finite? x) (not (infinite? x)))
+(define (flsqr x) (fl* x x))
 
 ;;
 ;; Parameters
@@ -133,16 +135,7 @@
   (unless (< low-bound up-bound)
      (raise-arguments-error 'make-random-real-generator "lower bound must be < upper bound"
                             "low-bound" low-bound "up-bound" up-bound))
-  (let ([rand-real-proc (random-source-make-reals (current-random-source))]
-        [low-bound (fl low-bound)]
-        [up-bound (fl up-bound)])
-   (lambda ()
-     (define t (rand-real-proc))
-     ;; alternative way of doing lowbound + t * (up-bound - low-bound)
-     ;; is susceptible to rounding errors and would require clamping to be safe
-     ;; (which in turn requires 144 for adjacent float function)
-     (fl+ (fl* t low-bound)
-          (fl* (fl- 1.0 t) up-bound)))))
+  (%make-random-real-generator (current-random-source) (fl low-bound) (fl up-bound)))
 
 (define (make-random-rectangular-generator
           real-lower-bound real-upper-bound
@@ -167,8 +160,8 @@
      (when (= angle-lower-bound angle-upper-bound)
        (raise-arguments-error 'make-random-polar-generator "angle bounds shouldn't be equal"
                               "angle-lower-bound" angle-lower-bound "angle-upper-bound" angle-upper-bound))
-     (let* ((b (fl (sqr magnitude-lower-bound)))
-            (m (fl- (fl (sqr magnitude-upper-bound)) b))
+     (let* ((b (flsqr (fl magnitude-lower-bound)))
+            (m (fl- (flsqr (fl magnitude-upper-bound)) b))
             (t-gen (make-random-real-generator 0. 1.))
             (phi-gen (make-random-real-generator angle-lower-bound angle-upper-bound)))
        (lambda ()
@@ -191,6 +184,8 @@
      (string-ref str (int-gen)))))
 
 (define (make-random-string-generator k str)
+  (unless (> (string-length str) 0)
+    (raise-argument-error 'make-random-string-generator "(not/c string-empty?)" str))
   (let ((char-gen (make-random-char-generator str))
         (int-gen (make-random-integer-generator 0 k)))
     (lambda ()
@@ -255,41 +250,21 @@
               (finite? deviation)
               (> deviation 0))
        (raise-argument-error 'make-normal-generator "(and/c real? finite? positive?)" deviation))
-     (let ([rand-real-proc (random-source-make-reals (current-random-source))]
-           [state #f]
-           [mean (fl mean)]
-           [deviation (fl deviation)])
-       (lambda ()
-         (if state
-             (let ((result state))
-              (set! state #f)
-              result)
-             (let ((r (flsqrt (fl* -2.0 (fllog (rand-real-proc)))))
-                   (theta (fl* 2.0 PI (rand-real-proc))))
-               (set! state (fl+ mean (fl* deviation r (flcos theta))))
-               (fl+ mean (fl* deviation r (flsin theta))))))))))
+     (%make-normal-generator (current-random-source) (fl mean) (fl deviation)))))
 
 (define (make-exponential-generator mean)
   (unless (and ;(real? mean)
                (finite? mean)
                #;(positive? mean))
     (raise-argument-error 'make-exponential-generator "(and/c real? finite? positive?)" mean))
-  (let ((rand-real-proc (random-source-make-reals (current-random-source))))
-   (lambda ()
-     (fl- (fl* (fl mean) (fllog (rand-real-proc)))))))
+  (%make-exponential-generator (current-random-source) (fl mean)))
 
 (define (make-geometric-generator p)
   #;(unless (and ;(real? p)
                (> p 0)
                (<= p 1))
-          (raise-argument-error 'make-geometric-generator "(and/c (>/c 0) (<=/c 1))" p))
-  (if (fl= (fl- p 1.) 0.0)
-      ;; p is indistinguishable from 1.
-      (lambda () 1)
-      (let ((c (fl/ (fllog1p (fl- p))))
-            (rand-real-proc (random-source-make-reals (current-random-source))))
-        (lambda ()
-          (exact-ceiling (fl* c (fllog (rand-real-proc))))))))
+      (raise-argument-error 'make-geometric-generator "(and/c (>/c 0) (<=/c 1))" p))
+  (%make-geometric-generator (current-random-source) (fl p)))
 
 ;; Draw from poisson distribution with mean L, variance L.
 ;; For small L, we use Knuth's method.  For larger L, we use rejection
@@ -310,72 +285,6 @@
    (if (< L 30)
        (make-poisson/small rand-real-proc (fl L))
        (make-poisson/large rand-real-proc (fl L)))))
-
-;; private
-(define (make-poisson/small rand-real-proc L)
-  (lambda ()
-    (do ((exp-L (flexp (fl- L)))
-         (k 0 (+ k 1))
-         (p 1.0 (fl* p (rand-real-proc))))
-        ((fl<= p exp-L) (- k 1)))))
-
-;; private
-(define (make-poisson/large rand-real-proc L)
-  (let* ((c (fl- 0.767 (fl/ 3.36 L)))
-         (beta (fl/ PI (flsqrt (fl* 3.0 L))))
-         (alpha (fl* beta L))
-         (k (fl- (fllog c) L (fllog beta))))
-    (define (loop)
-      (let* ((u (rand-real-proc))
-             (x (fl/ (fl- alpha (fllog (fl/ (fl- 1.0 u) u))) beta))
-             (n (exact-floor (fl+ x 0.5))))
-        (if (< n 0)
-            (loop)
-            (let* ((v (rand-real-proc))
-                   (y (fl- alpha (fl* beta x)))
-                   (t (fl+ 1.0 (flexp y)))
-                   (lhs (fl+ y (fllog (fl/ v (fl* t t)))))
-                   (rhs (fl+ k (fl* (->fl n) (fllog L)) (fl- (log-of-fact n)))))
-              (if (fl<= lhs rhs)
-                  n
-                  (loop))))))
-    loop))
-
-;; private
-;; log(n!) table for n 1 to 256. Vector, where nth index corresponds to log((n+1)!)
-;; Computed on first invocation of `log-of-fact`
-(define log-fact-table #f)
-
-;; private
-;; computes log-fact-table
-;; log(n!) = log((n-1)!) + log(n)
-(define (make-log-fact-table!)
-  (define table (make-flvector 256))
-  (flvector-set! table 0 0.0)
-  (do ((i 1 (+ i 1)))
-      ((> i 255) #t)
-    (flvector-set! table i (fl+ (flvector-ref table (- i 1))
-                                (fllog1p (->fl i)))))
-  (set! log-fact-table table))
-
-;; private
-;; returns log(n!)
-;; adapted from https://www.johndcook.com/blog/2010/08/16/how-to-compute-log-factorial/
-(define (log-of-fact n)
-  (when (not log-fact-table)
-    (make-log-fact-table!))
-  (cond
-    ((<= n 1) 0.0)
-    ((<= n 256) (flvector-ref log-fact-table (- n 1)))
-    (else (let ((x (->fl (+ n 1))))
-           (fl+ (fl* (fl- x 0.5)
-                     (fllog x))
-                (fl- x)
-                (fl* 0.5
-                     (fllog (fl* 2.0 PI)))
-                (fl/ 1.0 (fl* x 12.0)))))))
-
-
 
 (define (gsampling . generators-lst)
   (let ((gen-vec (list->vector generators-lst))
@@ -411,68 +320,6 @@
           eof
           (pick)))))
 
-
-;;; Code for binomial random variable generation.
-
-;;; binomial-geometric is somewhat classical, the
-;;; "First waiting time algorithm" from page 525 of
-;;; Devroye, L. (1986), Non-Uniform Random Variate
-;;; Generation, Springer-Verlag, New York.
-
-;;; binomial-rejection is algorithm BTRS from
-;;; Hormann, W. (1993), The generation of binomial
-;;; random variates, Journal of Statistical Computation
-;;; and Simulation, 46:1-2, 101-110,
-;;; DOI: https://doi.org/10.1080/00949659308811496
-;;; stirling-tail is also from that paper.
-
-;;; Another implementation of the same algorithm is at
-;;; https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/random_binomial_op.cc
-;;; That implementation pointed out at least two bugs in the
-;;; BTRS paper.
-
-(define (stirling-tail k)
-  ;; Computes
-  ;;
-  ;; \log(k!)-[\log(\sqrt{2\pi})+(k+\frac12)\log(k+1)-(k+1)]
-  ;;
-  (let ((small-k-table
-         ;; Computed using computable reals package
-         ;; Matches values in paper, which are given
-         ;; for 0\leq k < 10
-         (flvector
-          .08106146679532726
-          .0413406959554093
-          .02767792568499834
-          .020790672103765093
-          .016644691189821193
-          .013876128823070748
-          .01189670994589177
-          .010411265261972096
-          .009255462182712733
-          .00833056343336287
-          .007573675487951841
-          .00694284010720953
-          .006408994188004207
-          .0059513701127588475
-          .005554733551962801
-          .0052076559196096404
-          .004901395948434738
-          .004629153749334028
-          .004385560249232324
-          .004166319691996922)))
-    (if (< k 20)
-        (flvector-ref small-k-table k)
-        ;; the correction term (+ (/ (* 12 (+ k 1))) ...)
-        ;; in Stirling's approximation to log(k!)
-        (let* ((inexact-k+1 (->fl (+ k 1)))
-               (inexact-k+1^2 (fl* inexact-k+1 inexact-k+1)))
-          (fl/ (fl- #i1/12
-                (fl/ (fl- #i1/360
-                          (fl/ #i1/1260 inexact-k+1^2))
-                     inexact-k+1^2))
-               inexact-k+1)))))
-
 (define (make-binomial-generator n p)
 #|  (if (not (and ;(real? p)
                 (<= 0 p 1)
@@ -486,253 +333,9 @@
         ((zero? p)
          (lambda () 0))
         ((< (* n p) 10)
-         (binomial-geometric n (fl p)))
+         (binomial-geometric (current-random-source) n (fl p)))
         (else
-         (binomial-rejection n (fl p)))))
-
-(define (binomial-geometric n p)
-  (let ((geom (make-geometric-generator p)))
-    (lambda ()
-      (let loop ((X -1)
-                 (sum 0))
-        (if (< n sum)
-            X
-            (loop (+ X 1)
-                  (+ sum (geom))))))))
-
-(define (binomial-rejection n p)
-  ;; call when p <= 1/2 and np >= 10
-  ;; Use notation from the paper
-  (let* ((spq
-          (flsqrt (fl* (->fl n) p (fl- 1.0 p))))
-         (b
-          (fl+ 1.15 (fl* 2.53 spq)))
-         (a
-          (fl+ -0.0873
-             (fl* 0.0248 b)
-             (fl* 0.01 p)))
-         (c
-          (fl+ (fl* (->fl n) p) 0.5))
-         (v_r
-          (fl- 0.92
-             (fl/ 4.2 b)))
-         (alpha
-          ;; The formula in BTRS has 1.5 instead of 5.1;
-          ;; The formula for alpha in algorithm BTRD and Table 1
-          ;; and the tensorflow code uses 5.1, so we use 5.1
-          (fl* (fl+ 2.83 (fl/ 5.1 b)) spq))
-         (lpq
-          (fllog (fl/ p (fl- 1.0 p))))
-         (m
-          (exact-floor (fl* (->fl (+ n 1)) p)))
-         (rand-real-proc
-          (random-source-make-reals (current-random-source))))
-    (lambda ()
-      (let loop ((u (rand-real-proc))
-                 (v (rand-real-proc)))
-        (let* ((u
-                (fl- u 0.5))
-               (us
-                (fl- 0.5 (flabs u)))
-               (k
-                (exact-floor
-                  (fl+ (fl* (fl+ (fl* 2. (fl/ a us)) b) u) c))))
-          (cond ((or (< k 0)
-                     (< n k))
-                 (loop (rand-real-proc)
-                       (rand-real-proc)))
-                ((and (fl<= 0.07 us)
-                      (fl<= v v_r))
-                 k)
-                (else
-                 (let ((v
-                        ;; The tensorflow code notes that BTRS doesn't have
-                        ;; this logarithm; BTRS is incorrect (see BTRD, step 3.2)
-                        (fllog (fl* v (fl/ alpha
-                                     (fl+ (fl/ a (fl* us us)) b))))))
-                   (if (fl<=  v
-                              (fl+ (fl* (fl+ (->fl m) 0.5)
-                                        (fllog (fl* (fl/ (fl+ (->fl m) 1.)
-                                                         (fl- (->fl n) (->fl m) -1.)))))
-                                   (fl* (fl+ (->fl n) 1.)
-                                        (fllog (fl/ (fl- (->fl n) (->fl m) -1.)
-                                                    (fl- (->fl n) (->fl k) -1.))))
-                                   (fl* (fl+ (->fl k) 0.5)
-                                        (fllog (fl* (fl/ (fl- (->fl n) (->fl k) -1.)
-                                                         (fl+ (->fl k) 1.)))))
-                                   (fl* (fl- (->fl k) (->fl m)) lpq)
-                                   (fl- (fl+ (stirling-tail m)
-                                             (stirling-tail (- n m)))
-                                        (fl+ (stirling-tail k)
-                                             (stirling-tail (- n k))))))
-                       k
-                       (loop (rand-real-proc)
-                             (rand-real-proc)))))))))))
-
-
-;
-; zipf-zri.scm
-; Create a Zipf random distribution.
-;
-; Created by Linas Vepstas 10 July 2020
-; Nominated for inclusion in srfi-194
-;
-; Not optimized for speed!
-;
-; Implementation from ZRI algorithm presented in the paper:
-; "Rejection-inversion to generate variates from monotone discrete
-; distributions", Wolfgang Hörmann and Gerhard Derflinger
-; ACM TOMACS 6.3 (1996): 169-184
-;
-; Hörmann and Derflinger use "q" everywhere, when they really mean "s".
-; Thier "q" is not the standard q-series deformation. Its just "s".
-; The notation in the code below differs from the article to reflect
-; conventional usage.
-;
-;------------------------------------------------------------------
-;
-; The Hurwicz zeta distribution 1 / (k+q)^s for 1 <= k <= n integer
-; The Zipf distribution is recovered by setting q=0.
-;
-; The exponent `s` must be a real number not equal to 1.
-; Accuracy is diminished for |1-s|< 1e-6. The accuracy is roughly
-; equal to 1e-15 / |1-s| where 1e-15 == 64-bit double-precision ULP.
-;
-(define (make-zipf-generator/zri n s q)
-
-  ; The hat function h(x) = 1 / (x+q)^s
-  (define (hat x)
-    (flexpt (fl+ x q) (fl- s)))
-
-  (define _1-s (fl- 1.0 s))
-  (define oms (fl/ 1.0 _1-s))
-
-  ; The integral of hat(x)
-  ; H(x) = (x+q)^{1-s} / (1-s)
-  ; Note that H(x) is always negative.
-  (define (big-h x)
-    (fl/ (flexpt (fl+ q x) _1-s) _1-s))
-
-  ; The inverse function of H(x)
-  ; H^{-1}(y) = -q + (y(1-s))^{1/(1-s)}
-  (define (big-h-inv y)
-    (fl- (flexpt (fl* y _1-s) oms) q))
-
-  ; Lower and upper bounds for the uniform random generator.
-  (define big-h-half (fl- (big-h 1.5) (hat 1)))
-  (define big-h-n (big-h (fl+ (->fl n) 0.5)))
-
-  ; Rejection cut
-  (define cut (fl- 1.0 (big-h-inv (fl- (big-h 1.5) (hat 1.0)))))
-
-  ; Uniform distribution
-  (define dist (make-random-real-generator big-h-half big-h-n))
-
-  ; Attempt to hit the dartboard. Return #f if we fail,
-  ; otherwise return an integer between 1 and n.
-  (define (try)
-    (define u (dist))
-    (define x (big-h-inv u))
-    (define kflt (flfloor (fl+ x 0.5)))
-    (define k (inexact->exact kflt))
-    (if (and (< 0 k)
-             (or
-               (fl<= (- kflt x) cut)
-               (fl>= u (fl- (big-h (fl+ kflt 0.5)) (hat kflt))))) k #f))
-
-  ; Did we hit the dartboard? If not, try again.
-  (define (loop-until)
-    (define k (try))
-    (if k k (loop-until)))
-
-  ; Return the generator.
-  loop-until)
-
-;------------------------------------------------------------------
-;
-; The Hurwicz zeta distribution 1 / (k+q)^s for 1 <= k <= n integer
-; The Zipf distribution is recovered by setting q=0.
-;
-; The exponent `s` must be a real number close to 1.
-; Accuracy is diminished for |1-s|> 2e-4. The accuracy is roughly
-; equal to 0.05 * |1-s|^4 due to exp(1-s) being expanded to 4 terms.
-;
-; This handles the special case of s==1 perfectly.
-(define (make-zipf-generator/one n s q)
-
-  (define _1-s (fl- 1.0 s))
-
-  ; The hat function h(x) = 1 / (x+q)^s
-  ; Written for s->1 i.e. 1/(x+q)(x+q)^{s-1}
-  (define (hat x)
-    (define xpq (fl+ x q))
-    (fl/ (flexpt xpq _1-s) xpq))
-
-  ; Expansion of exn(y) = [exp(y(1-s))-1]/(1-s) for s->1
-  ; Expanded to 4th order.
-  ; Should equal this:
-  ;;; (define (exn lg) (/ (- (exp (* _1-s lg)) 1) _1-s))
-  ; but more accurate for s near 1.0
-  (define (exn lg)
-    (define (trm n u lg) (fl* lg (fl+ 1.0 (fl/ (fl* _1-s u) (->fl n)))))
-    (trm 2.0 (trm 3.0 (trm 4.0 1.0 lg) lg) lg))
-
-  ; Expansion of lg(y) = [log(1 + y(1-s))] / (1-s) for s->1
-  ; Expanded to 4th order.
-  ; Should equal this:
-  ;;; (define (lg y) (/ (log (+ 1 (* y _1-s))) _1-s))
-  ; but more accurate for s near 1.0
-  (define (lg y)
-    (define yms (* y _1-s))
-    (define (trm n u r) (- (/ 1 n) (* u r)))
-    (* y (trm 1 yms (trm 2 yms (trm 3 yms (trm 4 yms 0))))))
-
-  ; The integral of hat(x) defined at s==1
-  ; H(x) = [exp{(1-s) log(x+q)} - 1]/(1-s)
-  ; Should equal this:
-  ;;;  (define (big-h x) (/ (- (exp (* _1-s (log (+ q x)))) 1)  _1-s))
-  ; but expanded so that it's more accurate for s near 1.0
-  (define (big-h x)
-    (exn (fllog (fl+ q x))))
-
-  ; The inverse function of H(x)
-  ; H^{-1}(y) = -q + (1 + y(1-s))^{1/(1-s)}
-  ; Should equal this:
-  ;;; (define (big-h-inv y) (- (expt (+ 1 (* y _1-s)) (/ 1 _1-s)) q ))
-  ; but expanded so that it's more accurate for s near 1.0
-  (define (big-h-inv y)
-    (fl- (flexp (lg y)) q))
-
-  ; Lower and upper bounds for the uniform random generator.
-  (define big-h-half (fl- (big-h 1.5) (hat 1.0)))
-
-  (define big-h-n (big-h (fl+ (->fl n) 0.5)))
-
-  ; Rejection cut
-  (define cut (fl- 1.0 (big-h-inv (fl- (big-h 1.5) (fl/ 1.0 (fl+ 1.0 q))))))
-
-  ; Uniform distribution
-  (define dist (make-random-real-generator big-h-half big-h-n))
-
-  ; Attempt to hit the dartboard. Return #f if we fail,
-  ; otherwise return an integer between 1 and n.
-  (define (try)
-    (define u (dist))
-    (define x (big-h-inv u))
-    (define kflt (flfloor (fl+ x 0.5)))
-    (define k (inexact->exact kflt))
-    (if (and (< 0 k)
-             (or
-               (fl<= (fl- kflt x) cut)
-               (fl>= u (fl- (big-h (fl+ kflt 0.5)) (hat kflt))))) k #f))
-
-  ; Did we hit the dartboard? If not, try again.
-  (define (loop-until)
-    (define k (try))
-    (if k k (loop-until)))
-
-  ; Return the generator.
-  loop-until)
+         (binomial-rejection (current-random-source) n (fl p)))))
 
 ;------------------------------------------------------------------
 ;
@@ -751,19 +354,11 @@
 ;    (define zgen (make-zipf-generator 50 1.01 0))
 ;    (generator->list zgen 10)
 ;
-(define make-zipf-generator
-  (case-lambda
-    ((n)
-     (make-zipf-generator n 1.0 0.0))
-    ((n s)
-     (make-zipf-generator n s 0.0))
-    ((n s q)
-     (if (< 1e-5 (abs (- 1 s)))
-         (make-zipf-generator/zri n s q)
-         (make-zipf-generator/one n s q)))))
+(define (make-zipf-generator n [s 1.0] [q 0.0])
+  (if (< 1e-5 (abs (- 1 s)))
+      (make-zipf-generator/zri (current-random-source) n (fl s) (fl q))
+      (make-zipf-generator/one (current-random-source) n (fl s) (fl q))))
 
-
-;
 ; sphere.scm
 ; Uniform distributions on a sphere, and a ball.
 ; Submitted for inclusion in srfi-194
@@ -776,80 +371,19 @@
 ; distributed on an N-dimensional sphere.
 ; This implements the BoxMeuller algorithm, that is, of normalizing
 ; N+1 Gaussian random variables.
-(define (make-sphere-generator arg)
-  (make-ellipsoid-generator* (make-vector (+ 1 arg) 1.0)))
+(define (make-sphere-generator arg [use-flvec? #f])
+  (let ([gen
+         (make-ellipsoid-generator* (current-random-source) (if use-flvec? (make-flvector (+ arg 1) 1.0) (make-vector (+ 1 arg) 1.0)))])
+    (if use-flvec?
+        gen
+        (lambda () (flvector->vector (gen))))))
 
 (define (make-ellipsoid-generator arg)
-    (make-ellipsoid-generator* arg))
-
-; -----------------------------------------------
-; Generator of points uniformly distributed on an N-dimensional ellipsoid.
-;
-; The `axes` should be a vector of floats, specifying the axes of the
-; ellipsoid. The algorithm used is an accept/reject sampling algo,
-; wherein the acceptance rate is proportional to the measure of a
-; surface element on the ellipsoid. The measure is straight-forward to
-; arrive at, and the 3D case is described by `mercio` in detail at
-; https://math.stackexchange.com/questions/973101/how-to-generate-points-uniformly-distributed-on-the-surface-of-an-ellipsoid
-;
-; Note that sampling means that performance goes as
-; O(B/A x C/A x D/A x ...) where `A` is the shorest axis,
-; and `B`, `C`, `D`, ... are the other axes. Maximum performance
-; achieved on spheres.
-;
-(define (make-ellipsoid-generator* axes)
-
-  ; A vector of normal gaussian generators
-  (define gaussg-vec
-    (make-vector (vector-length axes) (make-normal-generator 0 1)))
-
-  ; Banach l2-norm of a vector
-  (define (l2-norm VEC)
-    (flsqrt (vector-fold
-            (lambda (i sum x) (fl+ sum (fl* x x)))
-            0.0
-            VEC)))
-
-  ; Generate one point on a sphere
-  (define (sph)
-    ; Sample a point
-    (define point
-      (vector-map (lambda (gaussg) (gaussg)) gaussg-vec))
-    ; Project it to the unit sphere (make it unit length)
-    (define norm (fl/ 1.0 (l2-norm point)))
-    (vector-map (lambda (x) (fl* x norm)) point))
-
-  ; Distance from origin to the surface of the
-  ; ellipsoid along direction RAY.
-  (define (ellipsoid-dist RAY)
-    (flsqrt (vector-fold
-             (lambda (i sum x a) (fl+ sum (fl/ (fl* x x) (fl* a a))))
-             0.0 RAY axes)))
-
-  ; Find the shortest axis.
-  (define minor
-    (vector-fold
-        (lambda (i mino l) (if (fl< l mino) l mino))
-        1e308 axes))
-
-  ; Uniform generator [0,1)
-  (define uni (make-random-real-generator 0.0 1.0))
-
-  ; Return #t if the POINT can be kept; else must resample.
-  (define (keep POINT)
-    (fl< (uni) (fl* minor (ellipsoid-dist POINT))))
-
-  ; Sample until a good point is found. The returned sample is a
-  ; vector of unit length (we already normed up above).
-  (define (sample)
-    (define vect (sph))
-    (if (keep vect) vect (sample)))
-
-  (lambda ()
-  ; Find a good point, and rescale to ellipsoid.
-    (vector-map
-         (lambda (x a) (* x a)) (sample) axes))
-)
+  (let ([gen
+         (make-ellipsoid-generator* (current-random-source) (if (flvector? arg) arg (vector->flvector arg)))])
+    (if (flvector? arg)
+        gen
+        (lambda () (flvector->vector (gen))))))
 
 ; -----------------------------------------------
 ; make-ball-generator N - return a generator of points uniformly
@@ -860,17 +394,27 @@
     (cond
       ((integer? arg) (make-vector (+ 2 arg) 1.0))
       ((vector? arg) (vector-append arg (vector-immutable 1.0 1.0)))
-      (else (raise-argument-error 'make-ball-generator "(or/c integer? (vectorof real?))" arg))))
+      ((flvector? arg)
+       (let ([dim (make-flvector (+ (flvector-length arg) 2) 1.0)])
+             (flvector-copy! dim 0 arg)
+             dim))
+      (else (raise-argument-error 'make-ball-generator "(or/c integer? (vectorof real?) flvector?)" arg))))
   (define N (- (vector-length dim-sizes) 2))
-  (define sphereg (make-sphere-generator (+ N 2)))
+  (define sphereg (make-sphere-generator (+ N 2) (flvector? arg)))
   ; Create a vector of N+2 values, and drop the last two.
   ; (The sphere already added one, so we only add one more)
-  (lambda ()
-    ((vector-map
-      (lambda (el dim-size _) (* el dim-size))
-      (sphereg)
-      dim-sizes
-      (make-vector N #f)))))
+  (if (flvector? arg)
+      (lambda () (inline-flvector-map
+                  (lambda (el dim-size _) (* el dim-size))
+                  (sphereg)
+                  dim-sizes
+                  (make-flvector N 0.0)))
+      (lambda ()
+        (vector-map
+         (lambda (el dim-size _) (* el dim-size))
+         (sphereg)
+         dim-sizes
+         (make-vector N #f)))))
 
 
 (module+ test
@@ -1304,7 +848,7 @@
               (reset-source!*)
               (test-sphere (make-sphere-generator 1) (vector 1.0 1.0) 200 #t)
               (test-sphere (make-sphere-generator 2) (vector 1.0 1.0 1.0) 200 #t)
-              (test-sphere (make-sphere-generator 3) (vector 1.0 1.0 1.0 1.0) 200 #t)
+              (test-sphere (make-sphere-generator 3 #t) (flvector 1.0 1.0 1.0 1.0) 200 #t)
 
               (reset-source!*)
               (test-sphere (make-ellipsoid-generator (vector 1.0 1.0)) (vector 1.0 1.0) 200 #t)
@@ -1314,13 +858,13 @@
               (reset-source!*)
               (test-sphere (make-ellipsoid-generator (vector 1.0 3.0)) (vector 1.0 3.0) 200 #f)
               (test-sphere (make-ellipsoid-generator (vector 1.0 3.0 5.0)) (vector 1.0 3.0 5.0) 200 #f)
-              (test-sphere (make-ellipsoid-generator (vector 1.0 3.0 5.0 7.0)) (vector 1.0 3.0 5.0 7.0) 200 #f)
+              (test-sphere (make-ellipsoid-generator (flvector 1.0 3.0 5.0 7.0)) (flvector 1.0 3.0 5.0 7.0) 200 #f)
 
               (reset-source!*)
               (test-ball (make-ball-generator 2) (vector 1.0 1.0))
               (test-ball (make-ball-generator 3) (vector 1.0 1.0 1.0))
               (test-ball (make-ball-generator (vector 1.0 3.0)) (vector 1.0 3.0))
-              (test-ball (make-ball-generator (vector 1.0 3.0 5.0)) (vector 1.0 3.0 5.0)))
+              (test-ball (make-ball-generator (flvector 1.0 3.0 5.0)) (flvector 1.0 3.0 5.0)))
 
   (test-group "Test binomial"
               (reset-source!)

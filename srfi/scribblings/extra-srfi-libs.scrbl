@@ -128,6 +128,10 @@ What the SRFI calls a bytevector is what Racket calls a byte string.
 
 @hyperlink["https://srfi.schemers.org/srfi-194/srfi-194.html"]{Reference documentation}.
 
+@code{make-ellipsoid-generator} and @code{make-ball-generator} can
+take a @code{flvector} or a vector of reals as an argument and returns
+the same.
+
 @section{SRFI-208 NaN Procedures}
 
 @defmodule[srfi/208]
