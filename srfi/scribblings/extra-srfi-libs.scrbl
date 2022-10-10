@@ -29,7 +29,9 @@ that Racket doesn't like @code{if} missing an else clause, reorganization of sou
 @hyperlink["https://srfi.schemers.org/srfi-128/srfi-128.html"]{Reference
 documentation}. Also includes
 @hyperlink["https://srfi.schemers.org/srfi-162/srfi-162.html"]{SRFI-162
-Comparators sublibrary} routines and variables.
+Comparators sublibrary} and
+@hyperlink["https://srfi.schemers.org/srfi-228/srfi-228.html"]{SRFI-228
+A further comparator library (draft)} routines and variables.
 
 @section{SRFI-132 Sort Libraries}
 

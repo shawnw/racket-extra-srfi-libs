@@ -1,7 +1,8 @@
 #lang racket/base
 
 (require racket/contract (only-in racket/math nan? infinite? exact-round)
-         (only-in racket/bool boolean=? symbol=?))
+         (only-in racket/bool boolean=? symbol=?)
+         (only-in racket/list index-where))
 (module+ test (require rackunit))
 (provide
  hash-bound hash-salt with-hash-salt comparator-if<=>
@@ -33,11 +34,11 @@
   [comparator-test-type (-> comparator? any/c any/c)]
   [comparator-check-type (-> comparator? any/c #t)]
   [comparator-hash (-> comparator? any/c exact-nonnegative-integer?)]
-  [=? (->* (comparator? any/c any/c) () #:rest list? boolean?)]
-  [<? (->* (comparator? any/c any/c) () #:rest list? boolean?)]
-  [>? (->* (comparator? any/c any/c) () #:rest list? boolean?)]
-  [<=? (->* (comparator? any/c any/c) () #:rest list? boolean?)]
-  [>=? (->* (comparator? any/c any/c) () #:rest list? boolean?)]
+  [=? (-> comparator? any/c any/c any/c ... boolean?)]
+  [<? (-> comparator? any/c any/c any/c ... boolean?)]
+  [>? (-> comparator? any/c any/c any/c ... boolean?)]
+  [<=? (-> comparator? any/c any/c any/c ... boolean?)]
+  [>=? (-> comparator? any/c any/c any/c ... boolean?)]
 
   ;;; SRFI-162 routines
   [comparator-min (->* (comparator? any/c) () #:rest list? any/c)]
@@ -57,9 +58,17 @@
   [eq-comparator comparator?]
   [eqv-comparator comparator?]
   [equal-comparator comparator?]
+
+  ;;; SRFI-228 routines
+  [make-wrapper-comparator (-> predicate/c (-> any/c any/c) comparator? comparator?)]
+  [make-product-comparator (-> comparator? comparator? ... comparator?)]
+  [make-sum-comparator (-> comparator? comparator? ... comparator?)]
+  [comparison-procedures (-> comparator? (values (-> any/c any/c any/c ... boolean?)
+                                                 (-> any/c any/c any/c ... boolean?)
+                                                 (-> any/c any/c any/c ... boolean?)
+                                                 (-> any/c any/c any/c ... boolean?)
+                                                 (-> any/c any/c any/c ... boolean?)))]
   ))
-
-
 
 
 ;;; Copyright (C) John Cowan (2015). All Rights Reserved.
@@ -666,6 +675,70 @@
 (define eqv-comparator (make-eqv-comparator))
 (define equal-comparator (make-equal-comparator))
 
+;;; SRFI-228
+;;; custom implementation
+
+(define (make-wrapper-comparator type? unwrap comp)
+  (let ([equal (comparator-equality-predicate comp)]
+        [cmp (comparator-ordering-predicate comp)]
+        [hash (comparator-hash-function comp)])
+    (make-comparator
+     type?
+     (lambda (a b) (equal (unwrap a) (unwrap b)))
+     (if (comparator-ordered? comp)
+         (lambda (a b) (cmp (unwrap a) (unwrap b)))
+         #f)
+     (if (comparator-hashable? comp)
+         (lambda (v) (hash (unwrap v)))
+         #f))))
+
+(define (make-product-comparator . comps)
+  (make-comparator
+   (lambda (v) (andmap (lambda (comp) (comparator-test-type comp v)) comps))
+   (lambda (a b) (andmap (lambda (comp) ((comparator-equality-predicate comp) a b)) comps))
+   (if (andmap comparator-ordered? comps)
+       (lambda (a b)
+         (ormap (lambda (comp) ((comparator-ordering-predicate comp) a b)) comps))
+       #f)
+   (if (andmap comparator-hashable? comps)
+       (lambda (v)
+         (number-hash (foldl (lambda (comp h) (bitwise-xor (comparator-hash comp v) h)) 0 comps)))
+       #f)))
+
+(define (make-sum-comparator . comps)
+  (let ([find-comparator-for-value
+         (lambda (v) (index-where comps (lambda (comp) (comparator-test-type comp v))))])
+    (make-comparator
+     (lambda (v) (ormap (lambda (comp) (comparator-test-type comp v)) comps))
+     (lambda (a b)
+       (let ([cmp-a (find-comparator-for-value a)]
+             [cmp-b (find-comparator-for-value b)])
+         (if (= cmp-a cmp-b)
+             ((comparator-equality-predicate (list-ref comps cmp-a)) a b)
+             #f)))
+     (if (andmap comparator-ordered? comps)
+         (lambda (a b)
+           (let ([cmp-a (find-comparator-for-value a)]
+                 [cmp-b (find-comparator-for-value b)])
+             (cond
+               ((= cmp-a cmp-b)
+                ((comparator-ordering-predicate (list-ref comps cmp-a)) a b))
+               ((< cmp-a cmp-b) #t)
+               (else #f))))
+         #f)
+   (if (andmap comparator-hashable? comps)
+       (lambda (v)
+         (comparator-hash (car (memf comps (lambda (comp) (comparator-test-type comp v))))))
+       #f))))
+
+(define (comparison-procedures comp)
+  (values
+   (lambda (a b . args) (apply <? comp a b args))
+   (lambda (a b . args) (apply <=? comp a b args))
+   (lambda (a b . args) (apply =? comp a b args))
+   (lambda (a b . args) (apply >=? comp a b args))
+   (lambda (a b . args) (apply >? comp a b args))))
+
 (module+ test
   (define-syntax-rule (test-assert tst)
     (check-true tst))
@@ -971,5 +1044,31 @@
               (test-assert (=? eqv-comparator 32 32))
               (test-assert (=? equal-comparator "ABC" "ABC"))
               ) ; end comparators/variables
+
+  (struct person (first-name last-name) #:constructor-name make-person)
+
+  (define person-name-comparator
+    (make-product-comparator
+     (make-wrapper-comparator person? person-last-name string-ci-comparator)
+     (make-wrapper-comparator person? person-first-name string-ci-comparator)))
+
+  (define-values (person-name<?
+                  person-name<=?
+                  person-name=?
+                  person-name>?
+                  person-name>=?)
+    (comparison-procedures person-name-comparator))
+
+  (test-group "wrap and product comparators"
+              (test-assert (person-name<? (make-person "John" "Cowan")
+                                          (make-person "Daphne" "Preston-Kendal"))) ;=> #t
+
+              (test-assert (person-name>? (make-person "Tom" "Smith")
+                                          (make-person "John" "Smith")))) ;=> #t
+
+  (define s-r-comp (make-sum-comparator string-comparator real-comparator))
+  (test-group "sum comparators"
+              (test-assert (<? s-r-comp "cat" "dog" 1 2))
+              (test-assert (>? s-r-comp 2 1 "dog" "cat")))
 
   ) ; end comparators
