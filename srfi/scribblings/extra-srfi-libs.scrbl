@@ -112,7 +112,7 @@ called with arguments are not supported.
 
 @hyperlink["https://srfi.schemers.org/srfi-175/srfi-175.html"]{Reference documentation}.
 
-@bold{Notes:}
+@bold{Notes}:
 
 What the SRFI calls a bytevector is what Racket calls a byte string.
 
@@ -133,6 +133,14 @@ What the SRFI calls a bytevector is what Racket calls a byte string.
 @code{make-ellipsoid-generator} and @code{make-ball-generator} can
 take a @code{flvector} or a vector of reals as an argument and returns
 the same.
+
+@section{SRFI-207 String-notated bytevectors}
+
+@defmodule[srfi/207]
+
+@hyperlink["https://srfi.schemers.org/srfi-207/srfi-207.html"]{Reference documentation}.
+
+@bold{Notes}: The @racket{u8"..."} reader syntax and I/O functions are not supported.
 
 @section{SRFI-208 NaN Procedures}
 

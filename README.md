@@ -20,6 +20,7 @@ Currently includes:
 * [SRFI-175 ASCII character library](https://srfi.schemers.org/srfi-175/srfi-175.html)
 * [SRFI-190 Coroutine Generators](https://srfi.schemers.org/srfi-190/srfi-190.html)
 * [SRFI-194 Random data generators](https://srfi.schemers.org/srfi-194/srfi-194.html)
+* [SRFI-207 String-notated bytevectors](https://srfi.schemers.org/srfi-207/srfi-207.html)
 * [SRFI-208 NaN procedures](https://srfi.schemers.org/srfi-208/srfi-208.html)
 * [SRFI-214 Flexvectors](https://srfi.schemers.org/srfi-214/srfi-214.html)
 * [SRFI-217 Integer Sets](https://srfi.schemers.org/srfi-217/srfi-217.html)
