@@ -1,7 +1,9 @@
 #lang racket/base
 ;;; Integer Mappings
 
-(require racket/contract racket/require racket/dict srfi/41 "145.rkt"
+(require racket/contract racket/require racket/dict
+         (only-in racket/fixnum most-negative-fixnum)
+         srfi/41 "145.rkt"
          (only-in srfi/1 fold unfold every iota partition)
          (only-in "128.rkt" comparator? =? make-comparator make-default-comparator)
          (only-in "158.rkt" make-coroutine-generator generator->stream)
@@ -100,8 +102,7 @@
   [fxmapping-split (-> fxmapping? fixnum? (values fxmapping? fxmapping?))]
   ))
 
-(define fx-least (if (= (system-type 'word) 32) (- (expt 2 29)) (- (expt 2 60))))
-(void (assume (fixnum? fx-least)))
+(define fx-least (most-negative-fixnum))
 (define (fxpositive? n) (fx> n 0))
 (define (fxnegative? n) (fx< n 0))
 (define (fxzero? n) (fx= n 0))

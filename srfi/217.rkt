@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require racket/require racket/contract racket/list racket/set
+         (only-in racket/fixnum most-negative-fixnum)
          (only-in racket/math exact-floor)
          "145.rkt"
          (only-in "151.rkt" [first-set-bit fxfirst-set-bit])
@@ -84,8 +85,7 @@
 (define (fxzero? n) (fx= n 0))
 (define (fxneg n) (fx- n))
 (define fx-width (if (= (system-type 'word) 32) 30 61))
-(define fx-least (if (= (system-type 'word) 32) (- (expt 2 29)) (- (expt 2 60))))
-(void (assume (fixnum? fx-least)))
+(define fx-least (most-negative-fixnum))
 (define (fxbit-set? i n) (bitwise-bit-set? n i))
 
 ;;; Consider merging the trie implementations of SRFI-217 and SRFI-224?
