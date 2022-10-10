@@ -124,6 +124,20 @@ What the SRFI calls a bytevector is what Racket calls a byte string.
 
 @bold{Notes:} The @code{yield} syntax conflicts with @racket{racket/generator}.
 
+@section{SRFI-193 Command line}
+
+@defmodule[srfi/193]
+
+@hyperlink["https://srfi.schemers.org/srfi-193/srfi-193.html"]{Reference documentation}.
+
+@bold{Notes}:
+
+The heuristics for telling if a command or script or
+neither is being executed could probably stand to be improved.
+
+The @code{command-line} procedure conflicts with the one in
+@racket{racket/cmdline}.
+
 @section{SRFI-194 Random data generators}
 
 @defmodule[srif/194]
