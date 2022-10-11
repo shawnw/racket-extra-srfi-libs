@@ -320,3 +320,9 @@ interface and can thus be used with @racket{racket/dict} functions.
 They also support @code{equal?} and are hashable so they can be used
 as keys in hash tables and sets. The usual warnings about mutating
 values stored in such mappings apply.
+
+@section{SRFI-232 Flexible curried procedures}
+
+@defmodule[srfi/232]
+
+@hyperlink["https://srfi.schemers.org/srfi-232/srfi-232.html"]{Reference documentation}.
