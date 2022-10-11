@@ -1,9 +1,9 @@
 #lang racket/base
 ;;; SRFI-190  Coroutine generators
 
-(require racket/contract syntax/parse syntax/parse/define racket/stxparam
+(require racket/contract syntax/parse/define racket/stxparam
          (only-in "158.rkt" make-coroutine-generator)
-         (for-syntax racket/base))
+         (for-syntax racket/base syntax/parse syntax/parse/lib/function-header))
 (module+ test (require rackunit))
 
 (provide yield coroutine-generator define-coroutine-generator)
@@ -19,8 +19,8 @@
 
 (define-syntax (define-coroutine-generator stx)
   (syntax-parse stx
-    [(_ (name:id arg:id ...) body:expr ...+)
-     #'(define (name arg ...) (coroutine-generator body ...))]
+    [(_ def:function-header body:expr ...+)
+     #'(define def (coroutine-generator body ...))]
     [(_ name:id body:expr ...+)
      #'(define name (coroutine-generator body ...))]))
 
