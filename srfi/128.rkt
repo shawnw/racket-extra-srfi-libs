@@ -10,7 +10,7 @@
   [comparator? predicate/c]
   [comparator-ordered? (-> comparator? boolean?)]
   [comparator-hashable? (-> comparator? boolean?)]
-  [make-comparator (-> predicate/c (-> any/c any/c any/c) (or/c (-> any/c any/c any/c) #f) (or/c (-> any/c exact-nonnegative-integer?) #f) comparator?)]
+  [make-comparator (-> (or/c predicate/c #t) (-> any/c any/c any/c) (or/c (-> any/c any/c any/c) #f) (or/c (-> any/c exact-nonnegative-integer?) #f) comparator?)]
   [make-pair-comparator (-> comparator? comparator? comparator?)]
   [make-list-comparator (-> comparator? predicate/c (-> any/c any/c) (-> any/c any/c) (-> any/c any/c) comparator?)]
   [make-vector-comparator (-> comparator? predicate/c (-> any/c exact-nonnegative-integer?) (-> any/c exact-nonnegative-integer? any/c) comparator?)]
