@@ -17,6 +17,7 @@
   [make-eq-comparator (-> comparator?)]
   [make-eqv-comparator (-> comparator?)]
   [make-equal-comparator (-> comparator?)]
+  [make-equal-always-comparator (-> comparator?)]
   [boolean-hash (-> boolean? exact-nonnegative-integer?)]
   [char-hash (-> char? exact-nonnegative-integer?)]
   [char-ci-hash (-> char? exact-nonnegative-integer?)]
@@ -58,6 +59,7 @@
   [eq-comparator comparator?]
   [eqv-comparator comparator?]
   [equal-comparator comparator?]
+  [equal-always-comparator comparator?]
 
   ;;; SRFI-228 routines
   [make-wrapper-comparator (-> predicate/c (-> any/c any/c) comparator? comparator?)]
@@ -265,6 +267,9 @@
 
 (define (make-equal-comparator)
   (make-comparator #t equal? #f (lambda (val) (abs (equal-hash-code val)))))
+
+(define (make-equal-always-comparator)
+  (make-comparator #t equal-always? #f (lambda (val) (abs (equal-always-hash-code val)))))
 
 ;;; Sequence ordering and hash functions
 ;; The hash functions are based on djb2, but
@@ -674,6 +679,7 @@
 (define eq-comparator (make-eq-comparator))
 (define eqv-comparator (make-eqv-comparator))
 (define equal-comparator (make-equal-comparator))
+(define equal-always-comparator (make-equal-always-comparator))
 
 ;;; SRFI-228
 ;;; custom implementation
@@ -792,12 +798,12 @@
               (print "list-qua-vector-comparator")
               (define list-qua-vector-comparator
                 (make-vector-comparator default-comparator list? length list-ref))
-              (print "eq-comparator")
-              (define eq-comparator (make-eq-comparator))
-              (print "eqv-comparator")
-              (define eqv-comparator (make-eqv-comparator))
-              (print "equal-comparator")
-              (define equal-comparator (make-equal-comparator))
+              ;(print "eq-comparator")
+              ;(define eq-comparator (make-eq-comparator))
+              ;(print "eqv-comparator")
+              ;(define eqv-comparator (make-eqv-comparator))
+              ;(print "equal-comparator")
+              ;(define equal-comparator (make-equal-comparator))
               (print "symbol-comparator")
               (define symbol-comparator
                 (make-comparator
@@ -868,6 +874,9 @@
                           (test-assert (not (=? eqv-comparator bool-pair bool-pair-2)))
                           (test-assert (=? equal-comparator bool-pair bool-pair-2))
                           (test-assert (not (=? equal-comparator bool-pair reverse-bool-pair)))
+                          (test-assert (=? equal-always-comparator bool-pair bool-pair-2))
+                          (test-assert (not (=? equal-always-comparator bool-pair reverse-bool-pair)))
+
                           ) ; end comparators/constructors
 
               (test-group "comparators/hash"

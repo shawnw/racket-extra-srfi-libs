@@ -42,6 +42,21 @@ standard Racket @code{eq-hash-code} etc. hash functions instead of
 for Racket structs with custom hash functions to work in case a hash
 table SRFI that uses comparators is added to this collection later.
 
+@subsection{Additional definitions}
+
+@defproc[(make-equal-always-comparator) comparator?]{
+
+Return a comparator that uses @code{equal-always?} for equality and
+@code{equal-always-hash-code} for hashing.
+
+}
+
+@defthing[equal-always-comparator comparator?]{
+
+A comparator returned by @code{make-equal-always-comparator}.
+
+}
+
 @section{SRFI-132 Sort Libraries}
 
 @defmodule[srif/132]
