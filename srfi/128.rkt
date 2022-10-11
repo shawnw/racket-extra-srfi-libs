@@ -258,13 +258,13 @@
 ;;; These comparators don't have ordering functions.
 
 (define (make-eq-comparator)
-  (make-comparator #t eq? #f default-hash))
+  (make-comparator #t eq? #f (lambda (val) (abs (eq-hash-code val)))))
 
 (define (make-eqv-comparator)
-  (make-comparator #t eqv? #f default-hash))
+  (make-comparator #t eqv? #f (lambda (val) (abs (eqv-hash-code val)))))
 
 (define (make-equal-comparator)
-  (make-comparator #t equal? #f default-hash))
+  (make-comparator #t equal? #f (lambda (val) (abs (equal-hash-code val)))))
 
 ;;; Sequence ordering and hash functions
 ;; The hash functions are based on djb2, but

@@ -33,6 +33,15 @@ Comparators sublibrary} and
 @hyperlink["https://srfi.schemers.org/srfi-228/srfi-228.html"]{SRFI-228
 A further comparator library (draft)} routines and variables.
 
+@bold{Notes}:
+
+The @code{make-eq-comparator}, @code{make-eqv-comparator} and
+@code{make-equal-comparator} functions return comparators using the
+standard Racket @code{eq-hash-code} etc. hash functions instead of
+@code{default-hash}. Not terribly useful at the moment, but it allows
+for Racket structs with custom hash functions to work in case a hash
+table SRFI that uses comparators is added to this collection later.
+
 @section{SRFI-132 Sort Libraries}
 
 @defmodule[srif/132]
