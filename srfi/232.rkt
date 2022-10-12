@@ -31,9 +31,50 @@
 
 (provide curried define-curried)
 
-;;; Too bad there's not a predefined simple-formals syntax class
-(define-syntax-parse-rule (curried formals exp:expr ...+)
-  (curried-1 formals (begin exp ...)))
+;;; Tried using this alternative implementation using Racket's curry
+;;; procedure, since it has some nice features like accepting keyword
+;;; arguments, but it fails a bunch of tests - doesn't handle rest
+;;; arguments correctly, and doesn't accept more than X arguments.
+#|
+(require (only-in racket/function curry)
+         (for-syntax syntax/parse/lib/function-header))
+
+(define-syntax-parse-rule (curried fmls:formals exp:expr ...+)
+  (curry (lambda fmls exp ...)))
+
+(define-syntax-parse-rule (define-curried head:function-header exp:expr ...+)
+  (define head.name (curried head.params exp ...)))
+|#
+
+
+;;; Adapted from syntax/parse/lib/function-header.rkt
+
+(begin-for-syntax
+  (define-splicing-syntax-class simple-formals-no-rest
+    #:attributes (params)
+    (pattern (~seq arg:id ...)
+             #:attr params #'(arg ...)
+             #:fail-when (check-duplicate-identifier (syntax->list #'params))
+             "duplicate argument name"))
+
+  (define-syntax-class simple-formals
+    #:attributes (params)
+    (pattern (~or* (args:simple-formals-no-rest)
+                   (args:simple-formals-no-rest . rest-id:id))
+             #:attr params #'((~@ . args.params) (~? rest-id))
+             #:fail-when (and (attribute rest-id)
+                              (member #'rest-id (syntax->list #'args.params) bound-identifier=?)
+                              #'rest-id)
+             "duplicate argument identifier"))
+
+  (define-syntax-class simple-header
+    #:attributes (name params)
+    (pattern ((~or header:simple-header name*:id) . args:simple-formals)
+             #:attr params #'((~@ . (~? header.params ())) . args.params)
+             #:attr name   #'(~? header.name name*))))
+
+(define-syntax-parse-rule (curried fmls:simple-formals exp:expr ...+)
+  (curried-1 fmls (begin exp ...)))
 
 (define-syntax (curried-1 stx)
   (syntax-parse stx
@@ -57,7 +98,7 @@
 (define-syntax-parse-rule (rest-args (args:id ...+) rest:id exp:expr)
   (letrec ((f (case-lambda
                 (() f)
-                ((args ...) (let ([rest '()]) exp))
+                ((args ...) (let ([rest '()]) exp)) ; Without this to match exact args, doesn't work right.
                 ((args ... . rest) exp)
                 (arg-list (more-args f arg-list)))))
     f))
@@ -65,26 +106,18 @@
 (define (more-args f current)
   (lambda args (apply f (append current args))))
 
-(define-syntax (define-curried stx)
-  (syntax-parse stx
-    ((define-curried (name:id args:id ...) exp:expr ...+)
-     #'(define name
-         (curried-1 (args ...) (begin exp ...))))
-    ((define-curried (name:id args:id ...+ . rest:id) exp:expr ...+)
-     #'(define name
-         (curried-1 (args ... . rest) (begin exp ...))))
-    ((define-curried (name:id . rest:id) exp:expr ...+)
-     #'(define name
-         (curried-1 rest (begin exp ...))))))
-
+(define-syntax-parse-rule (define-curried hdr:simple-header exp:expr ...+)
+  (define hdr.name (curried hdr.params exp ...)))
 
 (module+ test
-  (define-syntax-parse-rule (test-group name:string test:expr ...)
+  (define-syntax-rule (test-group name test ...)
     (begin test ...))
-  (define-syntax-parse-rule (test-eqv expected:expr test-expr:expr)
+  (define-syntax-rule (test-eqv expected test-expr)
     (check-eqv? test-expr expected))
-  (define-syntax-parse-rule (test-equal expected:expr test-expr:expr)
+  (define-syntax-rule (test-equal expected test-expr)
     (check-equal? test-expr expected))
+
+  (define-curried (add-curry x y) (+ x y))
 
   (test-group "Simple currying"
               (test-eqv 5 ((curried (x y) (+ x y)) 2 3))
@@ -95,6 +128,7 @@
               (test-eqv 5 (((curried (w x y z) (+ w x y z)) 1 1) 1 2))
               (test-eqv 5 (((curried (w x y z) (+ w x y z)) 1 1 1) 2))
               (test-eqv 5 (((((curried (w x y z) (+ w x y z)) 1) 1) 1) 2))
+              (test-eqv 5 ((add-curry 2) 3))
               )
 
   (test-group "Variadic"
