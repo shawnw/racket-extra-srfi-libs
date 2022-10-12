@@ -130,15 +130,22 @@ called with arguments are not supported.
 
 }
 
+@section{SRFI-173 Hooks}
+
+@defmodule[srfi/173]
+
+@hyperlink["https://srfi.schemers.org/srfi-173/srfi-173.html"]{Reference documentation}.
+
+@bold{Notes}: A hook object is callable as a procedure;
+@code{(hook-obj args ...)} is the same as @code{(hook-run hook-obj args ...)}.
+
 @section{SRFI-175 ASCII character library}
 
 @defmodule[srfi/175]
 
 @hyperlink["https://srfi.schemers.org/srfi-175/srfi-175.html"]{Reference documentation}.
 
-@bold{Notes}:
-
-What the SRFI calls a bytevector is what Racket calls a byte string.
+@bold{Notes}: What the SRFI calls a bytevector is what Racket calls a byte string.
 
 @section{SRFI-190 Coroutine Generators}
 
