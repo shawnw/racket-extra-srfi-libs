@@ -14,17 +14,36 @@ A note on licensings: Most of the included SRFIs are the reference implementatio
 Typical changes to the reference versions include adding contracts and removing now-redundant type checking, avoiding things Scheme allows
 that Racket doesn't like @code{if} missing an else clause, reorganization of source files, etc.
 
+@section{SRFI-13 String Libraries}
+
+@defmodule[typed/srfi/13]
+
+@hyperlink["https://srfi.schemers.org/srfi-13/srfi-13.html"]{Reference documentation}.
+
+@bold{Notes}: While Racket comes with a SRFI-13 implementation, it's
+only for normal Racket, not Typed Racket. This module can be used
+instead of having to @racketid{require/typed} specific functions from it
+that you might need in Typed Racket. A few functions conflict with
+base string functions; usually with the SRFI-13 version adding extra
+range arguments. These have been given a @racketid{-13} suffix -
+@code{string-downcase-13}, @code{string-upcase-13},
+@code{string-titlecase-13}, @code{string->list-13},
+@code{string-copy-13} and @code{string-fill!-13}. Unless you need the
+range arguments, you should use the standard Racket versions. The
+SRFI-13 functions that have name conflicts with ones in
+@racket{racket/string} have @emph{not} been adjusted.
+
 @section{SRFI-112 Environment Inquiry}
 
 @defmodule[srfi/112]
 
 @hyperlink["https://srfi.schemers.org/srfi-112/srfi-112.html"]{Reference documentation}.
 
-@bold{Notes:} @code{(os-version)} always returns @code{#f}, but the other functions are all implemented.
+@bold{Notes}: @code{(os-version)} always returns @code{#f}, but the other functions are all implemented.
 
 @section{SRFI-128 Comparators (reduced)}
 
-@defmodule[srif/128]
+@defmodule[srfi/128]
 
 @hyperlink["https://srfi.schemers.org/srfi-128/srfi-128.html"]{Reference
 documentation}. Also includes
@@ -64,7 +83,7 @@ A comparator returned by @code{make-equal-always-comparator}.
 @hyperlink["https://srfi.schemers.org/srfi-132/srfi-132.html"]{Reference
 documentation}.
 
-@bold{Notes:}
+@bold{Notes}:
 
 @code{vector-sort} and @code{vector-sort!} conflict with
 the ones in @code{racket/vector} - the order of the vector and
@@ -85,7 +104,7 @@ being aliases for the non-side-effect versions.
 
 @hyperlink["https://srfi.schemers.org/srfi-141/srfi-141.html"]{Reference documentation}.
 
-@bold{Notes:}
+@bold{Notes}:
 
 The functions in the typed version are constrained to only take and
 return exact integers. The regular package's will accept inexact
@@ -103,7 +122,7 @@ integers.
 
 @hyperlink["https://srfi.schemers.org/srfi-151/srfi-151.html"]{Reference documentation}.
 
-@bold{Notes:}
+@bold{Notes}:
 
 Written in Typed Racket. Hopefully the type signatures should be
 obvious and intuitive. If performance matters, code that uses these
