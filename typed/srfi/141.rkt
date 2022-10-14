@@ -1,5 +1,5 @@
 #lang typed/racket/base
-;;; -*- Mode: Scheme -*-
+;;; -*- Mode: Racket -*-
 
 ;;;; Integer Division Operators
 
