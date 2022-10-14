@@ -1,6 +1,6 @@
 #lang info
 (define collection 'multi)
-(define deps '("base" "typed-racket-lib" "srfi-lib" "math-lib" "data-lib"
+(define deps '("base" "typed-racket-lib" "typed-racket-more" "srfi-lib" "math-lib" "data-lib"
                       ("racket" #:version "8.6")))
 (define build-deps '("scribble-lib" "racket-doc" "rackunit-lib" "rackunit-typed" "data-doc"))
 (define pkg-desc "Ports of more SRFIs to Racket")
