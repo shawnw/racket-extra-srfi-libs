@@ -17,6 +17,7 @@ Currently includes:
 * [SRFI-145 Assumptions](https://srfi.schemers.org/srfi-145/srfi-145.html)
 * [SRFI-151 Bitwise Operations](https://srfi.schemers.org/srfi-151/srfi-151.html)
 * [SRFI-158 Generators and Accumulators](https://srfi.schemers.org/srfi-158/srfi-158.html)
+* [SRFI-160 Homogeneous numeric vector libraries](https://srfi.schemers.org/srfi-160/srfi-160.html)
 * [SRFI-162 Comparators sublibrary](https://srfi.schemers.org/srfi-162/srfi-162.html)
 * [SRFI-173 Hooks](https://srfi.schemers.org/srfi-173/srfi-173.html)
 * [SRFI-175 ASCII character library](https://srfi.schemers.org/srfi-175/srfi-175.html)
