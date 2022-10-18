@@ -9,7 +9,6 @@
                   @vector->list list->@vector)
          (only-in "../128.rkt" comparator? make-comparator)
          racket/contract)
-(module+ test (require rackunit))
 
 (provide
  (all-from-out "base.rkt")
@@ -152,6 +151,7 @@
   (and (@dyadic-vecs= vec1 0 (@vector-length vec1)
                       vec2 0 (@vector-length vec2))
        (or (null? vecs)
+           (null? (car vecs))
            (@vector= vec2 (car vecs) (cdr vecs)))))
 
 (define (@dyadic-vecs= vec1 start1 end1 vec2 start2 end2)

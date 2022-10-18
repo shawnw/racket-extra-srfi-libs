@@ -14,39 +14,27 @@
 ;(define typed-srfi-base-path (build-path root-path "typed" "srfi" "160"))
 ;(define private-typed-path (build-path typed-srfi-base-path "private"))
 
-(struct nvector (id member-type in-srfi-4?))
+(struct nvector (id member-type in-srfi-4? emit-tests?))
 
 ;;; One entry for each vector type
 (define nvectors
-  `(,(nvector "u8" 'Byte #t)
-    ,(nvector "s8" 'Fixnum #t)
-    ,(nvector "u16" 'Fixnum #t)
-    ,(nvector "s16" 'Fixnum #t)
-    ,(nvector "u32" 'Integer #t)
-    ,(nvector "s32" 'Integer #t)
-    ,(nvector "u64" 'Integer #t)
-    ,(nvector "s64" 'Integer #t)
-    ,(nvector "f32" 'Flonum #t)
-    ,(nvector "f64" 'Flonum #t)
-    ,(nvector "c64" 'Float-Complex #f)
-    ,(nvector "c128" 'Float-Complex #f)
-    ,(nvector "fl" 'FlVector #f)))
+  `(,(nvector "u8" 'Byte #t #f)
+    ,(nvector "s8" 'Fixnum #t #f)
+    ,(nvector "u16" 'Fixnum #t #f)
+    ,(nvector "s16" 'Fixnum #t #t)
+    ,(nvector "u32" 'Integer #t #f)
+    ,(nvector "s32" 'Integer #t #t)
+    ,(nvector "u64" 'Integer #t #f)
+    ,(nvector "s64" 'Integer #t #t)
+    ,(nvector "f32" 'Flonum #t #f)
+    ,(nvector "f64" 'Flonum #t #f)
+    ,(nvector "c64" 'Float-Complex #f #f)
+    ,(nvector "c128" 'Float-Complex #f #f)
+    ,(nvector "fl" 'FlVector #f #f)))
 
 ;;; Files to copy directly
 (define install-files '("base.rkt"))
 (define install-private-files '("complex.rkt" "valid.rkt" "flvector.rkt"))
-
-;;; Create all needed directories and copy/generate SRFI-160 source files.
-(define (main)
-  (make-directory-if-not-exists srfi-base-path)
-  (make-directory-if-not-exists private-srfi-path)
-  ;(make-directory-if-not-exists typed-srfi-base-path)
-  ;(make-directory-if-not-exists private-typed-path)
-  (copy-files install-files srfi-base-path)
-  (copy-files install-private-files private-srfi-path)
-  (for ([nvec (in-list nvectors)])
-    (make-vector2list nvec)
-    (make-module nvec)))
 
 (define (make-directory-if-not-exists dir-path)
   (unless (directory-exists? dir-path)
@@ -68,7 +56,7 @@
 
 (define (make-module nvec)
   (let ([output-file (build-path srfi-base-path (format "~A.rkt" (nvector-id nvec)))])
-    (make-source-from-template nvec "at-impl.rkt" output-file)))
+    (make-source-from-template nvec "at-impl.rkt" output-file #:add-tests (nvector-emit-tests? nvec))))
 
 (define (make-vector2list nvec)
   (let ([output-file (build-path private-srfi-path (format "~A-vector2list.rkt" (nvector-id nvec)))])
@@ -87,7 +75,8 @@
        (newline out)))))
 
 (define (make-source-from-template nvec template-file output-file
-                                   #:extra-preamble [extra-preamble #f])
+                                   #:extra-preamble [extra-preamble #f]
+                                   #:add-tests [add-tests? #f])
   (printf "Creating ~S... " (path->string output-file))
   (parameterize ([pretty-print-columns 80])
     (call-with-output-file
@@ -98,29 +87,65 @@
           (lambda (in)
             (preamble out)
             (when extra-preamble (extra-preamble out))
-            (process-template nvec in out)))))
-    (displayln "done")))
+            (process-template nvec in out)))
+        (when add-tests?
+          (call-with-input-file "at-test.rkt"
+            (lambda (test-in)
+              (process-template nvec test-in out #:in-test #t)))))))
+  (displayln "done"))
 
 ;;; Replace @ in symbols with the numeric vector id
 ;;; @vector-ref -> u8vector-ref for example
-(define (process-sexp nvec sexp)
-  (cond
-    ((symbol? sexp)
-     (let ([name (symbol->immutable-string sexp)])
-       (if (regexp-match? #rx"@" name)
-           (string->symbol (regexp-replace #rx"@" name (nvector-id nvec)))
-           sexp)))
-    ((list? sexp) ; Proper lists
-     (map (lambda (elem) (process-sexp nvec elem)) sexp))
-    ((pair? sexp) ; Improper lists
-     (cons (process-sexp nvec (car sexp)) (process-sexp nvec (cdr sexp))))
-    ((vector? sexp)
-     (for/vector #:length (vector-length sexp) ([elem (in-vector sexp)]) (process-sexp nvec elem)))
-    (else sexp)))
+(define (process-sexp nvec sexp #:in-test [in-test? #f])
+  (define (real-process-sexp sexp)
+    (cond
+      ((symbol? sexp)
+       (let ([name (symbol->immutable-string sexp)])
+         (if (regexp-match? #rx"@" name)
+             (string->symbol (regexp-replace #rx"@" name (nvector-id nvec)))
+             sexp)))
+      #|
+      ;;; Work in progress for adding tests of flonum-type vectors
+    ((and (list? sexp) (not (empty? sexp))) ; Proper lists
+     (cond
+       ((and in-test? ((listof real?) sexp))
+        (map real->double-flonum sexp))
+       ((and in-test?
+             (memq (car sexp) '(@vector list))
+             (memq (nvector-member-type nvec) '(Flonum Float-Complex))
+             ((listof real?) (cdr sexp)))
+        (cons (process-sexp nvec (car sexp) #:in-test in-test?)
+              (map real->double-flonum (cdr sexp))))
+       ((and in-test? (memq (car sexp) '(@vector-set! make-@vector @vector-fill!)))
+        (list (process-sexp nvec (first sexp) #:in-test in-test?) (second sexp) (real->double-flonum (third sexp))))
+    (else (map (lambda (elem) (process-sexp nvec elem #:in-test in-test?)) sexp))))
+    |#
+      ((list? sexp)
+       (map real-process-sexp sexp))
+      ((pair? sexp) ; Improper lists
+       (cons (real-process-sexp (car sexp)) (real-process-sexp (cdr sexp))))
+      #|
+      ((vector? sexp)
+      (if (and in-test? (eq? (nvector-member-type nvec) 'Flonum))
+      (for/vector #:length (vector-length sexp) ([elem (in-vector sexp)]) (real->double-flonum elem))
+      sexp))
+      |#
+      (else sexp)))
+  (real-process-sexp sexp))
 
-(define (process-template nvec in out)
+(define (process-template nvec in out #:in-test [in-test? #f])
   (for ([sexp (in-port read in)])
-    (pretty-write (process-sexp nvec sexp) out)
+    (pretty-write (process-sexp nvec sexp #:in-test in-test?) out)
     (newline out)))
 
-(main)
+
+;;; Create all needed directories and copy/generate SRFI-160 source files.
+(make-directory-if-not-exists srfi-base-path)
+(make-directory-if-not-exists private-srfi-path)
+;(make-directory-if-not-exists typed-srfi-base-path)
+;(make-directory-if-not-exists private-typed-path)
+(copy-files install-files srfi-base-path)
+(copy-files install-private-files private-srfi-path)
+(for ([nvec (in-list nvectors)])
+  (make-vector2list nvec)
+  (make-module nvec))

@@ -6,7 +6,7 @@
 (define build-deps '("scribble-lib" "racket-doc" "rackunit-lib"
                                     "rackunit-typed" "data-doc"))
 (define compile-omit-paths '(#rx"srfi-160-builder")) ; This doesn't seem to actually work as advertised
-(define test-omit-paths '(#rx"srfi-160-builder" #rx"160/[sucf]" #rx"private"))
+(define test-omit-paths '(#rx"srfi-160-builder" #rx"160/[^bs]" #rx"private"))
 (define pkg-desc "Ports of more SRFIs to Racket")
 (define version "0.7")
 (define pkg-authors '(shawnw))
