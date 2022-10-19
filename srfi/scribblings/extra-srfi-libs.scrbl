@@ -1,6 +1,7 @@
 #lang scribble/manual
 @require[@for-label[racket/base racket/generator racket/dict racket/set racket/unsafe/ops
-                    data/gvector]]
+                    racket/fixnum racket/flonum racket/extflonum
+                    data/gvector ffi/vector]]
 
 @title{Extra SRFI Libraries}
 @author[@author+email["Shawn Wagner" "shawnw.mobile@gmail.com"]]
@@ -148,6 +149,45 @@ Adapt a Racket generator to a SRFI-158 generator. Generators that are
 called with arguments are not supported.
 
 }
+
+@section{SRFI-160 Homogenous numeric vector libraries}
+
+@hyperlink["https://srfi.schemers.org/srfi-160/srfi-160.html"]{Reference
+documentation}. In addition to all the numeric types in the SRFI,
+functions for @code{flvector?} and @code{fxvector?} vectors are also
+provided, with a @racketid{fl} and @racketid{fx} prefix
+respectively. If Racket CS ever gains support for 80-bit
+@code{extflonum?}  numbers on x86, I'll add support for
+@code{extflvector?} and @code{f80vector?} vectors too (And might
+adjust the @code{f32vector?} contracts to explicitly work with
+@code{single-flonum?} values if CS ever gets them).
+
+@defmodule[srfi/160/base]
+
+Additional functions for converting between flvectors and SRFI-4 vectors:
+
+@defproc[(flvector->f32vector [fl flvector?] [start exact-nonnegative-integer? 0] [end exact-nonnegative-integer? (flvector-length fv)]) f32vector?]{}
+
+@defproc[(flvector->f64vector [fl flvector?] [start exact-nonnegative-integer? 0] [end exact-nonnegative-integer? (flvector-length fv)]) f64vector?]{}
+
+@defproc[(f32vector->flvector [f32 f32vector?] [start exact-nonnegative-integer? 0] [end exact-nonnegative-integer? (f32vector-length f32)]) flvector?]{}
+
+@defproc[(f64vector->flvector [f64 f64vector?] [start exact-nonnegative-integer? 0] [end exact-nonnegative-integer? (f64vector-length f64)]) flvector?]{}
+
+@defmodule[srfi/160/u8]
+@defmodule[srfi/160/s8]
+@defmodule[srfi/160/u16]
+@defmodule[srfi/160/s16]
+@defmodule[srfi/160/u32]
+@defmodule[srfi/160/s32]
+@defmodule[srfi/160/u64]
+@defmodule[srfi/160/s64]
+@defmodule[srfi/160/f32]
+@defmodule[srfi/160/f64]
+@defmodule[srfi/160/c64]
+@defmodule[srfi/160/c128]
+@defmodule[srfi/160/fl]
+@defmodule[srfi/160/fx]
 
 @section{SRFI-173 Hooks}
 
