@@ -2,6 +2,7 @@
 ;;;; Implementation of SRFI 160 base c64vectors and c128vectors
 
 (require
+ racket/contract
  (only-in racket/flonum make-flrectangular)
  (only-in ffi/vector
           make-f32vector make-f64vector
@@ -9,13 +10,21 @@
           f32vector-set! f64vector-set!
           f32vector-length f64vector-length))
 (provide
- c64vector? c128vector?
- make-c64vector make-c128vector
- c64vector c128vector
- c64vector-length c128vector-length
- c64vector-ref c128vector-ref
- c64vector-set! c128vector-set!
- list->c64vector list->c128vector)
+ (contract-out
+  [c64vector? predicate/c]
+  [c128vector? predicate/c]
+  [make-c64vector (->* (exact-integer?) (complex?) c64vector?)]
+  [make-c128vector (->* (exact-integer?) (complex?) c128vector?)]
+  [c64vector (-> complex? ... c64vector?)]
+  [c128vector (-> complex? ... c128vector?)]
+  [c64vector-length (-> c64vector? exact-nonnegative-integer?)]
+  [c128vector-length (-> c128vector? exact-nonnegative-integer?)]
+  [c64vector-ref (-> c64vector? exact-nonnegative-integer? complex?)]
+  [c128vector-ref (-> c128vector? exact-nonnegative-integer? complex?)]
+  [c64vector-set! (-> c64vector? exact-nonnegative-integer? complex? void?)]
+  [c128vector-set! (-> c128vector? exact-nonnegative-integer? complex? void?)]
+  [list->c64vector (-> (listof complex?) c64vector?)]
+  [list->c128vector (-> (listof complex?) c128vector?)]))
 
 (define (fl n) (real->double-flonum n))
 

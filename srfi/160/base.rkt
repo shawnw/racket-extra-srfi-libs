@@ -26,33 +26,10 @@
 
 (provide
  (all-from-out ffi/vector)
+ (all-from-out "private/complex.rkt")
  (all-from-out "private/flvector.rkt")
+ (all-from-out "private/valid.rkt")
  (contract-out
-  [u8? predicate/c]
-  [s8? predicate/c]
-  [u16? predicate/c]
-  [s16? predicate/c]
-  [u32? predicate/c]
-  [s32? predicate/c]
-  [u64? predicate/c]
-  [s64? predicate/c]
-  [f32? predicate/c]
-  [f64? predicate/c]
-  [c64? predicate/c]
-  [c128? predicate/c]
-  [fl? predicate/c]
-  [c64vector? predicate/c]
-  [c128vector? predicate/c]
-  [make-c64vector (->* (exact-integer?) (complex?) c64vector?)]
-  [make-c128vector (->* (exact-integer?) (complex?) c128vector?)]
-  [c64vector (-> complex? ... c64vector?)]
-  [c128vector (-> complex? ... c128vector?)]
-  [c64vector-length (-> c64vector? exact-nonnegative-integer?)]
-  [c128vector-length (-> c128vector? exact-nonnegative-integer?)]
-  [c64vector-ref (-> c64vector? exact-nonnegative-integer? complex?)]
-  [c128vector-ref (-> c128vector? exact-nonnegative-integer? complex?)]
-  [c64vector-set! (-> c64vector? exact-nonnegative-integer? complex? void?)]
-  [c128vector-set! (-> c128vector? exact-nonnegative-integer? complex? void?)]
   [u8vector->list (->* (u8vector?) (exact-nonnegative-integer? exact-nonnegative-integer?) (listof byte?))]
   [s8vector->list (->* (s8vector?) (exact-nonnegative-integer? exact-nonnegative-integer?) (listof fixnum?))]
   [u16vector->list (->* (u16vector?) (exact-nonnegative-integer? exact-nonnegative-integer?) (listof exact-nonnegative-integer?))]
@@ -65,9 +42,7 @@
   [f64vector->list (->* (f64vector?) (exact-nonnegative-integer? exact-nonnegative-integer?) (listof double-flonum?))]
   [c64vector->list (->* (c64vector?) (exact-nonnegative-integer? exact-nonnegative-integer?) (listof complex?))]
   [c128vector->list (->* (c128vector?) (exact-nonnegative-integer? exact-nonnegative-integer?) (listof complex?))]
-  [flvector->list (->* (flvector?) (exact-nonnegative-integer? exact-nonnegative-integer?) (listof flonum?))]
-  [list->c64vector (-> (listof complex?) c64vector?)]
-  [list->c128vector (-> (listof complex?) c128vector?)]))
+  [flvector->list (->* (flvector?) (exact-nonnegative-integer? exact-nonnegative-integer?) (listof flonum?))]))
 
 (module+ test
   ;;;; Shared tests

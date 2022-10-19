@@ -1,6 +1,22 @@
 #lang racket/base
 
-(provide u8? s8? u16? s16? u32? s32? u64? s64? f32? f64? c64? c128? fl?)
+(require racket/contract)
+
+(provide
+ (contract-out
+  [u8? predicate/c]
+  [s8? predicate/c]
+  [u16? predicate/c]
+  [s16? predicate/c]
+  [u32? predicate/c]
+  [s32? predicate/c]
+  [u64? predicate/c]
+  [s64? predicate/c]
+  [f32? predicate/c]
+  [f64? predicate/c]
+  [c64? predicate/c]
+  [c128? predicate/c]
+  [fl? predicate/c]))
 
 (define (u8? n) (byte? n))
 
