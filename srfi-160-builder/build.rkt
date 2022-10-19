@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 
 ;;; The reference implementation for SRFI-160 uses shell scripts and sed and
 ;;; stuff to generate source files from the templates. I feel about using
@@ -6,7 +6,7 @@
 ;;; with XML or JSON - there are better tools for the job. What better than
 ;;; Racket/Scheme for working with s-expresssions?
 
-(require racket/date racket/symbol)
+(require racket/date racket/pretty racket/symbol)
 
 (define root-path 'up)
 (define srfi-base-path (build-path root-path "srfi" "160"))
@@ -14,23 +14,23 @@
 ;(define typed-srfi-base-path (build-path root-path "typed" "srfi" "160"))
 ;(define private-typed-path (build-path typed-srfi-base-path "private"))
 
-(struct nvector (id member-type in-srfi-4? emit-tests?))
+(struct nvector (id member-type in-srfi-4? emit-tests? unsafe-available?))
 
 ;;; One entry for each vector type
 (define nvectors
-  `(,(nvector "u8" 'Byte #t #f)
-    ,(nvector "s8" 'Fixnum #t #f)
-    ,(nvector "u16" 'Fixnum #t #f)
-    ,(nvector "s16" 'Fixnum #t #t)
-    ,(nvector "u32" 'Integer #t #f)
-    ,(nvector "s32" 'Integer #t #t)
-    ,(nvector "u64" 'Integer #t #f)
-    ,(nvector "s64" 'Integer #t #t)
-    ,(nvector "f32" 'Flonum #t #f)
-    ,(nvector "f64" 'Flonum #t #f)
-    ,(nvector "c64" 'Float-Complex #f #f)
-    ,(nvector "c128" 'Float-Complex #f #f)
-    ,(nvector "fl" 'FlVector #f #f)))
+  `(,(nvector "u8" 'Byte #t #f #t)
+    ,(nvector "s8" 'Fixnum #t #f #f)
+    ,(nvector "u16" 'Fixnum #t #f #t)
+    ,(nvector "s16" 'Fixnum #t #t #t)
+    ,(nvector "u32" 'Integer #t #f #f)
+    ,(nvector "s32" 'Integer #t #t #f)
+    ,(nvector "u64" 'Integer #t #f #f)
+    ,(nvector "s64" 'Integer #t #t #f)
+    ,(nvector "f32" 'Flonum #t #f #f)
+    ,(nvector "f64" 'Flonum #t #f #t)
+    ,(nvector "c64" 'Float-Complex #f #f #f)
+    ,(nvector "c128" 'Float-Complex #f #f #f)
+    ,(nvector "fl" 'FlVector #f #f #t)))
 
 ;;; Files to copy directly
 (define install-files '("base.rkt"))
@@ -47,7 +47,7 @@
       (printf "Copying ~S to ~S~%" file (path->string dest-path))
       (copy-file file dest-path #t))))
 
-(define now (date->string (current-date) 'iso-8601))
+(define now (parameterize ([date-display-format 'iso-8601]) (date->string (current-date) #t)))
 
 (define (preamble out #:typed [typed? #f])
   (fprintf out "#lang ~Aracket/base~%" (if typed? "typed/" ""))
@@ -97,12 +97,29 @@
 ;;; Replace @ in symbols with the numeric vector id
 ;;; @vector-ref -> u8vector-ref for example
 (define (process-sexp nvec sexp #:in-test [in-test? #f])
+  (define use-unsafe-ops (make-parameter #f))
+  (define in-require (make-parameter #f))
+  (define at-re #rx"@")
   (define (real-process-sexp sexp)
     (cond
       ((symbol? sexp)
        (let ([name (symbol->immutable-string sexp)])
-         (if (regexp-match? #rx"@" name)
-             (string->symbol (regexp-replace #rx"@" name (nvector-id nvec)))
+         (if (regexp-match? at-re name)
+             (cond
+               ((and (use-unsafe-ops) ;;; Use unsafe functions where available and vetted
+                     (nvector-unsafe-available? nvec)
+                     (memq sexp '(@vector-ref @vector-set!)))
+                (if (string=? (nvector-id nvec) "u8")
+                    (string->symbol (regexp-replace #rx"@vector" name "unsafe-bytes"))
+                    (string->symbol (regexp-replace at-re name (format "unsafe-~A" (nvector-id nvec))))))
+               ((and (not (in-require))
+                     (member (nvector-id nvec) '("u8" "fl")) ;;; Always use unsafe -length when available
+                     (eq? sexp '@vector-length))
+                (if (string=? (nvector-id nvec) "u8")
+                    'unsafe-bytes-length
+                    'unsafe-flvector-length))
+               (else
+                (string->symbol (regexp-replace at-re name (nvector-id nvec)))))
              sexp)))
       #|
       ;;; Work in progress for adding tests of flonum-type vectors
@@ -121,7 +138,15 @@
     (else (map (lambda (elem) (process-sexp nvec elem #:in-test in-test?)) sexp))))
     |#
       ((list? sexp)
-       (map real-process-sexp sexp))
+       (cond
+         ((and (not (null? sexp)) (eq? (car sexp) 'unsafe))
+          (parameterize ([use-unsafe-ops #t])
+            (map real-process-sexp (cadr sexp))))
+         ((and (not (null? sexp)) (eq? (car sexp) 'require))
+          (parameterize ([in-require #t])
+            (map real-process-sexp sexp)))
+         (else
+          (map real-process-sexp sexp))))
       ((pair? sexp) ; Improper lists
        (cons (real-process-sexp (car sexp)) (real-process-sexp (cdr sexp))))
       #|
@@ -137,7 +162,6 @@
   (for ([sexp (in-port read in)])
     (pretty-write (process-sexp nvec sexp #:in-test in-test?) out)
     (newline out)))
-
 
 ;;; Create all needed directories and copy/generate SRFI-160 source files.
 (make-directory-if-not-exists srfi-base-path)

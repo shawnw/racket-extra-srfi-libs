@@ -3,6 +3,7 @@
 ;;; Adapt flvectors to SRFI-160.
 
 (require racket/contract
+         racket/unsafe/ops
          (only-in racket/flonum
                   flvector? flvector make-flvector flvector-ref flvector-set! flvector-length for/flvector)
          (only-in ffi/vector
@@ -22,24 +23,28 @@
 
 (define (flvector->f32vector fv [start 0] [end (flvector-length fv)])
   (let ([f32 (make-f32vector (- end start))])
-    (do ([i start (+ i 1)])
+    (do ([i start (+ i 1)]
+         [j 0 (unsafe-fx+ j 1)])
         ((= i end) f32)
-      (f32vector-set! f32 i (flvector-ref fv i)))))
+      (f32vector-set! f32 j (flvector-ref fv i)))))
 
 (define (flvector->f64vector fv [start 0] [end (flvector-length fv)])
   (let ([f64 (make-f64vector (- end start))])
-    (do ([i start (+ i 1)])
+    (do ([i start (+ i 1)]
+         [j 0 (unsafe-fx+ j 1)])
         ((= i end) f64)
-      (f64vector-set! f64 i (flvector-ref fv i)))))
+      (unsafe-f64vector-set! f64 j (flvector-ref fv i)))))
 
 (define (f32vector->flvector f32 [start 0] [end (f32vector-length f32)])
   (let ([fv (make-flvector (- end start))])
-    (do ([i start (+ i 1)])
+    (do ([i start (+ i 1)]
+         [j 0 (unsafe-fx+ j 1)])
         ((= i end) fv)
-      (flvector-set! fv i (f32vector-ref f32 i)))))
+      (unsafe-flvector-set! fv j (f32vector-ref f32 i)))))
 
 (define (f64vector->flvector f64 [start 0] [end (f64vector-length f64)])
   (let ([fv (make-flvector (- end start))])
-    (do ([i start (+ i 1)])
+    (do ([i start (+ i 1)]
+         [j 0 (unsafe-fx+ j 1)])
         ((= i end) fv)
-      (flvector-set! fv i (f64vector-ref f64 i)))))
+      (unsafe-flvector-set! fv j (f64vector-ref f64 i)))))

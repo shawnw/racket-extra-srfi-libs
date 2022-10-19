@@ -3,6 +3,7 @@
 
 (require
  racket/contract
+ ;(only-in racket/unsafe/ops unsafe-f64vector-ref unsafe-f64vector-set!)
  (only-in racket/flonum make-flrectangular)
  (only-in ffi/vector
           make-f32vector make-f64vector
