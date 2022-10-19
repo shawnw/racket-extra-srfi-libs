@@ -30,11 +30,12 @@
     ,(nvector "f64" 'Flonum #t #f #t)
     ,(nvector "c64" 'Float-Complex #f #f #f)
     ,(nvector "c128" 'Float-Complex #f #f #f)
-    ,(nvector "fl" 'FlVector #f #f #t)))
+    ,(nvector "fl" 'FlVector #f #f #t)
+    ,(nvector "fx" 'FxVector #f #t #t)))
 
 ;;; Files to copy directly
 (define install-files '("base.rkt"))
-(define install-private-files '("complex.rkt" "valid.rkt" "flvector.rkt"))
+(define install-private-files '("complex.rkt" "valid.rkt" "flvector.rkt" "fxvector.rkt"))
 
 (define (make-directory-if-not-exists dir-path)
   (unless (directory-exists? dir-path)
@@ -68,9 +69,10 @@
         (process-sexp nvec
                       (if (nvector-in-srfi-4? nvec)
                           '(require (only-in ffi/vector @vector-length @vector-ref))
-                          `(require (only-in ,(if (string=? (nvector-id nvec) "fl")
-                                                  "flvector.rkt"
-                                                  "complex.rkt") @vector-length @vector-ref))))
+                          `(require (only-in ,(case (nvector-id nvec)
+                                                (("fl") "flvector.rkt")
+                                                (("fx") "fxvector.rkt")
+                                                (else "complex.rkt")) @vector-length @vector-ref))))
         out)
        (newline out)))))
 
@@ -113,11 +115,12 @@
                     (string->symbol (regexp-replace #rx"@vector" name "unsafe-bytes"))
                     (string->symbol (regexp-replace at-re name (format "unsafe-~A" (nvector-id nvec))))))
                ((and (not (in-require))
-                     (member (nvector-id nvec) '("u8" "fl")) ;;; Always use unsafe -length when available
+                     (member (nvector-id nvec) '("u8" "fl" "fx")) ;;; Always use unsafe -length when available
                      (eq? sexp '@vector-length))
-                (if (string=? (nvector-id nvec) "u8")
-                    'unsafe-bytes-length
-                    'unsafe-flvector-length))
+                (case (nvector-id nvec)
+                  (("u8") 'unsafe-bytes-length)
+                  (("fl") 'unsafe-flvector-length)
+                  (("fx") 'unsafe-fxvector-length)))
                (else
                 (string->symbol (regexp-replace at-re name (nvector-id nvec)))))
              sexp)))

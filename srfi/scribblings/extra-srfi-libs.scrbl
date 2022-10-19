@@ -1,5 +1,6 @@
 #lang scribble/manual
 @require[@for-label[racket/base racket/generator racket/dict racket/set racket/unsafe/ops
+                    racket/fixnum racket/flonum racket/extflonum
                     data/gvector ffi/vector]]
 
 @title{Extra SRFI Libraries}
@@ -152,12 +153,18 @@ called with arguments are not supported.
 @section{SRFI-160 Homogenous numeric vector libraries}
 
 @hyperlink["https://srfi.schemers.org/srfi-160/srfi-160.html"]{Reference
-documentation}. In addition to all the numeric types in the SRFI, functions
-for @code{flvector?} vectors are also provided, with a @racketid{fl} prefix.
+documentation}. In addition to all the numeric types in the SRFI,
+functions for @code{flvector?} and @code{fxvector?} vectors are also
+provided, with a @racketid{fl} and @racketid{fx} prefix
+respectively. If Racket CS ever gains support for 80-bit
+@code{extflonum?}  numbers on x86, I'll add support for
+@code{extflvector?} and @code{f80vector?} vectors too (And might
+adjust the @code{f32vector?} contracts to explicitly work with
+@code{single-flonum?} values if CS ever gets them).
 
 @defmodule[srfi/160/base]
 
-Additional functions:
+Additional functions for converting between flvectors and SRFI-4 vectors:
 
 @defproc[(flvector->f32vector [fl flvector?] [start exact-nonnegative-integer? 0] [end exact-nonnegative-integer? (flvector-length fv)]) f32vector?]{}
 
@@ -180,6 +187,7 @@ Additional functions:
 @defmodule[srfi/160/c64]
 @defmodule[srfi/160/c128]
 @defmodule[srfi/160/fl]
+@defmodule[srfi/160/fx]
 
 @section{SRFI-173 Hooks}
 

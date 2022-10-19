@@ -8,6 +8,7 @@
                     f32vector->list f64vector->list)
          "private/complex.rkt"
          "private/flvector.rkt"
+         "private/fxvector.rkt"
          "private/valid.rkt"
          "private/u8-vector2list.rkt"
          "private/s8-vector2list.rkt"
@@ -21,13 +22,15 @@
          "private/f64-vector2list.rkt"
          "private/c64-vector2list.rkt"
          "private/c128-vector2list.rkt"
-         "private/fl-vector2list.rkt")
+         "private/fl-vector2list.rkt"
+         "private/fx-vector2list.rkt")
 (module+ test (require rackunit))
 
 (provide
  (all-from-out ffi/vector)
  (all-from-out "private/complex.rkt")
  (all-from-out "private/flvector.rkt")
+ (all-from-out "private/fxvector.rkt")
  (all-from-out "private/valid.rkt")
  (contract-out
   [u8vector->list (->* (u8vector?) (exact-nonnegative-integer? exact-nonnegative-integer?) (listof byte?))]
@@ -42,7 +45,8 @@
   [f64vector->list (->* (f64vector?) (exact-nonnegative-integer? exact-nonnegative-integer?) (listof double-flonum?))]
   [c64vector->list (->* (c64vector?) (exact-nonnegative-integer? exact-nonnegative-integer?) (listof complex?))]
   [c128vector->list (->* (c128vector?) (exact-nonnegative-integer? exact-nonnegative-integer?) (listof complex?))]
-  [flvector->list (->* (flvector?) (exact-nonnegative-integer? exact-nonnegative-integer?) (listof flonum?))]))
+  [flvector->list (->* (flvector?) (exact-nonnegative-integer? exact-nonnegative-integer?) (listof flonum?))]
+  [fxvector->list (->* (fxvector?) (exact-nonnegative-integer? exact-nonnegative-integer?) (listof fixnum?))]))
 
 (module+ test
   ;;;; Shared tests

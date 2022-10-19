@@ -16,9 +16,10 @@
   [f64? predicate/c]
   [c64? predicate/c]
   [c128? predicate/c]
-  [fl? predicate/c]))
+  [fl? predicate/c]
+  [fx? predicate/c]))
 
-(define (u8? n) (byte? n))
+(define u8? (procedure-rename byte? 'u8?))
 
 (define (s8? n) (and (fixnum? n) (<= -128 n 127)))
 
@@ -34,9 +35,9 @@
 
 (define (s64? n) (and (exact-integer? n) (<= -9223372036854775808 n 9223372036854775807)))
 
-(define (f32? n) (flonum? n))
+(define f32? (procedure-rename flonum? 'f32?))
 
-(define (f64? n) (double-flonum? n))
+(define f64? (procedure-rename double-flonum? 'f64?))
 
 (define (c64? n) (and (complex? n)
                       (flonum? (real-part n))
@@ -48,4 +49,5 @@
                       (or (zero? (imag-part n))
                           (double-flonum? (imag-part n)))))
 
-(define (fl? n) (flonum? n))
+(define fl? (procedure-rename flonum? 'fl?))
+(define fx? (procedure-rename fixnum? 'fx?))
