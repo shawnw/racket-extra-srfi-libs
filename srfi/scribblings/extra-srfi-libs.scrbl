@@ -1,7 +1,7 @@
 #lang scribble/manual
 @require[@for-label[racket/base racket/generator racket/dict racket/set racket/unsafe/ops
-                    racket/fixnum racket/flonum racket/extflonum
-                    data/gvector ffi/vector]]
+                    racket/fixnum racket/flonum racket/fixnum racket/extflonum
+                    data/order data/gvector ffi/vector]]
 
 @title{Extra SRFI Libraries}
 @author[@author+email["Shawn Wagner" "shawnw.mobile@gmail.com"]]
@@ -55,19 +55,35 @@ A further comparator library (draft)} routines and variables.
 
 @bold{Notes}:
 
-The @code{make-eq-comparator}, @code{make-eqv-comparator} and
-@code{make-equal-comparator} functions return comparators using the
-standard Racket @code{eq-hash-code} etc. hash functions instead of
-@code{default-hash}. Not terribly useful at the moment, but it allows
-for Racket structs with custom hash functions to work in case a hash
-table SRFI that uses comparators is added to this collection later.
+The @code{make-eq-comparator}, @code{make-eqv-comparator},
+@code{make-equal-comparator} and @code{make-equal-always} functions
+return comparators using the standard Racket @code{eq-hash-code}
+etc. hash functions instead of @code{default-hash}.
+
+@code{make-comparator} takes an optional keyword argument,
+@racketid{#:secondary-hash}, whose value has the same signature as the
+@racketid{hash} one - either @code{(-> any/c exact-integer?)} or
+@code{#f}. This is used for better compability with Racket's custom
+hash tables, which take two hash functions.
 
 @subsection{Additional definitions}
+
+@defproc[(comparator-secondary-hash-function [cmp comparator?]) (-> any/c exact-integer?)]{
+
+Returns the secondary hash function associated with the comparator.
+
+}
+
+@defproc[(comparator-secondary-hash [cmp comparator?] [obj any/c]) exact-integer?]{
+
+Returns the secondary hash code of the given value.
+
+}
 
 @defproc[(make-equal-always-comparator) comparator?]{
 
 Return a comparator that uses @code{equal-always?} for equality and
-@code{equal-always-hash-code} for hashing.
+@code{equal-always-hash-code}/@code{equal-always-secondary-hash-code} for hashing.
 
 }
 
@@ -116,6 +132,52 @@ integers.
 @defmodule[srfi/145]
 
 @hyperlink["https://srfi.schemers.org/srfi-145/srfi-145.html"]{Reference documentation}.
+
+@section{SRFI-146 Mappings}
+
+@hyperlink["https://srfi.schemers.org/srfi-146/srfi-146.html"]{Reference documentation}.
+
+@defmodule[srfi/146]
+
+@code{mapping?} objects are also @code{ordered-dict?}s and many
+functions in this module can be used with other ordered dicts. The
+mapping implementation uses
+@hyperlink["https://en.wikipedia.org/wiki/Scapegoat_tree"]{scapegoat
+trees}.
+
+The current @code{make-mapping-comparator} and @code{mapping-comparator} do not provide ordering.
+
+@bold{Additional functions}:
+
+@defproc[(in-ordered-dict [od ordered-dict?] [starting-pos any/c (dict-iterate-least od)])
+         sequence?]{
+
+Return a sequence of key/value values that starts with the least key
+(Or the given iteration position). The @code{dict-iterate-next}
+implementation of the ordered dict is assumed to return elements in
+ascending order of keys.
+
+}
+
+@defproc[(in-ordered-dict-keys [od ordered-dict?] [starting-pos any/c (dict-iterate-least od)])
+         sequence?]{
+
+Like @code{in-ordered-dict} but only returns the keys.
+
+}
+
+@defproc[(in-ordered-dict-values [od ordered-dict?] [starting-pos any/c (dict-iterate-least od)])
+         sequence?]{
+
+Like @code{in-ordered-dict} but only returns the values.
+
+}
+
+@defmodule[srfi/146/hash]
+
+@code{hashmap?} objects are also @code{dict?}s and many functions in
+this module can be used with other types of dicts. The hashmap implementation
+uses Racket's built in hash tables.
 
 @section{SRFI-151 Bitwise Operations}
 

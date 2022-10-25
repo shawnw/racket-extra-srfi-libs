@@ -10,31 +10,33 @@
   [comparator? predicate/c]
   [comparator-ordered? (-> comparator? boolean?)]
   [comparator-hashable? (-> comparator? boolean?)]
-  [make-comparator (-> (or/c predicate/c #t) (-> any/c any/c any/c) (or/c (-> any/c any/c any/c) #f) (or/c (-> any/c exact-nonnegative-integer?) #f) comparator?)]
+  [make-comparator (->* ((or/c predicate/c #t) (-> any/c any/c any/c) (or/c (-> any/c any/c any/c) #f) (or/c (-> any/c exact-integer?) #f)) (#:secondary-hash (or/c (-> any/c exact-integer?) #f)) comparator?)]
   [make-pair-comparator (-> comparator? comparator? comparator?)]
   [make-list-comparator (-> comparator? predicate/c (-> any/c any/c) (-> any/c any/c) (-> any/c any/c) comparator?)]
-  [make-vector-comparator (-> comparator? predicate/c (-> any/c exact-nonnegative-integer?) (-> any/c exact-nonnegative-integer? any/c) comparator?)]
+  [make-vector-comparator (-> comparator? predicate/c (-> any/c exact-integer?) (-> any/c exact-integer? any/c) comparator?)]
   [make-eq-comparator (-> comparator?)]
   [make-eqv-comparator (-> comparator?)]
   [make-equal-comparator (-> comparator?)]
   [make-equal-always-comparator (-> comparator?)]
-  [boolean-hash (-> boolean? exact-nonnegative-integer?)]
-  [char-hash (-> char? exact-nonnegative-integer?)]
-  [char-ci-hash (-> char? exact-nonnegative-integer?)]
-  [string-hash (-> string? exact-nonnegative-integer?)]
-  [string-ci-hash (-> string? exact-nonnegative-integer?)]
-  [symbol-hash (-> symbol? exact-nonnegative-integer?)]
-  [number-hash (-> number? exact-nonnegative-integer?)]
+  [boolean-hash (-> boolean? exact-integer?)]
+  [char-hash (-> char? exact-integer?)]
+  [char-ci-hash (-> char? exact-integer?)]
+  [string-hash (-> string? exact-integer?)]
+  [string-ci-hash (-> string? exact-integer?)]
+  [symbol-hash (-> symbol? exact-integer?)]
+  [number-hash (-> number? exact-integer?)]
   [make-default-comparator (-> comparator?)]
-  [default-hash (-> any/c exact-nonnegative-integer?)]
+  [default-hash (-> any/c exact-integer?)]
   [comparator-register-default! (-> comparator? void?)]
   [comparator-type-test-predicate (-> comparator? predicate/c)]
   [comparator-equality-predicate (-> comparator? (-> any/c any/c any/c))]
   [comparator-ordering-predicate (-> comparator? (-> any/c any/c any/c))]
-  [comparator-hash-function (-> comparator? (-> any/c exact-nonnegative-integer?))]
+  [comparator-hash-function (-> comparator? (-> any/c exact-integer?))]
+  [comparator-secondary-hash-function (-> comparator? (-> any/c exact-integer?))]
   [comparator-test-type (-> comparator? any/c any/c)]
   [comparator-check-type (-> comparator? any/c #t)]
-  [comparator-hash (-> comparator? any/c exact-nonnegative-integer?)]
+  [comparator-hash (-> comparator? any/c exact-integer?)]
+  [comparator-secondary-hash (-> comparator? any/c exact-integer?)]
   [=? (-> comparator? any/c any/c any/c ... boolean?)]
   [<? (-> comparator? any/c any/c any/c ... boolean?)]
   [>? (-> comparator? any/c any/c any/c ... boolean?)]
@@ -134,24 +136,54 @@
 
 ;;; Definition of comparator records with accessors and basic comparator
 
-#;(define-record-type comparator
-  (make-raw-comparator type-test equality ordering hash ordering? hash?)
-  comparator?
-  (type-test comparator-type-test-predicate)
-  (equality comparator-equality-predicate)
-  (ordering comparator-ordering-predicate)
-  (hash comparator-hash-function)
-  (ordering? comparator-ordered?)
-  (hash? comparator-hashable?))
-(struct comparator (type-test-predicate equality-predicate ordering-predicate hash-function ordered? hashable?) #:transparent)
+(define (apply-hash c hash-fun)
+  (bitwise-xor
+   (hash-fun (comparator-type-test-predicate c))
+   (hash-fun (comparator-equality-predicate c))
+   (if (comparator-ordered? c)
+       (hash-fun (comparator-ordering-predicate c))
+       0)
+   (if (comparator-hashable? c)
+       (+ (hash-fun (comparator-hash-function c))
+          (hash-fun (comparator-secondary-hash-function c)))
+       0)))
+
+(struct comparator (type-test-predicate equality-predicate ordering-predicate hash-function secondary-hash-function ordered? hashable?)
+  #:methods gen:equal+hash
+  [(define (equal-proc a b real-equal?)
+     (and
+      (real-equal? (comparator-type-test-predicate a) (comparator-type-test-predicate b))
+      (real-equal? (comparator-equality-predicate a) (comparator-equality-predicate b))
+      (cond
+        ((and (comparator-ordered? a) (comparator-ordered? b))
+         (real-equal? (comparator-ordering-predicate a) (comparator-ordering-predicate b)))
+        ((and (eq? (comparator-ordered? a) #f) (eq? (comparator-ordered? b) #f))
+         #t)
+        (else #f))
+      (cond
+        ((and (comparator-hashable? a) (comparator-hashable? b))
+         (and
+          (real-equal? (comparator-hash-function a) (comparator-hash-function b))
+          (real-equal? (comparator-secondary-hash-function a) (comparator-secondary-hash-function b))))
+        ((and (eq? (comparator-hashable? a) #f) (eq? (comparator-hashable? b) #f))
+         #t)
+        (else #f))))
+   (define (hash-proc cmp hash-fun) (apply-hash cmp hash-fun))
+   (define (hash2-proc cmp hash-fun) (apply-hash cmp hash-fun))])
+
+(define (default-type-test x) #t)
+(define (default-ordering-func a b) (error "ordering not supported"))
+(define (default-hash-func x) (error "hashing not supported"))
+(define (default-secondary-hash-func x) 42)
 
 ;; Public constructor
-(define (make-comparator type-test equality ordering hash)
+(define (make-comparator type-test equality ordering hash #:secondary-hash [secondary-hash #f])
   (comparator
-    (if (eq? type-test #t) (lambda (x) #t) type-test)
-    (if (eq? equality #t) (lambda (x y) (eqv? (ordering x y) 0)) equality)
-    (if ordering ordering (lambda (x y) (error "ordering not supported")))
-    (if hash hash (lambda (x y) (error "hashing not supported")))
+    (if (eq? type-test #t) default-type-test type-test)
+    (if (eq? equality #t) equal? equality)
+    (if ordering ordering default-ordering-func)
+    (if hash hash default-hash-func)
+    (if secondary-hash secondary-hash (if hash default-secondary-hash-func default-hash-func))
     (if ordering #t #f)
     (if hash #t #f)))
 
@@ -170,6 +202,9 @@
 ;; Invoke the hash function
 (define (comparator-hash comparator obj)
   ((comparator-hash-function comparator) obj))
+
+(define (comparator-secondary-hash comparator obj)
+  ((comparator-secondary-hash-function comparator) obj))
 
 ;;; Comparison predicates
 
@@ -260,16 +295,16 @@
 ;;; These comparators don't have ordering functions.
 
 (define (make-eq-comparator)
-  (make-comparator #t eq? #f (lambda (val) (abs (eq-hash-code val)))))
+  (make-comparator #t eq? #f eq-hash-code))
 
 (define (make-eqv-comparator)
-  (make-comparator #t eqv? #f (lambda (val) (abs (eqv-hash-code val)))))
+  (make-comparator #t eqv? #f eqv-hash-code))
 
 (define (make-equal-comparator)
-  (make-comparator #t equal? #f (lambda (val) (abs (equal-hash-code val)))))
+  (make-comparator #t equal? #f equal-hash-code #:secondary-hash equal-secondary-hash-code))
 
 (define (make-equal-always-comparator)
-  (make-comparator #t equal-always? #f (lambda (val) (abs (equal-always-hash-code val)))))
+  (make-comparator #t equal-always? #f equal-always-hash-code #:secondary-hash equal-secondary-hash-code))
 
 ;;; Sequence ordering and hash functions
 ;; The hash functions are based on djb2, but
