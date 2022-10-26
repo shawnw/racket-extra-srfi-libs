@@ -133,6 +133,13 @@ integers.
 
 @hyperlink["https://srfi.schemers.org/srfi-145/srfi-145.html"]{Reference documentation}.
 
+@defstruct*[(exn:fail:contract:assume exn:fail:contract) () #:transparent #:extra-constructor-name make-exn:fail:contract:assume]{
+
+The type of exception raised by @code{assume}.
+
+}
+
+
 @section{SRFI-146 Mappings}
 
 @hyperlink["https://srfi.schemers.org/srfi-146/srfi-146.html"]{Reference documentation}.
