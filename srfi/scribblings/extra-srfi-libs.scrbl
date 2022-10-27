@@ -125,7 +125,8 @@ being aliases for the non-side-effect versions.
 
 The functions in the typed version are constrained to only take and
 return exact integers. The regular package's will accept inexact
-integers.
+integers. The typed module also has @code{Fixnum} versions with a
+@racketid{fx} prefix - @code{fxfloor/}, for example.
 
 @section{SRFI-145 Assumptions}
 
