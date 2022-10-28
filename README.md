@@ -11,6 +11,7 @@ Currently includes:
 
 * [SRFI-13 String Libraries](https://srfi.schemers.org/srfi-13/srfi-13.html) (Typed Racket port)
 * [SRFI-112 Environment Inquiry](https://srfi.schemers.org/srfi-112/srfi-112.html)
+* [SRFI-127 Lazy Sequences](https://srfi.schemers.org/srfi-127/srfi-127.html)
 * [SRFI-128 Comparators (reduced)](https://srfi.schemers.org/srfi-128/srfi-128.html)
 * [SRFI-132 Sort Libraries](https://srfi.schemers.org/srfi-132/srfi-132.html)
 * [SRFI-141 Integer division](https://srfi.schemers.org/srfi-141/srfi-141.html)

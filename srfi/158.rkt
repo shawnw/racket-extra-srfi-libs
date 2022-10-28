@@ -70,9 +70,17 @@
   [stream->generator (-> stream? (-> any/c))]
   [generator->stream (-> (-> any/c) stream?)]
   ;; Racket-specific additions
+  [generator? predicate/c]
   [rkt-generator->srfi-generator (-> rkt-generator? (-> any/c))]
   ))
 
+(define (generator? obj)
+  (and
+   (procedure? obj)
+   (procedure-arity-includes? obj 0)
+   (let ([returns (procedure-result-arity obj)])
+     (or (eq? returns #f)
+         (equal? returns 1)))))
 
 ;; generator
 (define (generator . args)
@@ -1174,4 +1182,7 @@
   (test-equal? "racket to srfi generator conversion"
                (generator->list (rkt-generator->srfi-generator rkt-g))
                '(1 2 3))
-  )
+
+
+  (test-true "generator? random" (generator? random))
+  (test-false "generator? cons" (generator? cons)))

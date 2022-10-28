@@ -42,6 +42,36 @@ SRFI-13 functions that have name conflicts with ones in
 
 @bold{Notes}: @code{(os-version)} always returns @code{#f}, but the other functions are all implemented.
 
+@section{SRFI-127 Lazy Sequences}
+
+@defmodule[srfi/127]
+
+@hyperlink["https://srfi.schemers.org/srfi-127/srfi-127.html"]{Reference documentation}.
+
+@bold{Notes}: The lazy sequences described in the SRFI are built on
+normal, mutable Scheme @code{cons} cells. Racket @code{cons} cells are
+in theory immutable, so this implementation instead uses @code{mcons}
+cells; lists of which aren't compatible with list functions. There's a
+few extra functions to help make that easier to work with.
+
+@defproc[(list->lseq [lst list?]) lseq?]{
+
+Convert a list into an lseq.
+
+}
+
+@defproc[(make-lseq [val any/c] ...) lseq?]{
+
+Converts its arguments into an lseq.
+
+}
+
+@defproc[(in-lseq [lseq lseq?]) sequence?]{
+
+Create a Racket sequence that iterates over the lseq.
+
+}
+
 @section{SRFI-128 Comparators (reduced)}
 
 @defmodule[srfi/128]
@@ -212,6 +242,14 @@ These generators are @bold{not} compatible with the ones in
 @racket{racket/generator}. There is an adaptor function provided to
 wrap Racket generators in SRFI-158 ones, but beware of conflicting
 @code{generator} identifiers in the two modules.
+
+@defproc[(generator? [obj any/c]) boolean?]{
+
+Returns @code{#t} if the object appears to be a generator - a
+procedure that can be called with 0 arguments, and, if the number of
+values it returns is known, only returns 1.
+
+}
 
 @defproc[(rkt-generator->srfi-generator [g generator?]) (-> any/c)]{
 
