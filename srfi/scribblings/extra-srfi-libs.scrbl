@@ -158,6 +158,14 @@ return exact integers. The regular package's will accept inexact
 integers. The typed module also has @code{Fixnum} versions with a
 @racketid{fx} prefix - @code{fxfloor/}, for example.
 
+@section{SRFI-143 Fixnums}
+
+@defmodule[srfi/143]
+
+@defmodule[typed/srfi/143]
+
+@hyperlink["https://srfi.schemers.org/srfi-143/srfi-143.html"]{Reference documentation}.
+
 @section{SRFI-145 Assumptions}
 
 @defmodule[srfi/145]
