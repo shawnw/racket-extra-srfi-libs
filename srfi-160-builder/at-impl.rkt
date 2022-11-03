@@ -29,23 +29,74 @@
   [@vector-drop (-> @vector? exact-nonnegative-integer? @vector?)]
   [@vector-drop-right (-> @vector? exact-nonnegative-integer? @vector?)]
   [@vector-segment (-> @vector? exact-positive-integer? (listof @vector?))]
-  [@vector-fold (-> procedure? any/c @vector? @vector? ... any/c)]
-  [@vector-fold-right (-> procedure? any/c @vector? @vector? ... any/c)]
-  [@vector-map (-> procedure? @vector? @vector? ... @vector?)]
-  [@vector-map! (-> procedure? @vector? @vector? ... @vector?)]
-  [@vector-for-each (-> procedure? @vector? @vector? ... void?)]
-  [@vector-count (-> procedure? @vector? @vector? ... exact-nonnegative-integer?)]
+  [@vector-fold (->i ([kons (vecs) (and/c (unconstrained-domain-> any/c)
+                                          (lambda (f) (procedure-arity-includes? f (+ (length vecs) 2))))]
+                      [knil any/c]
+                      [vec1 @vector?])
+                     () #:rest [vecs (listof @vector?)]
+                     [_ any/c])]
+  [@vector-fold-right (->i ([kons (vecs) (and/c (unconstrained-domain-> any/c)
+                                                (lambda (f) (procedure-arity-includes? f (+ (length vecs) 2))))]
+                            [knil any/c]
+                            [vec1 @vector?])
+                           () #:rest [vecs (listof @vector?)]
+                           [_ any/c])]
+  [@vector-map (->i ([proc (vecs) (and/c (unconstrained-domain-> @?)
+                                         (lambda (f) (procedure-arity-includes? f (+ (length vecs) 1))))]
+                     [vec1 @vector?])
+                    () #:rest [vecs (listof @vector?)]
+                    [_ @vector?])]
+  [@vector-map! (->i ([proc (vecs) (and/c (unconstrained-domain-> @?)
+                                          (lambda (f) (procedure-arity-includes? f (+ (length vecs) 1))))]
+                      [vec1 @vector?])
+                     () #:rest [vecs (listof @vector?)]
+                     [_ @vector?])]
+  [@vector-for-each (->i ([proc (vecs) (lambda (f)
+                                         (and (procedure? f)
+                                              (procedure-arity-includes? f (+ (length vecs) 1))))]
+                          [vec1 @vector?])
+                         () #:rest [vecs (listof @vector?)]
+                         [_ void?])]
+  [@vector-count (->i ([proc (vecs) (and/c (unconstrained-domain-> any/c)
+                                           (lambda (f) (procedure-arity-includes? f (+ (length vecs) 1))))]
+                       [vec1 @vector?])
+                      () #:rest [vecs (listof @vector?)]
+                      [_ exact-nonnegative-integer?])]
   [@vector-cumulate (-> (-> any/c @? @?) any/c @vector? @vector?)]
   [@vector-take-while (-> (-> @? any/c) @vector? @vector?)]
   [@vector-take-while-right (-> (-> @? any/c) @vector? @vector?)]
   [@vector-drop-while (-> (-> @? any/c) @vector? @vector?)]
   [@vector-drop-while-right (-> (-> @? any/c) @vector? @vector?)]
-  [@vector-index (-> procedure? @vector? @vector? ... (or/c exact-nonnegative-integer? #f))]
-  [@vector-index-right (-> procedure? @vector? @vector? ... (or/c exact-nonnegative-integer? #f))]
-  [@vector-skip (-> procedure? @vector? @vector? ... (or/c exact-nonnegative-integer? #f))]
-  [@vector-skip-right (-> procedure? @vector? @vector? ... (or/c exact-nonnegative-integer? #f))]
-  [@vector-any (-> procedure? @vector? @vector? ... any)]
-  [@vector-every (-> procedure? @vector? @vector? ... any)]
+  [@vector-index (->i ([proc (vecs) (and/c (unconstrained-domain-> any/c)
+                                           (lambda (f) (procedure-arity-includes? f (+ (length vecs) 1))))]
+                       [vec1 @vector?])
+                      () #:rest [vecs (listof @vector?)]
+                      [_ (or/c exact-nonnegative-integer? #f)])]
+  [@vector-index-right (->i ([proc (vecs) (and/c (unconstrained-domain-> any/c)
+                                           (lambda (f) (procedure-arity-includes? f (+ (length vecs) 1))))]
+                             [vec1 @vector?])
+                            () #:rest [vecs (listof @vector?)]
+                            [_ (or/c exact-nonnegative-integer? #f)])]
+  [@vector-skip (->i ([proc (vecs) (and/c (unconstrained-domain-> any/c)
+                                          (lambda (f) (procedure-arity-includes? f (+ (length vecs) 1))))]
+                      [vec1 @vector?])
+                     () #:rest [vecs (listof @vector?)]
+                     [_ (or/c exact-nonnegative-integer? #f)])]
+  [@vector-skip-right (->i ([proc (vecs) (and/c (unconstrained-domain-> any/c)
+                                                (lambda (f) (procedure-arity-includes? f (+ (length vecs) 1))))]
+                            [vec1 @vector?])
+                           () #:rest [vecs (listof @vector?)]
+                           [_ (or/c exact-nonnegative-integer? #f)])]
+  [@vector-any (->i ([proc (vecs) (and/c (unconstrained-domain-> any/c)
+                                         (lambda (f) (procedure-arity-includes? f (+ (length vecs) 1))))]
+                     [vec1 @vector?])
+                    () #:rest [vecs (listof @vector?)]
+                    [_ any/c])]
+  [@vector-every (->i ([proc (vecs) (and/c (unconstrained-domain-> any/c)
+                                           (lambda (f) (procedure-arity-includes? f (+ (length vecs) 1))))]
+                       [vec1 @vector?])
+                      () #:rest [vecs (listof @vector?)]
+                      [_ any/c])]
   [@vector-partition (-> (-> @? any/c) @vector? (values @vector? exact-nonnegative-integer?))]
   [@vector-filter (-> (-> @? any/c) @vector? @vector?)]
   [@vector-remove (-> (-> @? any/c) @vector? @vector?)]
@@ -58,8 +109,8 @@
                              exact-nonnegative-integer? exact-nonnegative-integer? any/c void?)]
   [reverse-@vector->list (->* (@vector?)  (exact-nonnegative-integer? exact-nonnegative-integer?) (listof @?))]
   [reverse-list->@vector (-> (listof @?) @vector?)]
-  [@vector->vector  (->* (@vector?)  (exact-nonnegative-integer? exact-nonnegative-integer?) (vectorof @?))]
-  [vector->@vector  (->* ((vectorof @?)) (exact-nonnegative-integer? exact-nonnegative-integer?) @vector?)]
+  [@vector->vector (->* (@vector?)  (exact-nonnegative-integer? exact-nonnegative-integer?) (vectorof @?))]
+  [vector->@vector (->* ((vectorof @?)) (exact-nonnegative-integer? exact-nonnegative-integer?) @vector?)]
   [make-@vector-generator (->* (@vector?) (exact-nonnegative-integer? exact-nonnegative-integer?) (-> (or/c @? eof-object?)))]
   [write-@vector (->* (@vector?) (output-port?) void?)]
   [@vector-comparator comparator?]))

@@ -23,8 +23,17 @@
   [gflatten (-> (-> any/c) (-> any/c))]
   [ggroup (->* ((-> any/c) exact-positive-integer?) (any/c) (-> any/c))]
   [gmerge (->* ((-> any/c any/c any/c) (-> any/c)) () #:rest (listof (-> any/c)) (-> any/c))]
-  [gmap (->* (procedure? (-> any/c)) () #:rest (listof (-> any/c)) (-> any/c))]
-  [gcombine (->* (procedure? any/c (-> any/c)) () #:rest (listof (-> any/c)) (-> any/c))]
+  [gmap (->i ([proc (gens) (and/c (unconstrained-domain-> any/c)
+                                  (lambda (f) (procedure-arity-includes? f (+ (length gens) 1))))]
+              [g1 (-> any/c)])
+             () #:rest [gens (listof (-> any/c))]
+             [_ (-> any/c)])]
+  [gcombine (->i ([proc (gens) (and/c (unconstrained-domain-> (values any/c any/c))
+                                      (lambda (f) (procedure-arity-includes? f (+ (length gens) 2))))]
+                  [seed any/c]
+                  [g1 (-> any/c)])
+                 () #:rest [gens (listof (-> any/c))]
+                 [_ (-> any/c)])]
   [gfilter (-> predicate/c (-> any/c) (-> any/c))]
   [gremove (-> predicate/c (-> any/c) (-> any/c))]
   [gstate-filter (-> (-> any/c any/c (values boolean? any/c)) any/c (-> any/c) (-> any/c))]
@@ -41,14 +50,33 @@
   [generator->vector (->* ((-> any/c)) (exact-nonnegative-integer?) vector?)]
   [generator->vector! (-> vector? exact-nonnegative-integer? (-> any/c) any)]
   [generator->string (->* ((-> (or/c char? eof-object?))) (exact-nonnegative-integer?) string?)]
-  [generator-fold (->* (procedure? any/c (-> any/c)) () #:rest (listof (-> any/c)) any)]
-  [generator-for-each (->* (procedure? (-> any/c)) () #:rest (listof (-> any/c)) any)]
-  [generator-map->list (->* (procedure? (-> any/c)) () #:rest (listof (-> any/c)) list?)]
+  [generator-fold (->i ([proc (gens) (and/c (unconstrained-domain-> any/c)
+                                            (lambda (f) (procedure-arity-includes? f (+ (length gens) 2))))]
+                        [knil any/c]
+                        [g1 (-> any/c)])
+                       ()
+                       #:rest [gens (listof (-> any/c))]
+                       [_ any/c])]
+  [generator-for-each (->i ([proc (gens) (lambda (f)
+                                           (and (procedure? f)
+                                                (procedure-arity-includes? f (+ (length gens) 1))))]
+                            [g1 (-> any/c)])
+                           () #:rest [gens (listof (-> any/c))]
+                           [_ void?])]
+  [generator-map->list (->i ([proc (gens) (and/c (unconstrained-domain-> any/c)
+                                                 (lambda (f) (procedure-arity-includes? f (+ (length gens) 1))))]
+                             [g1 (-> any/c)])
+                            () #:rest [gens (listof (-> any/c))]
+                            [_ list?])]
   [generator-find (-> predicate/c (-> any/c) any/c)]
   [generator-count (-> predicate/c (-> any/c) exact-nonnegative-integer?)]
   [generator-any (-> predicate/c (-> any/c) any/c)]
   [generator-every (-> predicate/c (-> any/c) any/c)]
-  [generator-unfold (->* ((-> any/c) procedure?) () #:rest (listof any/c) any)]
+  [generator-unfold (->i ([g1 (-> any/c)]
+                          [proc (args) (and/c (unconstrained-domain-> any/c)
+                                              (lambda (f) (procedure-arity-includes? f (+ (length args) 4))))])
+                         () #:rest [args (listof any/c)]
+                         [_ any/c])]
   [make-accumulator (-> procedure? any/c procedure? any)]
   [count-accumulator (-> procedure?)]
   [list-accumulator (-> procedure?)]

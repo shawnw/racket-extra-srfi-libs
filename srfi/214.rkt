@@ -44,32 +44,104 @@
           [flexvector-add-front! (-> flexvector? any/c any/c ... void?)]
           [flexvector-remove-front! (-> flexvector? void?)]
           [flexvector=? (-> (-> any/c any/c any/c) flexvector? ... boolean?)]
-          [flexvector-fold (-> procedure? any/c flexvector? flexvector? ... any/c)]
-          [flexvector-fold-right (-> procedure? any/c flexvector? flexvector? ... any/c)]
-          [flexvector-for-each/index (-> (-> exact-nonnegative-integer? any/c any/c) flexvector? flexvector? ... void?)]
-          [flexvector-for-each (-> (-> any/c any/c) flexvector? flexvector? ... void?)]
-          [flexvector-map/index! (-> (-> exact-nonnegative-integer? any/c any/c) flexvector? flexvector? ... flexvector?)]
-          [flexvector-map! (-> (-> any/c any/c) flexvector? flexvector? ... flexvector?)]
-          [flexvector-map/index (-> (-> exact-nonnegative-integer? any/c any/c) flexvector? flexvector? ... flexvector?)]
-          [flexvector-map (-> (-> any/c any/c) flexvector? flexvector? ... flexvector?)]
-          [flexvector-append-map/index (-> procedure? flexvector? flexvector? ... flexvector?)]
-          [flexvector-append-map (-> procedure? flexvector? flexvector? ... flexvector?)]
+          [flexvector-fold (->i ([proc (fvs) (and/c (unconstrained-domain-> any/c)
+                                                    (lambda (f) (procedure-arity-includes? f (+ (length fvs) 2))))]
+                                 [knil any/c]
+                                 [fv1 flexvector?])
+                                () #:rest [fvs (listof flexvector?)]
+                                [_ any/c])]
+          [flexvector-fold-right (->i ([proc (fvs) (and/c (unconstrained-domain-> any/c)
+                                                          (lambda (f) (procedure-arity-includes? f (+ (length fvs) 2))))]
+                                       [knil any/c]
+                                       [fv1 flexvector?])
+                                      () #:rest [fvs (listof flexvector?)]
+                                      [_ any/c])]
+          [flexvector-for-each/index (->i ([proc (fvs) (lambda (f)
+                                                         (and (procedure? f)
+                                                              (procedure-arity-includes? f (+ (length fvs) 2))))]
+                                           [fv1 flexvector?])
+                                          () #:rest [fvs (listof flexvector?)]
+                                          [_ void?])]
+          [flexvector-for-each (->i ([proc (fvs) (lambda (f)
+                                                   (and (procedure? f)
+                                                        (procedure-arity-includes? f (+ (length fvs) 1))))]
+                                     [fv1 flexvector?])
+                                    () #:rest [fvs (listof flexvector?)]
+                                    [_ void?])]
+          [flexvector-map/index! (->i ([proc (fvs) (and/c (unconstrained-domain-> any/c)
+                                                          (lambda (f) (procedure-arity-includes? f (+ (length fvs) 2))))]
+                                       [fv1 flexvector?])
+                                      () #:rest [fvs (listof flexvector?)]
+                                      [_ flexvector])]
+          [flexvector-map! (->i ([proc (fvs) (and/c (unconstrained-domain-> any/c)
+                                                          (lambda (f) (procedure-arity-includes? f (+ (length fvs) 1))))]
+                                       [fv1 flexvector?])
+                                () #:rest [fvs (listof flexvector?)]
+                                [_ flexvector])]
+          [flexvector-map/index (->i ([proc (fvs) (and/c (unconstrained-domain-> any/c)
+                                                         (lambda (f) (procedure-arity-includes? f (+ (length fvs) 2))))]
+                                      [fv1 flexvector?])
+                                     () #:rest [fvs (listof flexvector?)]
+                                     [_ flexvector])]
+          [flexvector-map (->i ([proc (fvs) (and/c (unconstrained-domain-> any/c)
+                                                   (lambda (f) (procedure-arity-includes? f (+ (length fvs) 1))))]
+                                [fv1 flexvector?])
+                               () #:rest [fvs (listof flexvector?)]
+                               [_ flexvector])]
+          [flexvector-append-map/index (->i ([proc (fvs) (and/c (unconstrained-domain-> flexvector?)
+                                                         (lambda (f) (procedure-arity-includes? f (+ (length fvs) 2))))]
+                                      [fv1 flexvector?])
+                                            () #:rest [fvs (listof flexvector?)]
+                                            [_ flexvector])]
+          [flexvector-append-map (->i ([proc (fvs) (and/c (unconstrained-domain-> flexvector?)
+                                                          (lambda (f) (procedure-arity-includes? f (+ (length fvs) 1))))]
+                                       [fv1 flexvector?])
+                                      () #:rest [fvs (listof flexvector?)]
+                                      [_ flexvector])]
           [flexvector-filter! (-> (-> any/c any/c) flexvector? flexvector?)]
           [flexvector-filter (-> (-> any/c any/c) flexvector? flexvector?)]
-          [flexvector-index (-> procedure? flexvector? flexvector? ... (or/c exact-nonnegative-integer? #f))]
-          [flexvector-index-right (-> procedure? flexvector? flexvector? ... (or/c exact-nonnegative-integer? #f))]
-          [flexvector-skip (-> procedure? flexvector? flexvector? ... (or/c exact-nonnegative-integer? #f))]
-          [flexvector-skip-right (-> procedure? flexvector? flexvector? ... (or/c exact-nonnegative-integer? #f))]
+          [flexvector-index (->i ([proc (fvs) (and/c (unconstrained-domain-> any/c)
+                                                     (lambda (f) (procedure-arity-includes? f (+ (length fvs) 1))))]
+                                  [fv1 flexvector?])
+                                 () #:rest [fvs (listof flexvector?)]
+                                 [_ (or/c exact-nonnegative-integer? #f)])]
+          [flexvector-index-right (->i ([proc (fvs) (and/c (unconstrained-domain-> any/c)
+                                                           (lambda (f) (procedure-arity-includes? f (+ (length fvs) 1))))]
+                                        [fv1 flexvector?])
+                                       () #:rest [fvs (listof flexvector?)]
+                                       [_ (or/c exact-nonnegative-integer? #f)])]
+          [flexvector-skip (->i ([proc (fvs) (and/c (unconstrained-domain-> any/c)
+                                                    (lambda (f) (procedure-arity-includes? f (+ (length fvs) 1))))]
+                                 [fv1 flexvector?])
+                                () #:rest [fvs (listof flexvector?)]
+                                [_ (or/c exact-nonnegative-integer? #f)])]
+          [flexvector-skip-right (->i ([proc (fvs) (and/c (unconstrained-domain-> any/c)
+                                                          (lambda (f) (procedure-arity-includes? f (+ (length fvs) 1))))]
+                                       [fv1 flexvector?])
+                                      () #:rest [fvs (listof flexvector?)]
+                                      [_ (or/c exact-nonnegative-integer? #f)])]
           [flexvector-binary-search (->* (flexvector? any/c (-> any/c any/c exact-integer?)) (exact-nonnegative-integer? exact-nonnegative-integer?) (or/c exact-nonnegative-integer? #f))]
-          [flexvector-any (-> procedure? flexvector? flexvector? ... any/c)]
-          [flexvector-every (-> procedure? flexvector? flexvector? ... any/c)]
+          [flexvector-any (->i ([proc (fvs) (and/c (unconstrained-domain-> any/c)
+                                                   (lambda (f) (procedure-arity-includes? f (+ (length fvs) 1))))]
+                                [fv1 flexvector?])
+                               () #:rest [fvs (listof flexvector?)]
+                               [_ any/c])]
+          [flexvector-every (->i ([proc (fvs) (and/c (unconstrained-domain-> any/c)
+                                                   (lambda (f) (procedure-arity-includes? f (+ (length fvs) 1))))]
+                                  [fv1 flexvector?])
+                                 () #:rest [fvs (listof flexvector?)]
+                                 [_ any/c])]
           [flexvector-swap! (-> flexvector? exact-nonnegative-integer? exact-nonnegative-integer? flexvector?)]
           [flexvector-reverse! (-> flexvector? flexvector?)]
           [flexvector-append (-> flexvector? flexvector? ... flexvector?)]
           [flexvector-concatenate (-> (listof flexvector?) flexvector?)]
           [flexvector-append-subvectors (-> list? flexvector?)]
           [flexvector-empty? (-> flexvector? boolean?)]
-          [flexvector-count (-> procedure? flexvector? flexvector? ... exact-nonnegative-integer?)]
+          [flexvector-count (->i ([proc (fvs) (and/c (unconstrained-domain-> any/c)
+                                                     (lambda (f) (procedure-arity-includes? f (+ (length fvs) 1))))]
+                                  [fv1 flexvector?])
+                                 () #:rest [fvs (listof flexvector?)]
+                                 [_ exact-nonnegative-integer?])]
           [flexvector-cumulate (-> (-> any/c any/c any/c) any/c flexvector? flexvector?)]
           [flexvector-partition (-> (-> any/c any/c) flexvector? (values flexvector? flexvector?))]
           [flexvector->list (->* (flexvector?) (exact-integer? exact-integer?) list?)]

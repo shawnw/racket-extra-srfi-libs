@@ -25,17 +25,38 @@
   [lseq-length (-> lseq? exact-nonnegative-integer?)]
   [lseq-append (-> lseq? ... lseq?)]
   [lseq-zip (-> lseq? lseq? ... lseq?)]
-  [lseq-map (-> procedure? lseq? lseq? ... lseq?)]
-  [lseq-for-each (-> procedure? lseq? lseq? ... void?)]
+  [lseq-map (->i ([proc (lseqs) (and/c (unconstrained-domain-> any/c)
+                                       (lambda (f) (procedure-arity-includes? f (+ (length lseqs) 1))))]
+                  [lseq1 lseq?])
+                 () #:rest [lseqs (listof lseq?)]
+                 [_ lseq?])]
+  [lseq-for-each (->i ([proc (lseqs) (lambda (f)
+                                       (and (procedure? f)
+                                            (procedure-arity-includes? f (+ (length lseqs) 1))))]
+                       [lseq1 lseq?])
+                      () #:rest [lseqs (listof lseq?)]
+                      [_ void?])]
   [lseq-filter (-> (-> any/c any/c) lseq? lseq?)]
   [lseq-remove (-> (-> any/c any/c) lseq? lseq?)]
   [lseq-find (-> (-> any/c any/c) lseq? any/c)]
   [lseq-find-tail (-> (-> any/c any/c) lseq? (or/c lseq? #f))]
   [lseq-take-while (-> (-> any/c any/c) lseq? lseq?)]
   [lseq-drop-while (-> (-> any/c any/c) lseq? lseq?)]
-  [lseq-any (-> procedure? lseq? lseq? ... any/c)]
-  [lseq-every (-> procedure? lseq? lseq? ... any/c)]
-  [lseq-index (-> procedure? lseq? lseq? ... (or/c exact-nonnegative-integer? #f))]
+  [lseq-any (->i ([proc (lseqs) (and/c (unconstrained-domain-> any/c)
+                                      (lambda (f) (procedure-arity-includes? f (+ (length lseqs) 1))))]
+                  [lseq1 lseq?])
+                 () #:rest [lseqs (listof lseq?)]
+                 [_ any/c])]
+  [lseq-every (->i ([proc (lseqs) (and/c (unconstrained-domain-> any/c)
+                                         (lambda (f) (procedure-arity-includes? f (+ (length lseqs) 1))))]
+                    [lseq1 lseq?])
+                   () #:rest [lseqs (listof lseq?)]
+                   [_ any/c])]
+  [lseq-index (->i ([proc (lseqs) (and/c (unconstrained-domain-> any/c)
+                                         (lambda (f) (procedure-arity-includes? f (+ (length lseqs) 1))))]
+                    [lseq1 lseq?])
+                   () #:rest [lseqs (listof lseq?)]
+                   [_ (or/c exact-nonnegative-integer? #f)])]
   [lseq-member (->* (any/c lseq?) ((-> any/c any/c any/c)) lseq?)]
   [lseq-memq (-> any/c lseq? lseq?)]
   [lseq-memv (-> any/c lseq? lseq?)]

@@ -30,9 +30,9 @@
              [_ fxmapping?])]
   [fxmapping-unfold (->* ((->* (any/c) () #:rest list? any/c) (->* (any/c) () #:rest list? (values fixnum? any/c)) (->* (any/c) () #:rest list? any) any/c) ()
                          #:rest list? fxmapping?)]
-  [fxmapping-accumulate (->* (procedure? any/c) () #:rest list? fxmapping?)]
+  [fxmapping-accumulate (-> procedure? any/c any/c ... fxmapping?)]
   [alist->fxmapping (-> (listof (cons/c fixnum? any/c)) fxmapping?)]
-  [alist->fxmapping/combinator (-> (->* (fixnum? any/c) () #:rest list? any/c) (listof (cons/c fixnum? any/c)) fxmapping?)]
+  [alist->fxmapping/combinator (-> (-> fixnum? any/c any/c any/c) (listof (cons/c fixnum? any/c)) fxmapping?)]
   [fxmapping-contains? (-> fxmapping? fixnum? boolean?)]
   [fxmapping-empty? (-> fxmapping? boolean?)]
   [fxmapping-disjoint? (-> fxmapping? fxmapping? boolean?)]
