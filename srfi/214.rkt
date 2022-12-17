@@ -4,7 +4,6 @@
 (require (rename-in data/gvector
                     [gvector flexvector]
                     [gvector? flexvector?]
-                    [gvector-remove-last! flexvector-remove-back!]
                     [gvector-count flexvector-length]
                     [list->gvector list->flexvector])
          racket/contract racket/undefined (for-syntax racket/base racket/symbol)
@@ -18,31 +17,32 @@
         (make-flat-contract #:name name #:first-order fun)
         (make-contract #:name name #:first-order fun))))
 
-(provide flexvector flexvector? flexvector-remove-back!
+(provide flexvector flexvector?
          flexvector-length list->flexvector
          (contract-out
           [make-flexvector (->* (exact-positive-integer?) (any/c) flexvector?)]
           [flexvector-ref (-> flexvector? exact-nonnegative-integer? any/c)]
           [flexvector-set! (-> flexvector? exact-nonnegative-integer? any/c any/c)]
-          [flexvector-add! (-> flexvector exact-nonnegative-integer? any/c any/c ... void?)]
+          [flexvector-add! (-> flexvector exact-nonnegative-integer? any/c any/c ... flexvector?)]
           [flexvector-add-back! (-> flexvector? any/c ... flexvector?)]
-          [flexvector-add-all! (-> flexvector? exact-nonnegative-integer? list? void?)]
+          [flexvector-add-all! (-> flexvector? exact-nonnegative-integer? list? flexvector?)]
           [flexvector-remove! (-> flexvector? exact-nonnegative-integer? any/c)]
-          [flexvector-remove-range! (-> flexvector exact-integer? exact-integer? void?)]
-          [flexvector-clear! (-> flexvector? void?)]
+          [flexvector-remove-range! (-> flexvector exact-integer? exact-integer? flexvector?)]
+          [flexvector-clear! (-> flexvector? flexvector?)]
           [flexvector-filter/index (-> (-> exact-nonnegative-integer? any/c any/c) flexvector? flexvector?)]
           [flexvector-filter/index! (-> (-> exact-nonnegative-integer? any/c any/c) flexvector? flexvector?)]
           [flexvector-copy (->* (flexvector?) (exact-nonnegative-integer? exact-nonnegative-integer?) flexvector?)]
           [flexvector-copy! (->* (flexvector? exact-nonnegative-integer? flexvector?) (exact-nonnegative-integer? exact-nonnegative-integer?) flexvector?)]
           [flexvector-unfold (-> procedure? procedure? procedure? any/c any/c ... flexvector?)]
           [flexvector-unfold-right (-> procedure? procedure? procedure? any/c any/c ... flexvector?)]
-          [flexvector-fill! (->* (flexvector? any/c) (exact-nonnegative-integer? exact-nonnegative-integer?) void?)]
+          [flexvector-fill! (->* (flexvector? any/c) (exact-nonnegative-integer? exact-nonnegative-integer?) flexvector?)]
           [flexvector-reverse-copy (->* (flexvector?) (exact-nonnegative-integer? exact-nonnegative-integer?) flexvector?)]
           [flexvector-append! (-> flexvector? flexvector? ... flexvector?)]
           [flexvector-front (-> flexvector? any/c)]
           [flexvector-back (-> flexvector? any/c)]
-          [flexvector-add-front! (-> flexvector? any/c any/c ... void?)]
-          [flexvector-remove-front! (-> flexvector? void?)]
+          [flexvector-add-front! (-> flexvector? any/c any/c ... flexvector?)]
+          [flexvector-remove-front! (-> flexvector? any/c)]
+          [flexvector-remove-back! (-> flexvector? any/c)]
           [flexvector=? (-> (-> any/c any/c any/c) flexvector? ... boolean?)]
           [flexvector-fold (->i ([proc (fvs) (and/c (unconstrained-domain-> any/c)
                                                     (lambda (f) (procedure-arity-includes? f (+ (length fvs) 2))))]
@@ -225,12 +225,12 @@
 
 (define flexvector-add!
   (case-lambda
-    ((fv i x) (gvector-insert! fv i x))
+    ((fv i x) (gvector-insert! fv i x) fv)
     ((fv i . xs) (flexvector-add-all! fv i xs))))
 
 (define flexvector-add-front!
   (case-lambda
-    ((fv x) (gvector-insert! fv 0 x))
+    ((fv x) (gvector-insert! fv 0 x) fv)
     ((fv . xs) (flexvector-add-all! fv 0 xs))))
 
 (define (flexvector-add-back! fv . elems)
@@ -263,7 +263,7 @@
 (define (flexvector-clear! fv)
   (let loop ()
     (when (> (flexvector-length fv) 0)
-      (flexvector-remove-back! fv)
+      (gvector-remove-last! fv)
       (loop)))
   fv)
 
@@ -434,7 +434,7 @@
 (define (flexvector-fill! fv fill [start 0] [end (flexvector-length fv)])
   (clamp-ranges ('flexvector-fill! fv start end)
                 (do ((i start (+ i 1)))
-                    ((>= i end))
+                    ((>= i end) fv)
                   (gvector-set! fv i fill))))
 
 (define (flexvector-unfold-right . args)
@@ -479,6 +479,13 @@
   (let ((tmp (gvector-ref fv i)))
     (gvector-set! fv i (gvector-ref fv j))
     (gvector-set! fv j tmp)))
+
+(define (flexvector-remove-back! fv)
+  (when (flexvector-empty? fv)
+    (raise-argument-error 'flexvector-remove-back! "(not/c flexvector-empty?)" fv))
+  (let ([elem (gvector-ref fv (- (flexvector-length fv) 1))])
+    (gvector-remove-last! fv)
+    elem))
 
 ;; Other stuff lifted from the reference implementation
 ;; With rackety error throwing
