@@ -433,6 +433,11 @@ Do a binary search in @code{fv} for @code{val} per SRFI-223 @code{bisect-right}.
 
 }
 
+@defproc[(in-flexvector [fv flexvector?]) sequence?]{
+
+ Returns a sequence that iterates through the elements of the flexvector.
+
+}
 
 @section{SRFI-217 Integer Sets}
 

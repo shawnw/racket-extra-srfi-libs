@@ -5,7 +5,8 @@
                     [gvector flexvector]
                     [gvector? flexvector?]
                     [gvector-count flexvector-length]
-                    [list->gvector list->flexvector])
+                    [list->gvector list->flexvector]
+                    [in-gvector in-flexvector])
          racket/contract racket/undefined (for-syntax racket/base racket/symbol)
          "145.rkt" "190.rkt" "223.rkt"
          )
@@ -18,7 +19,7 @@
         (make-contract #:name name #:first-order fun))))
 
 (provide flexvector flexvector?
-         flexvector-length list->flexvector
+         flexvector-length list->flexvector in-flexvector
          (contract-out
           [make-flexvector (->* (exact-positive-integer?) (any/c) flexvector?)]
           [flexvector-ref (-> flexvector? exact-nonnegative-integer? any/c)]
@@ -268,12 +269,12 @@
   fv)
 
 (define (flexvector-filter/index pred? fv)
-  (for/gvector ([(elem i) (in-indexed (in-gvector fv))]
+  (for/gvector ([(elem i) (in-indexed (in-flexvector fv))]
                 #:when (pred? i elem))
     elem))
 
 (define (flexvector-filter pred? fv)
-  (for/gvector ([elem (in-gvector fv)]
+  (for/gvector ([elem (in-flexvector fv)]
                 #:when (pred? elem))
     elem))
 
@@ -355,7 +356,7 @@
 
 (define (flexvector-concatenate fvs)
   (for*/gvector ([fv (in-list fvs)]
-                 [elem (in-gvector fv)])
+                 [elem (in-flexvector fv)])
     elem))
 
 (define (flexvector-append . fvs)
@@ -420,7 +421,7 @@
          (loop (+ start 1) (+ i 1)))))))
 
 (define-coroutine-generator (flexvector->generator fv)
-  (for ([elem (in-gvector fv)])
+  (for ([elem (in-flexvector fv)])
     (yield elem)))
 
 (define (generator->flexvector g)
@@ -428,7 +429,7 @@
 
 (define (flexvector-append! fv . fvs)
   (for* ([afv (in-list fvs)]
-         [elem (in-gvector afv)])
+         [elem (in-flexvector afv)])
     (gvector-add! fv elem)))
 
 (define (flexvector-fill! fv fill [start 0] [end (flexvector-length fv)])
