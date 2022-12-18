@@ -143,6 +143,28 @@ test cases pass, but if this becomes an issue in practice (The
 function has lots of warnings attached), I'll switch them to just
 being aliases for the non-side-effect versions.
 
+@section{SRFI-134 Immutable Deques}
+
+@hyperlink["https://srfi.schemers.org/srfi-134/srfi-134.html"]{Reference documentation}.
+
+@bold{Notes}:
+
+Deques are @code{equal?} if they are the same length and all corresponding elements are @code{equal?}.
+
+@bold{Extra functions}:
+
+@defproc[(in-ideque [dq ideque?]) sequence?]{
+
+ Returns a sequence that iterates through the deque from front to back. A @code{ideque?} can also be used directly as a sequence.
+
+}
+
+@defproc[(in-ideque-backwards [dq ideque?]) sequence?]{
+
+ Returns a sequence that iterates through the deque in reverse order, back to front.
+
+}
+
 @section{SRFI-141 Integer division}
 
 @defmodule[srfi/141]

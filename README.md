@@ -14,6 +14,7 @@ Currently includes:
 * [SRFI-127 Lazy Sequences](https://srfi.schemers.org/srfi-127/srfi-127.html)
 * [SRFI-128 Comparators (reduced)](https://srfi.schemers.org/srfi-128/srfi-128.html)
 * [SRFI-132 Sort Libraries](https://srfi.schemers.org/srfi-132/srfi-132.html)
+* [SRFI-134 Immutable Deques](https://srfi.schemers.org/srfi-134/srfi-134.html)
 * [SRFI-141 Integer division](https://srfi.schemers.org/srfi-141/srfi-141.html)
 * [SRFI-143 Fixnums](https://srfi.schemers.org/srfi-143/srfi-143.html)
 * [SRFI-145 Assumptions](https://srfi.schemers.org/srfi-145/srfi-145.html)
