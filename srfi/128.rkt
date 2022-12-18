@@ -2,7 +2,7 @@
 
 (require racket/contract (only-in racket/math nan? infinite? exact-round)
          (only-in racket/bool boolean=? symbol=?)
-         (only-in racket/list index-where))
+         (only-in racket/list index-where remove-duplicates))
 (module+ test (require rackunit))
 (provide
  hash-bound hash-salt with-hash-salt comparator-if<=>
@@ -65,13 +65,10 @@
 
   ;;; SRFI-228 routines
   [make-wrapper-comparator (-> predicate/c (-> any/c any/c) comparator? comparator?)]
-  [make-product-comparator (-> comparator? comparator? ... comparator?)]
-  [make-sum-comparator (-> comparator? comparator? ... comparator?)]
-  [comparison-procedures (-> comparator? (values (-> any/c any/c any/c ... boolean?)
-                                                 (-> any/c any/c any/c ... boolean?)
-                                                 (-> any/c any/c any/c ... boolean?)
-                                                 (-> any/c any/c any/c ... boolean?)
-                                                 (-> any/c any/c any/c ... boolean?)))]
+  [make-product-comparator (-> comparator? ... comparator?)]
+  [make-sum-comparator (-> comparator? ... comparator?)]
+  [comparator-one comparator?]
+  [comparator-zero comparator?]
   ))
 
 
@@ -717,70 +714,99 @@
 (define equal-always-comparator (make-equal-always-comparator))
 
 ;;; SRFI-228
-;;; custom implementation
+;;; Mix of reference and custom implementation
 
 (define (make-wrapper-comparator type? unwrap comp)
-  (let ([equal (comparator-equality-predicate comp)]
-        [cmp (comparator-ordering-predicate comp)]
-        [hash (comparator-hash-function comp)])
-    (make-comparator
-     type?
-     (lambda (a b) (equal (unwrap a) (unwrap b)))
-     (if (comparator-ordered? comp)
-         (lambda (a b) (cmp (unwrap a) (unwrap b)))
-         #f)
-     (if (comparator-hashable? comp)
-         (lambda (v) (hash (unwrap v)))
-         #f))))
-
-(define (make-product-comparator . comps)
   (make-comparator
-   (lambda (v) (andmap (lambda (comp) (comparator-test-type comp v)) comps))
-   (lambda (a b) (andmap (lambda (comp) ((comparator-equality-predicate comp) a b)) comps))
-   (if (andmap comparator-ordered? comps)
-       (lambda (a b)
-         (ormap (lambda (comp) ((comparator-ordering-predicate comp) a b)) comps))
+   type?
+   (lambda (a b) ((comparator-equality-predicate comp) (unwrap a) (unwrap b)))
+   (if (comparator-ordered? comp)
+       (lambda (a b) ((comparator-ordering-predicate comp) (unwrap a) (unwrap b)))
        #f)
-   (if (andmap comparator-hashable? comps)
-       (lambda (v)
-         (number-hash (foldl (lambda (comp h) (bitwise-xor (comparator-hash comp v) h)) 0 comps)))
+   (if (comparator-hashable? comp)
+       (lambda (v) ((comparator-hash-function comp) (unwrap v)))
+       #f)
+   #:secondary-hash
+   (if (comparator-hashable? comp)
+       (lambda (v) ((comparator-secondary-hash-function comp) v))
        #f)))
 
-(define (make-sum-comparator . comps)
-  (let ([find-comparator-for-value
-         (lambda (v) (index-where comps (lambda (comp) (comparator-test-type comp v))))])
-    (make-comparator
-     (lambda (v) (ormap (lambda (comp) (comparator-test-type comp v)) comps))
-     (lambda (a b)
-       (let ([cmp-a (find-comparator-for-value a)]
-             [cmp-b (find-comparator-for-value b)])
-         (if (= cmp-a cmp-b)
-             ((comparator-equality-predicate (list-ref comps cmp-a)) a b)
-             #f)))
-     (if (andmap comparator-ordered? comps)
-         (lambda (a b)
-           (let ([cmp-a (find-comparator-for-value a)]
-                 [cmp-b (find-comparator-for-value b)])
-             (cond
-               ((= cmp-a cmp-b)
-                ((comparator-ordering-predicate (list-ref comps cmp-a)) a b))
-               ((< cmp-a cmp-b) #t)
-               (else #f))))
-         #f)
-   (if (andmap comparator-hashable? comps)
-       (lambda (v)
-         (comparator-hash (car (memf comps (lambda (comp) (comparator-test-type comp v))))))
-       #f))))
+(define comparator-one (make-comparator (lambda (x) #t) (lambda (a b) #t) (lambda (a b) #f) (lambda (x) 0) #:secondary-hash (lambda (x) 0)))
+(define comparator-zero (make-comparator (lambda (x) #f) (lambda (a b) (error "can't compare" a b)) #f #f))
 
-(define (comparison-procedures comp)
-  (values
-   (lambda (a b . args) (apply <? comp a b args))
-   (lambda (a b . args) (apply <=? comp a b args))
-   (lambda (a b . args) (apply =? comp a b args))
-   (lambda (a b . args) (apply >=? comp a b args))
-   (lambda (a b . args) (apply >? comp a b args))))
+(define (make-product-comparator . comparators)
+  (if (null? comparators)
+      comparator-one
+      (let* ((type-tests
+              (remove-duplicates
+               (map comparator-type-test-predicate comparators)
+               eq?))
+             (type-test
+              (lambda (val)
+                (andmap (lambda (test) (test val)) type-tests))))
+        (make-comparator
+         type-test
+         (lambda (a b)
+           (andmap (lambda (cmp)
+                     ((comparator-equality-predicate cmp) a b))
+                   comparators))
+         (if (andmap comparator-ordered? comparators)
+             (lambda (a b)
+               (let loop ((cmps comparators))
+                 (cond ((null? cmps) #f)
+                       (((comparator-ordering-predicate (car cmps)) a b) #t)
+                       (((comparator-equality-predicate (car cmps)) a b) (loop (cdr cmps)))
+                       (else #f))))
+             #f)
+         (if (andmap comparator-hashable? comparators)
+             (lambda (x)
+               (foldl bitwise-xor
+                     0
+                     (map (lambda (cmp)
+                            ((comparator-hash-function cmp) x))
+                          comparators)))
+             #f)))))
+
+(define (comparator-index comparators val)
+  (index-where comparators
+   (lambda (cmp)
+     ((comparator-type-test-predicate cmp) val))))
+
+(define (make-sum-comparator . comparators)
+  (if (null? comparators)
+      comparator-zero
+      (make-comparator
+       (lambda (x)
+         (ormap
+          (lambda (cmp)
+            ((comparator-type-test-predicate cmp) x))
+          comparators))
+       (lambda (a b)
+         (let ((a-cmp-idx (comparator-index comparators a))
+               (b-cmp-idx (comparator-index comparators b)))
+           (if (not (= a-cmp-idx b-cmp-idx))
+               #f
+               (let ((cmp (list-ref comparators a-cmp-idx)))
+                 ((comparator-equality-predicate cmp) a b)))))
+       (if (andmap comparator-ordered? comparators)
+           (lambda (a b)
+             (let ((a-cmp-idx (comparator-index comparators a))
+                   (b-cmp-idx (comparator-index comparators b)))
+               (cond ((< a-cmp-idx b-cmp-idx) #t)
+                     ((> a-cmp-idx b-cmp-idx) #f)
+                     (else
+                      (let ((cmp (list-ref comparators a-cmp-idx)))
+                        ((comparator-ordering-predicate cmp) a b))))))
+           #f)
+       (if (andmap comparator-hashable? comparators)
+           (lambda (x)
+             (let ((cmp (memf (lambda (cmp) ((comparator-type-test-predicate cmp) x))
+                              comparators)))
+               ((comparator-hash-function cmp) x)))
+           #f))))
 
 (module+ test
+  (require "132.rkt")
   (define-syntax-rule (test-assert tst)
     (check-true tst))
   (define-syntax-rule (test expected tst)
@@ -789,6 +815,10 @@
     (check-exn exn:fail? (lambda () tst)))
   (define-syntax-rule (test-group name tests ...)
     (begin tests ...))
+  (define-syntax-rule (test-eq expected tst)
+    (check-eq? tst expected))
+  (define-syntax-rule (test-equal expected tst)
+    (check-equal? tst expected))
   (define (print msg) (void))
 
   (test-group "comparators"
@@ -1089,30 +1119,66 @@
               (test-assert (=? equal-comparator "ABC" "ABC"))
               ) ; end comparators/variables
 
-  (struct person (first-name last-name) #:constructor-name make-person)
+  (struct person (first-name last-name) #:constructor-name make-person #:transparent)
 
   (define person-name-comparator
     (make-product-comparator
      (make-wrapper-comparator person? person-last-name string-ci-comparator)
      (make-wrapper-comparator person? person-first-name string-ci-comparator)))
 
-  (define-values (person-name<?
-                  person-name<=?
-                  person-name=?
-                  person-name>?
-                  person-name>=?)
-    (comparison-procedures person-name-comparator))
+  (test-group "simple"
+              (test-eq
+                          #t
+                          (<? person-name-comparator
+                              (make-person "John" "Cowan")
+                              (make-person "Daphne" "Preston-Kendal")))
 
-  (test-group "wrap and product comparators"
-              (test-assert (person-name<? (make-person "John" "Cowan")
-                                          (make-person "Daphne" "Preston-Kendal"))) ;=> #t
+              (test-eq
+                          #t
+                          (>? person-name-comparator
+                              (make-person "Tom" "Smith")
+                              (make-person "John" "Smith"))))
 
-              (test-assert (person-name>? (make-person "Tom" "Smith")
-                                          (make-person "John" "Smith")))) ;=> #t
+  (struct book (author title) #:constructor-name make-book #:transparent)
 
-  (define s-r-comp (make-sum-comparator string-comparator real-comparator))
-  (test-group "sum comparators"
-              (test-assert (<? s-r-comp "cat" "dog" 1 2))
-              (test-assert (>? s-r-comp 2 1 "dog" "cat")))
+  (define book-comparator
+    (make-product-comparator
+     (make-wrapper-comparator book? book-author person-name-comparator)
+     (make-wrapper-comparator book? book-title string-ci-comparator)))
 
+  (struct cd (artist title) #:constructor-name make-cd #:transparent)
+
+  (define cd-comparator
+    (make-product-comparator
+     (make-wrapper-comparator cd? cd-artist person-name-comparator)
+     (make-wrapper-comparator cd? cd-title string-ci-comparator)))
+
+  (define item-comparator
+    (make-sum-comparator book-comparator cd-comparator))
+
+  (test-group "nested"
+              (let* ((beatles (make-person "The" "Beatles"))
+                     (abbey-road (make-cd beatles "Abbey Road"))
+                     (deutsche-grammatik
+                      (make-book (make-person "Jacob" "Grimm") "Deutsche Grammatik"))
+                     (sonnets (make-book (make-person "William" "Shakespeare") "Sonnets"))
+                     (mnd (make-book (make-person "William" "Shakespeare")
+                                     "A Midsummer Night’s Dream"))
+                     (bob (make-cd (make-person "Bob" "Dylan") "Blonde on Blonde"))
+                     (revolver (make-cd (make-person "The" "Beatles") "Revolver")))
+                (test-equal
+                 (list deutsche-grammatik
+                       mnd
+                       sonnets
+                       abbey-road
+                       revolver
+                       bob)
+                 (list-sort
+                  (lambda (a b) (<? item-comparator a b))
+                  (list abbey-road
+                        deutsche-grammatik
+                        sonnets
+                        mnd
+                        bob
+                        revolver)))))
   ) ; end comparators

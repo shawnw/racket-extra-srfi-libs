@@ -35,5 +35,5 @@ Currently includes:
 * [SRFI-221 Generator/accumulator sub-library](https://srfi.schemers.org/srfi-221/srfi-221.html)
 * [SRFI-223 Generalized binary search procedures](https://srfi.schemers.org/srfi-223/srfi-223.html)
 * [SRFI-224 Integer Mappings](https://srfi.schemers.org/srfi-224/srfi-224.html)
-* [SRFI-228 A further comparator library](https://srfi.schemers.org/srfi-228/srfi-228.html) (draft)
+* [SRFI-228 Composing Comparators](https://srfi.schemers.org/srfi-228/srfi-228.html)
 * [SRFI-232 Flexible curried procedures](https://srfi.schemers.org/srfi-232/srfi-232.html)
