@@ -165,11 +165,22 @@
   #:extra-constructor-name %make-dq
   #:methods gen:equal+hash
   [(define (equal-proc a b equal-wrapper?)
-     (ideque= equal-wrapper? a b))
+     (%ideque=-binary equal-wrapper? a b))
    (define (hash-proc a hash-code)
      (ideque-fold (lambda (elem hash) (bitwise-xor (hash-code elem) hash)) 0 a))
       (define (hash2-proc a hash-code)
      (ideque-fold (lambda (elem hash) (bitwise-xor (hash-code elem) hash)) 0 a))]
+  #:methods gen:custom-write
+  [(define (write-proc dq port mode)
+     (write-string "#<ideque" port)
+     (for ([elem (in-ideque dq)])
+       (write-char #\space port)
+       (cond
+         ((eq? mode #t) (write elem port))
+         ((eq? mode #f) (display elem port))
+         (else (print elem port mode))))
+     (write-char #\> port)
+     )]
   #:property prop:sequence
   (lambda (idq) (in-ideque idq))
   )
