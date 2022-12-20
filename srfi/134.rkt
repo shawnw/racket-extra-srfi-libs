@@ -31,7 +31,7 @@
 ;; Stream version by Wolfgang Corcoran-Mathe.
 
 
-(require racket/contract racket/struct
+(require racket/contract racket/struct syntax/parse/define (for-syntax racket/base syntax/for-body)
          (only-in srfi/1 unfold list= concatenate zip append-map iota take drop split-at) srfi/8 srfi/41 (only-in "158.rkt" generator generator->list))
 (module+ test (require rackunit))
 
@@ -96,7 +96,9 @@
   ;; Extras
   [in-ideque (-> ideque? sequence?)]
   [in-ideque-backwards (-> ideque? sequence?)]
-  ))
+  )
+ for/ideque for*/ideque
+ )
 
 ;;;; Stream utility
 
@@ -605,6 +607,22 @@
       #f
       #f))))
 
+(define-syntax-parse-rule (for/ideque clauses body ... tail-expr)
+  #:with original this-syntax
+  #:with ((pre-body ...) (post-body ...)) (split-for-body this-syntax #'(body ... tail-expr))
+  (for/fold/derived original ((dq (ideque)))
+    clauses
+    pre-body ...
+    (ideque-add-back dq (let () post-body ...))))
+
+(define-syntax-parse-rule (for*/ideque clauses body ... tail-expr)
+  #:with original this-syntax
+  #:with ((pre-body ...) (post-body ...)) (split-for-body this-syntax #'(body ... tail-expr))
+  (for*/fold/derived original ((dq (ideque)))
+    clauses
+    pre-body ...
+    (ideque-add-back dq (let () post-body ...))))
+
 
 (module+ test
   (define-syntax-rule (test-group name exprs ...)
@@ -831,7 +849,8 @@
 
   (test-group "sequences"
               (test '(1 2 3) (for/list ([elem (ideque 1 2 3)]) elem))
-              (test '(3 2 1) (for/list ([elem (in-ideque-backwards (ideque 1 2 3))]) elem)))
+              (test '(3 2 1) (for/list ([elem (in-ideque-backwards (ideque 1 2 3))]) elem))
+              (test '(0 1 2 3) (ideque->list (for/ideque ((n (in-range 4))) n))))
 
   (test-group "equality"
               (check-true (equal? (ideque 1 2 3) (ideque 1 2 3)))

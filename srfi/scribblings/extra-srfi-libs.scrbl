@@ -165,6 +165,18 @@ Deques are @code{equal?} if they are the same length and all corresponding eleme
 
 }
 
+@defform[(for/ideque (sequence-binding ...) (body ...))]{
+
+ A @code{for} comprehension that returns a queue built from the value returned by each iteration of the body.
+
+}
+
+@defform[(for*/ideque (sequence-binding ...) (body ...))]{
+
+ A @code{for*} comprehension that returns a queue built from the value returned by each iteration of the body.
+
+}
+
 @section{SRFI-141 Integer division}
 
 @defmodule[srfi/141]
@@ -429,7 +441,7 @@ Return a new flexvector @code{len} elements long, populated with the results of 
 
 }
 
-@defproc[(flexvector->bytes [fv (flexvectorof byte?)] [start exact-integer? 0] [end exact-integer? (flexvector-length fv)]) bytes?] {
+@defproc[(flexvector->bytes [fv (flexvectorof byte?)] [start exact-integer? 0] [end exact-integer? (flexvector-length fv)]) bytes?]{
 
 Convert a flexvector of bytes to a byte string.
 
