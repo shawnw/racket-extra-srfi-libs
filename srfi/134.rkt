@@ -175,6 +175,7 @@
      (make-constructor-style-printer
       (lambda (obj) 'ideque)
       (lambda (obj) (in-ideque obj))))]
+  #:property prop:custom-print-quotable 'never
   #:property prop:sequence
   (lambda (idq) (in-ideque idq))
   )
