@@ -31,7 +31,7 @@
 ;; Stream version by Wolfgang Corcoran-Mathe.
 
 
-(require racket/contract
+(require racket/contract racket/struct
          (only-in srfi/1 unfold list= concatenate zip append-map iota take drop split-at) srfi/8 srfi/41 (only-in "158.rkt" generator generator->list))
 (module+ test (require rackunit))
 
@@ -171,16 +171,10 @@
       (define (hash2-proc a hash-code)
      (ideque-fold (lambda (elem hash) (bitwise-xor (hash-code elem) hash)) 0 a))]
   #:methods gen:custom-write
-  [(define (write-proc dq port mode)
-     (write-string "#<ideque" port)
-     (for ([elem (in-ideque dq)])
-       (write-char #\space port)
-       (cond
-         ((eq? mode #t) (write elem port))
-         ((eq? mode #f) (display elem port))
-         (else (print elem port mode))))
-     (write-char #\> port)
-     )]
+  [(define write-proc
+     (make-constructor-style-printer
+      (lambda (obj) 'ideque)
+      (lambda (obj) (in-ideque obj))))]
   #:property prop:sequence
   (lambda (idq) (in-ideque idq))
   )
