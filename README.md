@@ -24,6 +24,7 @@ Currently includes:
 * [SRFI-160 Homogeneous numeric vector libraries](https://srfi.schemers.org/srfi-160/srfi-160.html)
 * [SRFI-162 Comparators sublibrary](https://srfi.schemers.org/srfi-162/srfi-162.html)
 * [SRFI-173 Hooks](https://srfi.schemers.org/srfi-173/srfi-173.html)
+* [SRFI-174 POSIX Timespecs](https://srfi.schemers.org/srfi-174/srfi-174.html)
 * [SRFI-175 ASCII character library](https://srfi.schemers.org/srfi-175/srfi-175.html)
 * [SRFI-190 Coroutine Generators](https://srfi.schemers.org/srfi-190/srfi-190.html)
 * [SRFI-193 Command line](https://srfi.schemers.org/srfi-193/srfi-193.html)

@@ -348,6 +348,18 @@ Additional functions for converting between flvectors and SRFI-4 vectors:
 @bold{Notes}: A hook object is callable as a procedure;
 @code{(hook-obj args ...)} is the same as @code{(hook-run hook-obj args ...)}.
 
+@section{SRFI-174 POSIX Timespecs}
+
+@defmodule[srfi/174]
+
+@hyperlink["https://srfi.schemers.org/srfi-174/srfi-174.html"]{Reference documentation}.
+
+@bold{Notes}:
+
+Implemented as a distinct type (A transparent structure), with the range of the seconds values the same as the range of Racket integers.
+
+@code{timespec-hash} uses @code{equal-hash-code} and might return negative values contrary to the SRFI description of the function.
+
 @section{SRFI-175 ASCII character library}
 
 @defmodule[srfi/175]
