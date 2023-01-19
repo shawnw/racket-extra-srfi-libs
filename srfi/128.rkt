@@ -301,7 +301,7 @@
   (make-comparator #t equal? #f equal-hash-code #:secondary-hash equal-secondary-hash-code))
 
 (define (make-equal-always-comparator)
-  (make-comparator #t equal-always? #f equal-always-hash-code #:secondary-hash equal-secondary-hash-code))
+  (make-comparator #t equal-always? #f equal-always-hash-code #:secondary-hash equal-always-secondary-hash-code))
 
 ;;; Sequence ordering and hash functions
 ;; The hash functions are based on djb2, but

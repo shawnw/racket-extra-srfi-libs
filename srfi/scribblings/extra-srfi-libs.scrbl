@@ -94,7 +94,8 @@ etc. hash functions instead of @code{default-hash}.
 @racketid{#:secondary-hash}, whose value has the same signature as the
 @racketid{hash} one - either @code{(-> any/c exact-integer?)} or
 @code{#f}. This is used for better compability with Racket's custom
-hash tables, which take two hash functions.
+hash tables, which take two hash functions. Hash functions can also return
+negative numbers, contrary to the SRFI spec.
 
 @subsection{Additional definitions}
 
