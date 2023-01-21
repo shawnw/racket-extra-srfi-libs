@@ -397,9 +397,31 @@ The @code{command-line} procedure conflicts with the one in
 
 @hyperlink["https://srfi.schemers.org/srfi-194/srfi-194.html"]{Reference documentation}.
 
-@code{make-ellipsoid-generator} and @code{make-ball-generator} can
+@bold{Notes}: @code{make-ellipsoid-generator} and @code{make-ball-generator} can
 take a @code{flvector} or a vector of reals as an argument and returns
 the same.
+
+@section{SRFI-196 Range Objects}
+
+@defmodule[srfi/196]
+
+@hyperlink["https://srfi.schemers.org/srfi-196/srfi-196.html"]{Reference documentation}.
+
+@bold{Notes}: The @racket{range} function from this module conflicts with the one from @racket{racket/list}.
+
+@subsection{Additional functions}
+
+@defproc[(range-empty? [r range?]) boolean?]{
+
+ Returns true if the range's length is 0, otherwise false.
+
+}
+
+@defproc[(in-range-object [r range?]) sequence?]{
+
+ Returns a sequence that iterates over the range. Range objects can also be used directly as sequences.
+
+}
 
 @section{SRFI-207 String-notated bytevectors}
 

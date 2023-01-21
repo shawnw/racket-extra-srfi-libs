@@ -29,6 +29,7 @@ Currently includes:
 * [SRFI-190 Coroutine Generators](https://srfi.schemers.org/srfi-190/srfi-190.html)
 * [SRFI-193 Command line](https://srfi.schemers.org/srfi-193/srfi-193.html)
 * [SRFI-194 Random data generators](https://srfi.schemers.org/srfi-194/srfi-194.html)
+* [SRFI-196 Range Objects](https://srfi.schemers.org/srfi-196/srfi-196.html)
 * [SRFI-207 String-notated bytevectors](https://srfi.schemers.org/srfi-207/srfi-207.html)
 * [SRFI-208 NaN procedures](https://srfi.schemers.org/srfi-208/srfi-208.html)
 * [SRFI-214 Flexvectors](https://srfi.schemers.org/srfi-214/srfi-214.html)
