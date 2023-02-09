@@ -9,12 +9,7 @@
 ;;; extflonum support too, when I can find a Racket build that
 ;;; supports it - my x86-64 one reports (extflonum-available?) as #f
 
-(require (only-in math/flonum flnan?))
-(require/typed racket/unsafe/ops
-  [(unsafe-fxior fxior) (-> Fixnum Fixnum Fixnum)]
-  [(unsafe-fxand fxand) (-> Fixnum Fixnum Fixnum)]
-  [(unsafe-fx> fx>) (-> Fixnum Fixnum Boolean)]
-  [(unsafe-fx= fx=) (-> Fixnum Fixnum Boolean)])
+(require racket/fixnum (only-in math/flonum flnan?))
 
 (module+ test
   (require typed/rackunit))
@@ -23,7 +18,10 @@
 
 ;;; Use a per-thread byte buffer to hold representations of numbers
 ;;; instead of allocating ones on every call.
-(define byte-buffer ((inst make-thread-cell (U Bytes False)) #f))
+
+(: byte-buffer (Thread-Cellof (U Bytes False)))
+(define byte-buffer (make-thread-cell #f))
+
 (: get-buffer (-> Bytes))
 (define (get-buffer)
   (let ([buffer (thread-cell-ref byte-buffer)])
