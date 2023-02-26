@@ -409,9 +409,16 @@ The @code{command-line} procedure conflicts with the one in
 
 @hyperlink["https://srfi.schemers.org/srfi-194/srfi-194.html"]{Reference documentation}.
 
-@bold{Notes}: @code{make-ellipsoid-generator} and @code{make-ball-generator} can
-take a @code{flvector} or a vector of reals as an argument and returns
-the same.
+@bold{Notes}:
+
+Written in Typed Racket.
+
+@code{make-ellipsoid-generator}, @code{make-ball-generator} and
+@code{make-sphere-generator} have variants @code{flmake-ellipsoid-generator},
+@code{flmake-ball-generator} and @code{flmake-sphere-generator} that return
+flvectors. The ellipsoid generator functions can take a flvector or a vector
+of reals. The ball generator functions can take a flvector, vector of reals,
+or an integer.
 
 @section{SRFI-196 Range Objects}
 
