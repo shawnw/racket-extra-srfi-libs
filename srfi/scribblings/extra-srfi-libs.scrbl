@@ -34,6 +34,18 @@ range arguments, you should use the standard Racket versions. The
 SRFI-13 functions that have name conflicts with ones in
 @racket{racket/string} have @emph{not} been adjusted.
 
+@section{SRFI-27 Sources of Random Bits}
+
+@defmodule[typed/srfi/27]
+
+@hyperlink["https://srfi.schemers.org/srfi-27/srfi-27.html"]{Reference
+documentation}.
+
+@bold{Notes}: While Racket comes with a SRFI-27 implementation, it's only for
+normal Racket, not Typed Racket. This module can be used instead of having to
+@racketid{require/typed} specific functions from it that you might need in
+Typed Racket.
+
 @section{SRFI-112 Environment Inquiry}
 
 @defmodule[srfi/112]
