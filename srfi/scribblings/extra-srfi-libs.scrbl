@@ -174,7 +174,18 @@ test cases pass, but if this becomes an issue in practice (The
 function has lots of warnings attached), I'll switch them to just
 being aliases for the non-side-effect versions.
 
+@section{SRFI-133 Vector Library (R7RS-compatible)}
+
+@defmodule[srfi/133]
+
+@hyperlink{"https://srfi.schemers.org/srfi-133/srfi-133.html"{Reference documentation}.
+
+@bold{Notes}: See also @hyperlink["https://srfi.schemers.org/srfi-43/srfi-43.html"]{SRFI-43} included with Racket.
+ Notable differences are functions that take callbacks not passing the current index like they do in 43.
+
 @section{SRFI-134 Immutable Deques}
+
+@defmodule[srfi/134]
 
 @hyperlink["https://srfi.schemers.org/srfi-134/srfi-134.html"]{Reference documentation}.
 
