@@ -1,8 +1,8 @@
 #lang racket/base
 
-(require racket/contract racket/vector
-         (only-in srfi/1 reduce unfold xcons every concatenate) (only-in srfi/43 vector-unfold)
-         "145.rkt")
+(require racket/contract
+         (only-in srfi/1 reduce unfold xcons every concatenate)
+         "133.rkt" "145.rkt")
 (module+ test (require rackunit))
 
 (provide
@@ -45,7 +45,7 @@
   [range-index (-> procedure? range? range? ... (or/c exact-nonnegative-integer? #f))]
   [range-index-right (-> procedure? range? range? ... (or/c exact-nonnegative-integer? #f))]
   [range-take-while (-> (-> any/c any/c) range? range?)]
-  [range-take-while-right (-> (-> any/c any/c) range? range?)]  
+  [range-take-while-right (-> (-> any/c any/c) range? range?)]
   [range-drop-while (-> (-> any/c any/c) range? range?)]
   [range-drop-while-right (-> (-> any/c any/c) range? range?)]
   [vector->range (-> vector? range?)]
@@ -638,18 +638,18 @@
 (module+ test
   (require (only-in srfi/1 iota take drop fold count filter-map fold-right list-index take-while drop-while remove)
            (only-in "158.rkt" generator->list))
-  
+
   (define-syntax check
     (syntax-rules (=>)
       ((_ expr => expected)
        (check-equal? expr expected))))
 
   (define (print-header msg) (void))
-  
+
   ;;;; Utility
 
   (define (square n) (* n n))
-  
+
   (define (identity x) x)
 
   (define-syntax constantly

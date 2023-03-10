@@ -9,7 +9,7 @@
          racket/contract (only-in racket/list add-between)
          racket/port racket/require
          (only-in srfi/1 append-reverse)
-         srfi/13 srfi/14 (only-in srfi/43 vector-unfold)
+         srfi/13 srfi/14 (only-in "133.rkt" vector-unfold)
          (only-in "160/u8.rkt" u8vector-for-each)
          "190.rkt")
 (require (filtered-in

@@ -1,6 +1,6 @@
 #lang typed/racket/base
 
-(require "../typed/srfi/27.rkt" (only-in srfi/43 vector-fold)
+(require "../typed/srfi/27.rkt"
          (only-in racket/vector vector-map vector-append vector-take vector-drop)
          (only-in racket/math infinite? pi positive-integer?)
          math/flonum)
