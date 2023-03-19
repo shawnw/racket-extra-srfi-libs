@@ -10,7 +10,10 @@
          (for-syntax racket/base (only-in racket/string string-prefix?)))
 (require (filtered-in
           (lambda (name)
-            (and (string-prefix? name "unsafe-fx")
+            (and (or (string-prefix? name "unsafe-fx")
+                     (string-prefix? name "unsafe-string")
+                     (string=? name "unsafe-char->integer")
+                     (string=? name "unsafe-integer->char"))
                  (substring name 7)))
             racket/unsafe/ops))
 (module+ test (require rackunit))
