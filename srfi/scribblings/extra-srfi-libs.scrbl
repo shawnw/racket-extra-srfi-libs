@@ -625,3 +625,18 @@ values stored in such mappings apply.
 @defmodule[srfi/232]
 
 @hyperlink["https://srfi.schemers.org/srfi-232/srfi-232.html"]{Reference documentation}.
+
+@section{SRFI-235 Combinators}
+
+@defmodule[srfi/235]
+
+@hyperlink["https://srfi.schemers.org/srfi-235/srfi-235.html"]{Reference documentation}.
+
+@bold{Notes}:
+
+The @code{conjoin} and @code{disjoin} functions conflict with the ones in @racket{racket/function}
+and @code{group-by} with the one in @racket{racket/list}.
+
+@code{case-procedure} uses @code{equal?} to compare values instead of @code{eqv?} to match Racket's @code{case}.
+
+Procedures that take or return procedures that take arbitary arguments will work with keyword arguments for the most part.
