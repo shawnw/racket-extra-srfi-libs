@@ -518,6 +518,8 @@ after the last documented ones that are passed to the consumer procedure. For ex
 (apply/mv ~a #\a (values #\b #\c) #:separator ", ")
 }
 
+The forms and functions that take/return boxes use SRFI-195 multiple-value ones.
+
 @subsection{Additional functions}
 
 @defproc[(bind/vector [vec vector?] [transducer procedure?] ...) any]{

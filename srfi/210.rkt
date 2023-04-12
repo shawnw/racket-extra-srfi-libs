@@ -12,6 +12,7 @@
 (provide
  ; Syntax forms
  apply/mv call/mv list/mv vector/mv box/mv value/mv coarity with-values
+ case-receive bind/mv
  ; Aleady in Racket: set!-values
  ; Renamed procedures from other modules
  vector-values box-values identity
