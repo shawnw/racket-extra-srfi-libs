@@ -434,9 +434,13 @@ or an integer.
 
 @hyperlink["https://srfi.schemers.org/srfi-195/srfi-195.html"]{Reference documentation}.
 
+@bold{Notes}:
+
 Native Racket single-valued boxes are accepted by these functions, and multiple-valued boxes of arity 1 created by this SRFI's @code{box} use them.
 
 Multiple-valued boxes can be compared and hashed with @code{equal?}. The usual caveats about modifying a box used as a key in a hash table apply.
+
+@subsection{Additional forms}
 
 @defform[(mvbox match-pat ...)]
 
@@ -498,6 +502,29 @@ includes NaN checking of arguments in the contracts; the typed one has an
 explicit check to raise an error if passed a non-NaN number. I might remove
 that check in the future and just say it's undefined what happens when they're
 passed a non-NaN.
+
+@section{SRFI-210 Procedures and Syntax for Multiple Values}
+
+@defmodule[srfi/210]
+
+@hyperlink["https://srfi.schemers.org/srfi-210/srfi-210.html"]{Reference documentation}.
+
+@bold{Notes}:
+
+@code{apply/mv}, @code{call/mv}, and @code{with-values} have been extended to work with Racket's keyword arguments by taking optional keyword+value arguments
+after the last documented ones that are passed to the consumer procedure. For example,
+
+@codeblock{
+(apply/mv ~a #\a (values #\b #\c) #:separator ", ")
+}
+
+@subsection{Additional functions}
+
+@defproc[(bind/vector [vec vector?] [transducer procedure?] ...) any]{
+
+ Like @code{bind/list} but takes a vector instead of a list.
+
+}
 
 @section{SRFI-214 Flexvectors}
 
