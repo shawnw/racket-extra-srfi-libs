@@ -46,6 +46,14 @@ normal Racket, not Typed Racket. This module can be used instead of having to
 @racketid{require/typed} specific functions from it that you might need in
 Typed Racket.
 
+@section{SRFI-11 Boxes}
+
+@defmodule[srfi/111]
+
+@hyperlink["https://srfi.schemers.org/srfi-111/srfi-111.html"]{Reference documentation}.
+
+Racket natively supports SRFI-111 single-valued boxes, but this module re-exports SRFI-195 versions of functions to comply with that document.
+
 @section{SRFI-112 Environment Inquiry}
 
 @defmodule[srfi/112]
@@ -419,6 +427,25 @@ Written in Typed Racket.
 flvectors. The ellipsoid generator functions can take a flvector or a vector
 of reals. The ball generator functions can take a flvector, vector of reals,
 or an integer.
+
+@section{SRFI-195 Multiple-value Boxes}
+
+@defmodule[srfi/195]
+
+@hyperlink["https://srfi.schemers.org/srfi-195/srfi-195.html"]{Reference documentation}.
+
+Native Racket single-valued boxes are accepted by these functions, and multiple-valued boxes of arity 1 created by this SRFI's @code{box} use them.
+
+Multiple-valued boxes can be compared and hashed with @code{equal?}. The usual caveats about modifying a box used as a key in a hash table apply.
+
+@defform[(mvbox match-pat ...)]
+
+A match expander to use multiple-valued boxes in @code{match} clauses.
+
+@codeblock{
+           (match (box 1 2 3)
+                  [(mvbox a b c) (list a b c)]) ; '(1 2 3)
+}
 
 @section{SRFI-196 Range Objects}
 

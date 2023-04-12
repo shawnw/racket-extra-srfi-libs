@@ -11,6 +11,7 @@ Currently includes:
 
 * [SRFI-13 String Libraries](https://srfi.schemers.org/srfi-13/srfi-13.html) (Typed Racket port)
 * [SRFI-27 Sources of Random Bits](https://srfi.schemers.org/srfi-27/srfi-27.html) (Typed Racket port)
+* [SRFI-111 Boxes](https://srfi.schemers.org/srfi-111/srfi-111.html)
 * [SRFI-112 Environment Inquiry](https://srfi.schemers.org/srfi-112/srfi-112.html)
 * [SRFI-127 Lazy Sequences](https://srfi.schemers.org/srfi-127/srfi-127.html)
 * [SRFI-128 Comparators (reduced)](https://srfi.schemers.org/srfi-128/srfi-128.html)
@@ -30,6 +31,7 @@ Currently includes:
 * [SRFI-190 Coroutine Generators](https://srfi.schemers.org/srfi-190/srfi-190.html)
 * [SRFI-193 Command line](https://srfi.schemers.org/srfi-193/srfi-193.html)
 * [SRFI-194 Random data generators](https://srfi.schemers.org/srfi-194/srfi-194.html)
+* [SRFI-195 Multiple-value Boxes](https://srfi.schemers.org/srfi-195/srfi-195.html)
 * [SRFI-196 Range Objects](https://srfi.schemers.org/srfi-196/srfi-196.html)
 * [SRFI-207 String-notated bytevectors](https://srfi.schemers.org/srfi-207/srfi-207.html)
 * [SRFI-208 NaN procedures](https://srfi.schemers.org/srfi-208/srfi-208.html)
