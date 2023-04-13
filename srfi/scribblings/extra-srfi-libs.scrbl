@@ -46,6 +46,14 @@ normal Racket, not Typed Racket. This module can be used instead of having to
 @racketid{require/typed} specific functions from it that you might need in
 Typed Racket.
 
+@section{SRFI-11 Boxes}
+
+@defmodule[srfi/111]
+
+@hyperlink["https://srfi.schemers.org/srfi-111/srfi-111.html"]{Reference documentation}.
+
+Racket natively supports SRFI-111 single-valued boxes, but this module re-exports SRFI-195 versions of functions to comply with that document.
+
 @section{SRFI-112 Environment Inquiry}
 
 @defmodule[srfi/112]
@@ -420,6 +428,29 @@ flvectors. The ellipsoid generator functions can take a flvector or a vector
 of reals. The ball generator functions can take a flvector, vector of reals,
 or an integer.
 
+@section{SRFI-195 Multiple-value Boxes}
+
+@defmodule[srfi/195]
+
+@hyperlink["https://srfi.schemers.org/srfi-195/srfi-195.html"]{Reference documentation}.
+
+@bold{Notes}:
+
+Native Racket single-valued boxes are accepted by these functions, and multiple-valued boxes of arity 1 created by this SRFI's @code{box} use them.
+
+Multiple-valued boxes can be compared and hashed with @code{equal?}. The usual caveats about modifying a box used as a key in a hash table apply.
+
+@subsection{Additional forms}
+
+@defform[(mvbox match-pat ...)]
+
+A match expander to use multiple-valued boxes in @code{match} clauses.
+
+@codeblock{
+           (match (box 1 2 3)
+                  [(mvbox a b c) (list a b c)]) ; '(1 2 3)
+}
+
 @section{SRFI-196 Range Objects}
 
 @defmodule[srfi/196]
@@ -471,6 +502,31 @@ includes NaN checking of arguments in the contracts; the typed one has an
 explicit check to raise an error if passed a non-NaN number. I might remove
 that check in the future and just say it's undefined what happens when they're
 passed a non-NaN.
+
+@section{SRFI-210 Procedures and Syntax for Multiple Values}
+
+@defmodule[srfi/210]
+
+@hyperlink["https://srfi.schemers.org/srfi-210/srfi-210.html"]{Reference documentation}.
+
+@bold{Notes}:
+
+@code{apply/mv}, @code{call/mv}, and @code{with-values} have been extended to work with Racket's keyword arguments by taking optional keyword+value arguments
+after the last documented ones that are passed to the consumer procedure. For example,
+
+@codeblock{
+(apply/mv ~a #\a (values #\b #\c) #:separator ", ")
+}
+
+The forms and functions that take/return boxes use SRFI-195 multiple-value ones.
+
+@subsection{Additional functions}
+
+@defproc[(bind/vector [vec vector?] [transducer procedure?] ...) any]{
+
+ Like @code{bind/list} but takes a vector instead of a list.
+
+}
 
 @section{SRFI-214 Flexvectors}
 
