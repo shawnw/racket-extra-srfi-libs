@@ -473,6 +473,19 @@ A match expander to use multiple-valued boxes in @code{match} clauses.
 
 }
 
+@section{SRFI-202 Pattern-matching Variant of the @code{and-let*} Form that Supports Multiple Values}
+
+@defmodule[srfi/202]
+
+@hyperlink["https://srfi.schemers.org/srfi-202/srfi-202.html"]{Reference documentation}.
+
+@bold{Notes}:
+
+The reference implementations for this SRFI include one for Racket, but this one is original, using @code{syntax-parse} macros. It's also a lot simpler,
+which makes me wonder, but it passes all the test cases...
+
+Uses @code{match} style pattern matching.
+
 @section{SRFI-207 String-notated bytevectors}
 
 @defmodule[srfi/207]

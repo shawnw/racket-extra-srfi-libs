@@ -33,6 +33,7 @@ Currently includes:
 * [SRFI-194 Random data generators](https://srfi.schemers.org/srfi-194/srfi-194.html)
 * [SRFI-195 Multiple-value Boxes](https://srfi.schemers.org/srfi-195/srfi-195.html)
 * [SRFI-196 Range Objects](https://srfi.schemers.org/srfi-196/srfi-196.html)
+* [SRFI-202: Pattern-matching Variant of the `and-let*` Form that Supports Multiple Values](https://srfi.schemers.org/srfi-202/srfi-202.html)
 * [SRFI-207 String-notated bytevectors](https://srfi.schemers.org/srfi-207/srfi-207.html)
 * [SRFI-208 NaN procedures](https://srfi.schemers.org/srfi-208/srfi-208.html)
 * [SRFI-210 Procedures and Syntax for Multiple Values](https://srfi.schemers.org/srfi-210/srfi-210.html)
