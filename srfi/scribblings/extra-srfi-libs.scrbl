@@ -46,7 +46,17 @@ normal Racket, not Typed Racket. This module can be used instead of having to
 @racketid{require/typed} specific functions from it that you might need in
 Typed Racket.
 
-@section{SRFI-11 Boxes}
+@section{SRFI-74 Octet-Addressed Binary Blocks}
+
+@defmodule[typed/srfi/74]
+
+@hyperlink["https://srfi.schemers.org/srfi-74/srfi-74.html"]{Reference documentation}.
+
+@bold{Notes}: The untyped version of this module in @code{srfi-lib} is just the reference implementation and has, as of Racket 8.8,
+a serious bug in that the "native" endianness is always big-endian. This version, besides being written in Typed Racket, fixes that,
+and uses a more Racket-specific implementation. You should probably use always use this one, at least until the bug is fixed.
+
+@section{SRFI-111 Boxes}
 
 @defmodule[srfi/111]
 
