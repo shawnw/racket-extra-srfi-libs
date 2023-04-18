@@ -57,15 +57,45 @@
 
 (define apply-chain compose)
 
+(define (no-keyword-args? proc)
+  (let-values ([(required optional) (procedure-keywords proc)])
+    (and (eq? required '()) (eq? optional '()))))
+
+(define (exactly-two-args? proc)
+  (and (eqv? (procedure-arity proc) 2)
+       (no-keyword-args? proc)))
+
 (define (flip proc)
-  (make-keyword-procedure
-   (lambda (kw-lst kw-lst-vals . args)
-     (keyword-apply proc kw-lst kw-lst-vals (reverse args)))))
+  (cond
+    ((exactly-two-args? proc)
+     (lambda (arg1 arg2) (proc arg2 arg1)))
+    ((no-keyword-args? proc)
+     (procedure-reduce-arity-mask
+      (lambda args
+        (apply proc (reverse args)))
+      (procedure-arity-mask proc)
+      (string->symbol (format "(flip ~A)" (object-name proc)))))
+    (else
+     (make-keyword-procedure
+      (lambda (kw-lst kw-lst-vals . args)
+        (keyword-apply proc kw-lst kw-lst-vals (reverse args)))))))
 
 (define (swap proc)
-  (make-keyword-procedure
-   (lambda (kw-lst kw-val-lst arg1 arg2 . args)
-     (keyword-apply proc kw-lst kw-val-lst arg2 arg1 args))))
+  (unless (procedure-arity-includes? proc 2 #t)
+    (raise-argument-error 'swap "(procedure-arity-includes/c 2)" proc))
+  (cond
+    ((exactly-two-args? proc)
+     (lambda (arg1 arg2) (proc arg2 arg1)))
+    ((no-keyword-args? proc)
+     (procedure-reduce-arity-mask
+      (lambda (arg1 arg2 . args)
+        (apply proc arg2 arg1 args))
+      (bitwise-and (procedure-arity-mask proc) (bitwise-not #b11))
+      (string->symbol (format "(swap ~A)" (object-name proc)))))
+    (else
+     (make-keyword-procedure
+      (lambda (kw-lst kw-val-lst arg1 arg2 . args)
+        (keyword-apply proc kw-lst kw-val-lst arg2 arg1 args))))))
 
 (define (on-left proc)
   (lambda (a b) (proc a)))
@@ -90,8 +120,9 @@
               (ormap all-preds? args))))))
 
 (define (each-of . procs)
-  (make-keyword-procedure (lambda (kw-lst kw-lst-vals . args)
-                            (for-each (lambda (proc) (keyword-apply proc kw-lst kw-lst-vals args)) procs))))
+  (make-keyword-procedure
+   (lambda (kw-lst kw-lst-vals . args)
+     (for-each (lambda (proc) (keyword-apply proc kw-lst kw-lst-vals args)) procs))))
 
 (define (all-of proc)
   (lambda (list) (andmap proc list)))
@@ -105,10 +136,12 @@
 
 (define left-section
   (make-keyword-procedure
-   (lambda (kw-lst1 kw-lst-vals1 proc . args)  
+   (lambda (kw-lst1 kw-lst-vals1 proc . args)
      (make-keyword-procedure
       (lambda (kw-lst2 kw-lst-vals2 . objs)
-        (keyword-apply proc (append kw-lst1 kw-lst2) (append kw-lst-vals1 kw-lst-vals2) (append args objs)))))
+        (keyword-apply proc (append kw-lst1 kw-lst2) (append kw-lst-vals1 kw-lst-vals2) (append args objs)))
+      (lambda objs
+        (keyword-apply proc kw-lst1 kw-lst-vals1 (append args objs)))))
    (lambda (proc . args)
      (make-keyword-procedure
       (lambda (kw-lst kw-lst-vals . objs)
@@ -120,7 +153,9 @@
      (let ([args (reverse args)])
        (make-keyword-procedure
         (lambda (kw-lst2 kw-lst-vals2 . objs)
-          (keyword-apply proc (append kw-lst1 kw-lst2) (append kw-lst-vals1 kw-lst-vals2) (append objs args))))))
+          (keyword-apply proc (append kw-lst1 kw-lst2) (append kw-lst-vals1 kw-lst-vals2) (append objs args)))
+        (lambda objs
+          (keyword-apply proc kw-lst1 kw-lst-vals1 (append objs args))))))
    (lambda (proc . args)
      (let ([args (reverse args)])
        (make-keyword-procedure
@@ -128,24 +163,52 @@
           (keyword-apply proc kw-lst kw-lst-vals (append objs args))))))))
 
 (define (arguments-drop proc n)
-  (make-keyword-procedure
-   (lambda (kw-lst kw-lst-vals . args)
-     (keyword-apply proc kw-lst kw-lst-vals (drop args n)))))
+  (if (no-keyword-args? proc)
+      (procedure-reduce-arity
+       (lambda args
+         (apply proc (drop args n)))
+       (make-arity-at-least n)
+       (string->symbol (format "(arguments-drop ~A ~A)" (object-name proc) n)))
+      (make-keyword-procedure
+       (lambda (kw-lst kw-lst-vals . args)
+         (keyword-apply proc kw-lst kw-lst-vals (drop args n))))))
 
 (define (arguments-drop-right proc n)
-  (make-keyword-procedure
-   (lambda (kw-lst kw-lst-vals . args)
-     (keyword-apply proc kw-lst kw-lst-vals (drop-right args n)))))
+  (if (no-keyword-args? proc)
+      (procedure-reduce-arity
+       (lambda args
+         (apply proc (drop-right args n)))
+       (make-arity-at-least n)
+       (string->symbol (format "(arguments-drop-right ~A ~A)" (object-name proc) n)))
+      (make-keyword-procedure
+       (lambda (kw-lst kw-lst-vals . args)
+         (keyword-apply proc kw-lst kw-lst-vals (drop-right args n))))))
 
 (define (arguments-take proc n)
-  (make-keyword-procedure
-   (lambda (kw-lst kw-lst-vals . args)
-     (keyword-apply proc kw-lst kw-lst-vals (take args n)))))
+  (unless (procedure-arity-includes? proc n #t)
+    (raise-argument-error 'arguments-take (format "(procedure-arity-includes/c ~A)" n) proc))
+  (if (no-keyword-args? proc)
+      (procedure-reduce-arity
+       (lambda args
+         (apply proc (take args n)))
+       (make-arity-at-least n)
+       (string->symbol (format "(arguments-take ~A ~A)" (object-name proc) n)))
+      (make-keyword-procedure
+       (lambda (kw-lst kw-lst-vals . args)
+         (keyword-apply proc kw-lst kw-lst-vals (take args n))))))
 
 (define (arguments-take-right proc n)
-  (make-keyword-procedure
-   (lambda (kw-lst kw-lst-vals . args)
-     (keyword-apply proc kw-lst kw-lst-vals (take-right args n)))))
+  (unless (procedure-arity-includes? proc n #t)
+    (raise-argument-error 'arguments-take-right (format "(procedure-arity-includes/c ~A)" n) proc))
+  (if (no-keyword-args? proc)
+      (procedure-reduce-arity
+       (lambda args
+         (apply proc (take-right args n)))
+       (make-arity-at-least n)
+       (string->symbol (format "(arguments-take-right ~A ~A)" (object-name proc) n)))
+      (make-keyword-procedure
+       (lambda (kw-lst kw-lst-vals . args)
+         (keyword-apply proc kw-lst kw-lst-vals (take-right args n))))))
 
 (define (group-by key [= equal?])
   (lambda (list) (rkt:group-by key list =)))
@@ -188,7 +251,7 @@
 
 (define (eager-or-procedure . thunks)
   (ormap identity (map-in-order (lambda (thunk) (thunk)) thunks)))
-  
+
 (define (funcall-procedure thunk) (thunk))
 
 (define (loop-procedure thunk)
@@ -210,7 +273,7 @@
 
 (module+ test
   (require srfi/1)
-  
+
   (define-syntax-rule (test-begin name) (void))
   (define-syntax-rule (test-end) (void))
   (define-syntax-rule (test-group name tests ...) (let () tests ...))
