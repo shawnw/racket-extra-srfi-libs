@@ -8,6 +8,7 @@
          (only-in racket/base
                   [box? rkt:box?]
                   [box rkt:box]
+                  [box-immutable rkt:box-immutable]
                   [unbox rkt:unbox]
                   [set-box! rkt:set-box!]))
 (module+ test (require rackunit))
@@ -17,6 +18,7 @@
  (contract-out
   [box? predicate/c]
   [box (-> any/c ... box?)]
+  [box-immutable (-> any/c ... box?)]
   [unbox (-> box? any)]
   [set-box! (-> (and/c box? (not/c immutable?)) any/c ... void?)]
   [box-arity (-> box? exact-nonnegative-integer?)]
@@ -49,26 +51,40 @@
       (rkt:box (unsafe-car vals))
       (make-mvbox (list->vector vals))))
 
+(define (box-immutable . vals)
+  (if (= (length vals) 1)
+      (rkt:box-immutable (unsafe-car vals))
+      (make-mvbox (unsafe-vector*->immutable-vector! (list->vector vals)))))
+
+
 (define (unbox b)
   (if (rkt:box? b)
       (unsafe-unbox b)
       (vector->values (mvbox-vals b))))
 
 (define (set-box! b . vals)
-  (if (rkt:box? b)
-      (if (= (length vals) 1)
-          (unsafe-set-box! b (unsafe-car vals))
-          (raise-arguments-error 'set-box! "Box and arguments must have the same arity"
-                                 "box arity" 1
-                                 "argument arity" (length vals)))
-      (let ([v (mvbox-vals b)])
-        (unless (= (unsafe-vector-length v) (length vals))
-          (raise-arguments-error 'set-box! "Box and arguments must have the same arity"
+  (cond
+    ((rkt:box? b)
+     (cond
+       ((immutable? b)
+        (raise-argument-error 'set-box! "(and/c box? (not/c immutable?))" b))
+       ((= (length vals) 1)
+        (unsafe-set-box! b (unsafe-car vals)))
+       (else
+        (raise-arguments-error 'set-box! "Box and arguments must have the same arity"
+                               "box arity" 1
+                               "argument arity" (length vals)))))
+    ((immutable? (mvbox-vals b))
+     (raise-argument-error 'set-box! "(and/c box? (not/c immutable?))" b))
+    (else
+     (let ([v (mvbox-vals b)])
+       (unless (= (unsafe-vector-length v) (length vals))
+         (raise-arguments-error 'set-box! "Box and arguments must have the same arity"
                                  "box arity" (unsafe-vector-length v)
                                  "argument arity" (length vals)))
-        (for ([elem (in-list vals)]
-              [i (in-naturals)])
-          (unsafe-vector-set! v i elem)))))
+       (for ([elem (in-list vals)]
+             [i (in-naturals)])
+         (unsafe-vector-set! v i elem))))))
 
 (define (box-arity b)
   (if (rkt:box? b)
@@ -85,13 +101,21 @@
           (raise-range-error 'unbox-value "box" "" i b 0 (- (unsafe-vector-length (mvbox-vals b)))))))
 
 (define (set-box-value! b i v)
-  (if (rkt:box? b)
-      (if (= i 0)
-          (unsafe-set-box! b v)
-          (raise-range-error 'set-box-value! "box" "" i b 0 0))
-      (if (and (> i 0) (< i (unsafe-vector-length (mvbox-vals b))))
-          (unsafe-vector-set! (mvbox-vals b) i v)
-          (raise-range-error 'set-box-value! "box" "" i b 0 (- (unsafe-vector-length (mvbox-vals b)) 1)))))
+  (cond
+    ((rkt:box? b)
+     (cond
+       ((immutable? b)
+        (raise-argument-error 'set-box-value! "(and/c box? (not/c immutable?))" b))
+       ((= i 0)
+        (unsafe-set-box! b v))
+       (else
+        (raise-range-error 'set-box-value! "box" "" i b 0 0))))
+    ((immutable? (mvbox-vals b))
+     (raise-argument-error 'set-box-value! "(and/c box? (not/c immutable?))" b))
+    ((and (> i 0) (< i (unsafe-vector-length (mvbox-vals b))))
+     (unsafe-vector-set! (mvbox-vals b) i v))
+    (else
+     (raise-range-error 'set-box-value! "box" "" i b 0 (- (unsafe-vector-length (mvbox-vals b)) 1)))))
 
 (define-match-expander mvbox
   (lambda (stx)

@@ -450,7 +450,7 @@ Native Racket single-valued boxes are accepted by these functions, and multiple-
 
 Multiple-valued boxes can be compared and hashed with @code{equal?}. The usual caveats about modifying a box used as a key in a hash table apply.
 
-@subsection{Additional forms}
+@subsection{Additional procedures and forms}
 
 @defform[(mvbox match-pat ...)]
 
@@ -459,6 +459,13 @@ A match expander to use multiple-valued boxes in @code{match} clauses.
 @codeblock{
            (match (box 1 2 3)
                   [(mvbox a b c) (list a b c)]) ; '(1 2 3)
+}
+
+@defproc[(box-immutable [arg any/c] ...) box?]{
+
+Creates an immutable box; using @code{set-box!} or @code{set-box-value!} with it is an error.
+ Only single-valued boxes make @code{immutable?} return true.
+
 }
 
 @section{SRFI-196 Range Objects}
