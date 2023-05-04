@@ -169,7 +169,7 @@
 
 
 ;; make-coroutine-generator
-(define (make-coroutine-generator proc)
+#;(define (make-coroutine-generator proc)
   (define return #f)
   (define resume #f)
   (define yield (lambda (v) (call/cc (lambda (r) (set! resume r) (return v)))))
@@ -180,6 +180,23 @@
                                  (set! resume (lambda (v) (return eof)))
                                  (return eof)))))))
 
+;; Use a continuation prompt instead of saving a second continuation for where to return to.
+(require racket/control racket/function)
+(define (make-coroutine-generator proc)
+  (define coroutine-tag (make-continuation-prompt-tag))
+  (define resume #f)
+  (define (yield v) (call/cc (lambda (r) (set! resume r) (abort/cc coroutine-tag v)) coroutine-tag))
+  (lambda ()
+    (call/prompt
+     (thunk
+      (cond
+        (resume (resume (void)))
+        (else
+         (proc yield)
+         (set! resume (lambda (v) (abort/cc coroutine-tag eof)))
+         eof)))
+     coroutine-tag
+     identity)))
 
 ;; list->generator
 (define (list->generator lst)
