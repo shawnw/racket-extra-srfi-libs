@@ -100,6 +100,7 @@
   ;; Racket-specific additions
   [generator? predicate/c]
   [rkt-generator->srfi-generator (-> rkt-generator? (-> any/c))]
+  [sequence->generator (-> sequence? (-> any/c))]
   ))
 
 (define (generator? obj)
@@ -803,6 +804,19 @@
               (if (void? v) eof g)
               v)))))
 
+
+(define (sequence->generator seq)
+  (let-values ([(more? next) (sequence-generate seq)])
+    (make-coroutine-generator
+     (lambda (yield)
+       (let loop ()
+         (cond
+           ((more?)
+            (yield (next))
+            (loop))
+           (else
+            eof)))))))
+
 (module+ test
   (require (only-in srfi/1 unfold) (only-in "141.rkt" truncate/)
            (only-in racket/list make-list) (only-in racket/port with-input-from-string)
@@ -1228,6 +1242,10 @@
                (generator->list (rkt-generator->srfi-generator rkt-g))
                '(1 2 3))
 
+
+  (test-equal? "sequence to generator conversion"
+               (generator->list (sequence->generator (in-range 10)))
+               '(0 1 2 3 4 5 6 7 8 9))
 
   (test-true "generator? random" (generator? random))
   (test-false "generator? cons" (generator? cons)))

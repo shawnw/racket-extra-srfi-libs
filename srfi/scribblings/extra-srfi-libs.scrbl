@@ -331,6 +331,12 @@ called with arguments are not supported.
 
 }
 
+@defproc[(sequence->generator [s sequence?]) (-> any/c)]{
+
+Adapt a Racket sequence to a SRFI-158 generator.
+
+}
+
 @section{SRFI-160 Homogenous numeric vector libraries}
 
 @hyperlink["https://srfi.schemers.org/srfi-160/srfi-160.html"]{Reference
