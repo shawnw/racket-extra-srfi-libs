@@ -45,3 +45,4 @@ Currently includes:
 * [SRFI-228 Composing Comparators](https://srfi.schemers.org/srfi-228/srfi-228.html)
 * [SRFI-232 Flexible curried procedures](https://srfi.schemers.org/srfi-232/srfi-232.html)
 * [SRFI-235 Combinators](https://srfi.schemers.org/srfi-235/srfi-235.html)
+* [SRFI-238 Codesets](https://srfi.schemers.org/srfi-238/srfi-238.html)

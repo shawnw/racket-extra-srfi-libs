@@ -732,3 +732,19 @@ and @code{group-by} with the one in @racket{racket/list}.
 @code{case-procedure} uses @code{equal?} to compare values instead of @code{eqv?} to match Racket's @code{case}.
 
 Procedures that take or return procedures that take arbitary arguments will work with keyword arguments for the most part.
+
+@section{SRFI-238 Codesets}
+
+@defmodule[srfi/238]
+
+@hyperlink["https://srfi.schemers.org/srfi-238/srfi-238.html"]{Reference documentation}.
+
+The only predefined codeset is @code{'errno} with POSIX errno values.
+
+@subsection{Additional functions}
+
+@defproc[(register-codeset! [name symbol?] [data (listof (list/c (or/c symbol? #f) (or/c exact-integer? #f) (or/c string? #f)))]) void?]{
+
+Define and register a new codeset with the given names, numbers and messages. The message is optional, and either the name or number is, but not both.
+
+}
