@@ -1,7 +1,7 @@
 #lang racket/base
 ;;; Integer Mappings
 
-(require racket/contract racket/require racket/dict
+(require racket/contract racket/hash-code racket/require racket/dict
          (only-in racket/fixnum most-negative-fixnum)
          srfi/41 "145.rkt"
          (only-in srfi/1 fold unfold every iota partition)
@@ -1238,10 +1238,10 @@
          (trie=? (make-comparator (lambda (x) #t) my-equal? #f #f) (fxmapping-trie a) (fxmapping-trie b))))
    (define (hash-proc a my-hash-code)
      (trie-fold-left (lambda (k v hash)
-                       (+ hash (bitwise-xor (my-hash-code k) (my-hash-code v)))) 0 (fxmapping-trie a)))
+                       (hash-code-combine hash (my-hash-code k) (my-hash-code v))) 0 (fxmapping-trie a)))
    (define (hash2-proc a my-hash2-code)
      (trie-fold-left (lambda (k v hash)
-                       (+ hash (bitwise-xor (my-hash2-code k) (my-hash2-code v)))) 0 (fxmapping-trie a)))])
+                       (hash-code-combine hash (my-hash2-code k) (my-hash2-code v))) 0 (fxmapping-trie a)))])
 
 ;;;; Constructors
 

@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/require racket/contract racket/list racket/set
+(require racket/require racket/contract racket/hash-code racket/list racket/set
          (only-in racket/fixnum most-negative-fixnum)
          (only-in racket/math exact-floor)
          "145.rkt"
@@ -1054,9 +1054,9 @@
      (or (eqv? a b)
          (trie=? (iset-trie a) (iset-trie b))))
    (define (hash-proc a my-hash-code)
-     (trie-fold (lambda (k hash) (+ hash (my-hash-code k))) 0 (iset-trie a)))
+     (trie-fold (lambda (k hash) (hash-code-combine hash (my-hash-code k))) 0 (iset-trie a)))
    (define (hash2-proc a my-hash2-code)
-     (trie-fold (lambda (k hash) (+ hash (my-hash2-code k))) 0 (iset-trie a)))])
+     (trie-fold (lambda (k hash) (hash-code-combine hash (my-hash2-code k))) 0 (iset-trie a)))])
 
 #;(define-record-type <iset>
   (raw-iset trie)

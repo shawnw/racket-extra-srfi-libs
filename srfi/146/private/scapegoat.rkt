@@ -3,7 +3,7 @@
 ;;; use SRFI-128 comparators and SRFI-158 generators instead of
 ;;; dict/order order objects and racket/generator generators.
 
-(require racket/contract racket/dict racket/stream data/order
+(require racket/contract racket/dict racket/hash-code racket/stream data/order
          "../../128.rkt" "../../158.rkt" "../../190.rkt")
 
 (provide
@@ -21,11 +21,10 @@
 (define scapegoat-tree-rebalance-on-copy (make-parameter #t))
 
 (define (%apply-hash st hash-func)
-  (for/fold ([hash (+
-                    (scapegoat-tree-count st)
-                    (hash-func (scapegoat-tree-key-comparator st)))])
-            ([(k v) (in-dict st)])
-    (bitwise-xor hash (+ (hash-func k) (hash-func v)))))
+  (apply hash-code-combine
+         (hash-func (scapegoat-tree-key-comparator st))
+         (for/list ([(k v) (in-dict st)])
+           (hash-code-combine (hash-func k) (hash-func v)))))
 
 (struct node (key val left right))
 (struct scapegoat-tree ((count #:mutable) (max-count #:mutable) key-comparator (root #:mutable))

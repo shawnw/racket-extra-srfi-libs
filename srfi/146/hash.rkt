@@ -2,7 +2,7 @@
 
 ;;; SRFI-146 hashmaps
 
-(require racket/contract racket/dict racket/generic racket/match racket/require
+(require racket/contract racket/dict racket/generic racket/hash-code racket/match racket/require
          "../128.rkt"
          (for-syntax racket/base)
          (filtered-in (lambda (name) (regexp-replace #rx"mapping" name "hashmap")) "private/common.rkt"))
@@ -41,10 +41,11 @@
 
 ;;; Internal routines and struct definitions
 
+;; Needs to be something where order of entries doesn't matter, which rules out hash-code-combine for the entire thing
 (define (%apply-hash hm hash-func)
    (for/fold ([hash (hash-func (hashmap-key-comparator hm))])
              ([(k v) (in-dict (hashmap-table hm))])
-     (bitwise-xor hash (+ (hash-func k) (hash-func v)))))
+     (bitwise-xor hash (hash-code-combine (hash-func k) (hash-func v)))))
 
 (struct hashmap (key-comparator [table #:mutable])
   #:name %hashmap

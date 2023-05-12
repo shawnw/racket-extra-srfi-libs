@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/contract (only-in racket/math nan? infinite? exact-round)
+(require racket/contract racket/hash-code (only-in racket/math nan? infinite? exact-round)
          (only-in racket/bool boolean=? symbol=?)
          (only-in racket/list index-where remove-duplicates))
 (module+ test (require rackunit))
@@ -134,15 +134,15 @@
 ;;; Definition of comparator records with accessors and basic comparator
 
 (define (apply-hash c hash-fun)
-  (bitwise-xor
+  (hash-code-combine
    (hash-fun (comparator-type-test-predicate c))
    (hash-fun (comparator-equality-predicate c))
    (if (comparator-ordered? c)
        (hash-fun (comparator-ordering-predicate c))
        0)
    (if (comparator-hashable? c)
-       (+ (hash-fun (comparator-hash-function c))
-          (hash-fun (comparator-secondary-hash-function c)))
+       (hash-code-combine (hash-fun (comparator-hash-function c))
+                          (hash-fun (comparator-secondary-hash-function c)))
        0)))
 
 (struct comparator (type-test-predicate equality-predicate ordering-predicate hash-function secondary-hash-function ordered? hashable?)

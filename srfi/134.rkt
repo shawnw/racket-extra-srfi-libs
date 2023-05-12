@@ -31,7 +31,7 @@
 ;; Stream version by Wolfgang Corcoran-Mathe.
 
 
-(require racket/contract racket/struct syntax/parse/define (for-syntax racket/base syntax/for-body)
+(require racket/contract racket/hash-code racket/struct syntax/parse/define (for-syntax racket/base syntax/for-body)
          (only-in srfi/1 unfold list= concatenate zip append-map iota take drop split-at) srfi/8 srfi/41 (only-in "158.rkt" generator generator->list))
 (module+ test (require rackunit))
 
@@ -169,9 +169,9 @@
   [(define (equal-proc a b equal-wrapper?)
      (%ideque=-binary equal-wrapper? a b))
    (define (hash-proc a hash-code)
-     (ideque-fold (lambda (elem hash) (bitwise-xor (hash-code elem) hash)) 0 a))
+     (ideque-fold (lambda (elem hash) (hash-code-combine (hash-code elem) hash)) 0 a))
       (define (hash2-proc a hash-code)
-     (ideque-fold (lambda (elem hash) (bitwise-xor (hash-code elem) hash)) 0 a))]
+     (ideque-fold (lambda (elem hash) (hash-code-combine (hash-code elem) hash)) 0 a))]
   #:methods gen:custom-write
   [(define write-proc
      (make-constructor-style-printer
