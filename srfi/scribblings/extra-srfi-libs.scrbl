@@ -645,6 +645,7 @@ store ranges of numbers.
 @defmodule[srfi/223]
 
 @hyperlink["https://srfi.schemers.org/srfi-223/srfi-223.html"]{Reference documentation}.
+This and the following modules are written in Typed Racket.
 
 @defmodule[srfi/223/bytes]
 

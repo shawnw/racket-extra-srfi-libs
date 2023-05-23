@@ -1,18 +1,13 @@
-#lang racket/base
+#lang typed/racket/base
 ;;; SRFI-223 specialization for flvectors
 
-(require "../223.rkt" racket/contract racket/flonum)
-(module+ test (require rackunit))
+(require "../223.rkt" racket/flonum)
+(module+ test (require typed/rackunit))
 
-(provide
- (contract-out
-  [flvector-bisect-left (case-> (-> flvector? flonum? (-> flonum? flonum? any/c) integer?)
-                             (-> flvector? flonum? (-> flonum? flonum? any/c) integer? integer? integer?))]
-  [flvector-bisect-right (case-> (-> flvector? flonum? (-> flonum? flonum? any/c) integer?)
-                              (-> flvector? flonum? (-> flonum? flonum? any/c) integer? integer? integer?))]))
+(provide flvector-bisect-left flvector-bisect-right)
 
 (define-values (flvector-bisect-left flvector-bisect-right)
-  (bisection flvector-ref (lambda (flv) (values 0 (flvector-length flv)))))
+  ((inst bisection FlVector Flonum) flvector-ref (lambda ([flv : FlVector]) (values 0 (flvector-length flv)))))
 
 (module+ test
   (define fv (flvector 1.0 2.0 3.0 4.0))

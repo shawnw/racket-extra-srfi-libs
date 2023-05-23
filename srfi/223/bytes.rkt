@@ -1,20 +1,15 @@
-#lang racket/base
+#lang typed/racket/base
 ;;; SRFI-223 specialization for byte strings
 
-(require "../223.rkt" racket/contract)
-(module+ test (require rackunit))
+(require "../223.rkt")
+(module+ test (require typed/rackunit))
 
-(provide
- (contract-out
-  [bytes-bisect-left (case-> (-> bytes? byte? (-> byte? byte? any/c) integer?)
-                             (-> bytes? byte? (-> byte? byte? any/c) integer? integer? integer?))]
-  [bytes-bisect-right (case-> (-> bytes? byte? (-> byte? byte? any/c) integer?)
-                              (-> bytes? byte? (-> byte? byte? any/c) integer? integer? integer?))]))
+(provide bytes-bisect-left bytes-bisect-right)
 
 (define-values (bytes-bisect-left bytes-bisect-right)
-  (bisection bytes-ref (lambda (bs) (values 0 (bytes-length bs)))))
+  ((inst bisection Bytes Byte) bytes-ref (lambda ([bs : Bytes]) (values 0 (bytes-length bs)))))
 
 (module+ test
   (define bs #"abcd")
-  (test-equal? "bytes-bisect-left" (bytes-bisect-left bs (char->integer #\c) <) 2)
-  (test-equal? "bytes-bisect-right" (bytes-bisect-right bs (char->integer #\c) <) 3))
+  (test-equal? "bytes-bisect-left" (bytes-bisect-left bs (assert (char->integer #\c) byte?) <) 2)
+  (test-equal? "bytes-bisect-right" (bytes-bisect-right bs (assert (char->integer #\c) byte?) <) 3))

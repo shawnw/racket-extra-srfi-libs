@@ -1,31 +1,13 @@
-#lang racket/base
+#lang typed/racket/base/shallow
 
-(require racket/contract "141.rkt")
-(module+ test (require rackunit srfi/9))
+(require "../typed/srfi/141.rkt")
 
-(provide
- (contract-out
-  [bisect-left (-> any/c any/c (-> any/c integer? any/c) (-> any/c any/c any/c) integer? integer? integer?)]
-  [bisect-right (-> any/c any/c (-> any/c integer? any/c) (-> any/c any/c any/c) integer? integer? integer?)]
-  [bisection (case-> (-> (-> any/c integer? any/c) (-> any/c (values integer? integer?))
-                         (values (case->
-                                  (-> any/c any/c (-> any/c any/c any/c) integer?)
-                                  (-> any/c any/c (-> any/c any/c any/c) integer? integer? integer?))
-                                 (case->
-                                  (-> any/c any/c (-> any/c any/c any/c) integer?)
-                                  (-> any/c any/c (-> any/c any/c any/c) integer? integer? integer?))))
-                     (-> (-> any/c integer? any/c)
-                         (values (case->
-                                  (-> any/c any/c (-> any/c any/c any/c) integer?)
-                                  (-> any/c any/c (-> any/c any/c any/c) integer? integer? integer?))
-                                 (case->
-                                  (-> any/c any/c (-> any/c any/c any/c) integer?)
-                                  (-> any/c any/c (-> any/c any/c any/c) integer? integer? integer?)))))]
-  [vector-bisect-left (case-> (-> vector? any/c (-> any/c any/c any/c) integer?)
-                              (-> vector? any/c (-> any/c any/c any/c) integer? integer? integer?))]
-  [vector-bisect-right (case-> (-> vector? any/c (-> any/c any/c any/c) integer?)
-                               (-> vector? any/c (-> any/c any/c any/c) integer? integer? integer?))]))
+(provide bisect-left bisect-right
+         bisection
+         vector-bisect-left vector-bisect-right)
 
+(: bisect-left :
+   (All (a b) (a b (a Integer -> b) (b b -> Any) Integer Integer -> Integer)))
 (define (bisect-left a val ref less? lo hi)
   (if (>= lo hi) lo
       (let ((mid (floor-quotient (+ lo hi) 2)))
@@ -33,6 +15,8 @@
             (bisect-left a val ref less? (+ mid 1) hi)
             (bisect-left a val ref less? lo mid)))))
 
+(: bisect-right :
+   (All (a b) (a b (a Integer -> b) (b b -> Any) Integer Integer -> Integer)))
 (define (bisect-right a val ref less? lo hi)
   (if (>= lo hi) lo
       (let ((mid (floor-quotient (+ lo hi) 2)))
@@ -40,30 +24,57 @@
             (bisect-right a val ref less? lo mid)
             (bisect-right a val ref less? (+ mid 1) hi)))))
 
-(define bisection
+(: bisection :
+   (All (a b)
+        (->* ((a Integer -> b)) ((a -> (Values Integer Integer)))
+             (Values
+              (case->
+               (a b (b b -> Any) -> Integer)
+               (a b (b b -> Any) Integer Integer -> Integer))
+              (case->
+               (a b (b b -> Any) -> Integer)
+               (a b (b b -> Any) Integer Integer -> Integer))))))
+(define (bisection ref [lo-hi-proc (lambda (container) (error "both lo and hi arguments must be given to this procedure"))])
+  (values
+   (case-lambda
+     ((container val less?)
+      (let-values (((lo hi) (lo-hi-proc container)))
+        (bisect-left container val ref less? lo hi)))
+     ((container val less? lo hi)
+      (bisect-left container val ref less? lo hi)))
+   (case-lambda
+     ((container val less?)
+      (let-values (((lo hi) (lo-hi-proc container)))
+        (bisect-right container val ref less? lo hi)))
+     ((container val less? lo hi)
+      (bisect-right container val ref less? lo hi)))))
+
+(: vector-bisect-left :
+   (All (α)
+        (case->
+         ((Vectorof α) α (α α -> Any) -> Integer)
+         ((Vectorof α) α (α α -> Any) Integer Integer -> Integer))))
+(define vector-bisect-left
   (case-lambda
-    ((ref lo-hi-proc)
-     (values
-      (case-lambda
-       ((a val less?)
-        (let-values (((lo hi) (lo-hi-proc a)))
-          (bisect-left a val ref less? lo hi)))
-       ((a val less? lo hi)
-        (bisect-left a val ref less? lo hi)))
-      (case-lambda
-       ((a val less?)
-        (let-values (((lo hi) (lo-hi-proc a)))
-          (bisect-right a val ref less? lo hi)))
-       ((a val less? lo hi)
-        (bisect-right a val ref less? lo hi)))))
-    ((ref)
-     (bisection ref
-                (lambda (a) (error "both lo and hi arguments must be given to this procedure"))))))
+    [(vec elem less? lo high)
+     ((inst bisect-left (Vectorof α) α) vec elem vector-ref less? lo high)]
+    [(vec elem less?)
+     ((inst bisect-left (Vectorof α) α) vec elem vector-ref less? 0 (vector-length vec))]))
 
-(define-values (vector-bisect-left vector-bisect-right)
-  (bisection vector-ref (lambda (v) (values 0 (vector-length v)))))
+(: vector-bisect-right :
+   (All (α)
+        (case->
+         ((Vectorof α) α (α α -> Any) -> Integer)
+         ((Vectorof α) α (α α -> Any) Integer Integer -> Integer))))
+(define vector-bisect-right
+  (case-lambda
+    [(vec elem less? lo high)
+     ((inst bisect-right (Vectorof α) α) vec elem vector-ref less? lo high)]
+    [(vec elem less?)
+     ((inst bisect-right (Vectorof α) α) vec elem vector-ref less? 0 (vector-length vec))]))
 
-(module+ test
+(module* test racket/base
+  (require rackunit (submod "..") srfi/9 "141.rkt")
   (define-syntax-rule (test name expected funccall)
     (test-equal? name funccall expected))
   (define-syntax-rule (test-group name tests ...)
