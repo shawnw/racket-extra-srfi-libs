@@ -108,7 +108,7 @@
 	    acc
 	    (loop (+ index 1)
 		  (proc (+ start index) acc))))
-      (let loop ((index (cast (- (+ start count) 1) Index))
+      (let loop ((index (assert (- (+ start count) 1) index?))
 		 (acc unit))
 	(if (< index start)
 	    acc

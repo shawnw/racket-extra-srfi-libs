@@ -2,7 +2,7 @@
 
 (require "../typed/srfi/27.rkt" (only-in srfi/43 vector-fold)
          (only-in racket/vector vector-map vector-append vector-take vector-drop)
-         (only-in racket/math infinite? pi)
+         (only-in racket/math infinite? pi positive-integer?)
          math/flonum)
 
 (provide
@@ -75,7 +75,7 @@
     (raise-arguments-error 'make-random-integer-generator "Upper bound should be greater than lower bound"
                            "low-bound" low-bound "up-bound" up-bound))
   (let ((rand-int-proc (random-source-make-integers (current-random-source)))
-        (range (cast (- up-bound low-bound) Positive-Integer)))
+        (range (assert (- up-bound low-bound) positive-integer?)))
     (lambda ()
       (+ low-bound (rand-int-proc range)))))
 
@@ -374,7 +374,7 @@
     ;randomly pick generator. If it's exhausted remove it, and pick again
     ;returns value (or eof, if all generators are exhausted)
     (define (pick) : (U a EOF)
-      (let* ((index (rand-int-proc (cast (vector-length gen-vec) Positive-Integer)))
+      (let* ((index (rand-int-proc (assert (vector-length gen-vec) positive-integer?)))
              (gen (vector-ref gen-vec index))
              (value (gen)))
         (if (eof-object? value)
@@ -863,7 +863,7 @@
   (inline-build-flvector (+ (vector-length rv) 2)
                          (lambda ([i : Index])
                            (if (< i (vector-length rv))
-                               (fl (cast (vector-ref rv i) Real))
+                               (fl (vector-ref rv i))
                                1.0))))
 
 (: grow-flvec : FlVector -> FlVector)

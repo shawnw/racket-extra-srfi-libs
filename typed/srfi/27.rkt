@@ -252,7 +252,7 @@
               (a (* mk-by-n n)))
          (do ((x (mrg32k3a-random-power state k)
                  (mrg32k3a-random-power state k)))
-             ((< x a) (cast (quotient x mk-by-n) Nonnegative-Integer)))))))
+             ((< x a) (assert (quotient x mk-by-n) nonnegative-integer?)))))))
 
 
 ; Pseudo-Randomization

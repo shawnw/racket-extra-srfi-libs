@@ -566,13 +566,13 @@
 	 (end1 (+ start1 delta)))
 
     (if (and (eq? s1 s2) (= start1 start2))	; EQ fast path
-	(cast delta Index)
+	(assert delta index?)
 
 	(let lp ((i start1) (j start2))		; Regular path
 	  (if (or (>= i end1)
 		  (not (char=? (string-ref s1 i)
 			       (string-ref s2 j))))
-	      (cast (- i start1) Index)
+	      (assert (- i start1) index?)
 	      (lp (+ i 1) (+ j 1)))))))
 
 (: %string-suffix-length (String Integer Integer String Integer Integer -> Index))
@@ -581,13 +581,13 @@
 	 (start1 (- end1 delta)))
 
     (if (and (eq? s1 s2) (= end1 end2))		; EQ fast path
-	(cast delta Index)
+	(assert delta index?)
 
 	(let lp ((i (- end1 1)) (j (- end2 1)))	; Regular path
 	  (if (or (< i start1)
 		  (not (char=? (string-ref s1 i)
 			       (string-ref s2 j))))
-	      (cast (- (- end1 i) 1) Index)
+	      (assert (- (- end1 i) 1) index?)
 	      (lp (- i 1) (- j 1)))))))
 
 (: %string-prefix-length-ci (String Integer Integer String Integer Integer -> Index))
@@ -596,13 +596,13 @@
 	 (end1 (+ start1 delta)))
 
     (if (and (eq? s1 s2) (= start1 start2))	; EQ fast path
-	(cast delta Index)
+	(assert delta index?)
 
 	(let lp ((i start1) (j start2))		; Regular path
 	  (if (or (>= i end1)
 		  (not (char-ci=? (string-ref s1 i)
 				  (string-ref s2 j))))
-	      (cast (- i start1) Index)
+	      (assert (- i start1) index?)
 	      (lp (+ i 1) (+ j 1)))))))
 
 (: %string-suffix-length-ci (String Integer Integer String Integer Integer -> Index))
@@ -611,13 +611,13 @@
 	 (start1 (- end1 delta)))
 
     (if (and (eq? s1 s2) (= end1 end2))		; EQ fast path
-	(cast delta Index)
+	(assert delta index?)
 
 	(let lp ((i (- end1 1)) (j (- end2 1)))	; Regular path
 	  (if (or (< i start1)
 		  (not (char-ci=? (string-ref s1 i)
 				  (string-ref s2 j))))
-	      (cast (- (- end1 i) 1) Index)
+	      (assert (- (- end1 i) 1) index?)
 	      (lp (- i 1) (- j 1)))))))
 
 (define-string-fun (string-prefix-length s1 s2 start1 end1 start2 end2 Index)
@@ -1006,7 +1006,7 @@
   (check-string-range 'string-trim-both s start end)
   (cond ((string-skip s criterion start end)
          => (lambda ([i : Index])
-              (%substring/shared s i (+ 1 (cast (string-skip-right s criterion i end) Index)))))
+              (%substring/shared s i (+ 1 (assert (string-skip-right s criterion i end) index?)))))
         (else "")))
 
 (: string-pad-right (->* (String Nonnegative-Integer) (Char Integer Integer) String))
@@ -1120,19 +1120,19 @@
          (let lp ((i start))
            (and (< i end)
                 (if (char=? criterion (string-ref str i))
-                    (cast i Index)
+                    (assert i index?)
                     (lp (+ i 1))))))
         ((char-set? criterion)
          (let lp ((i start))
            (and (< i end)
                 (if (char-set-contains? criterion (string-ref str i))
-                    (cast i Index)
+                    (assert i index?)
                     (lp (+ i 1))))))
         ((char-pred? criterion)
          (let lp ((i start))
            (and (< i end)
                 (if (criterion (string-ref str i))
-                    (cast i Index)
+                    (assert i index?)
                     (lp (+ i 1))))))))
 
 (define-string-criterion-fun (string-index-right str criterion start end (Option Index))
@@ -1140,19 +1140,19 @@
          (let lp ((i (- end 1)))
            (and (>= i start)
                 (if (char=? criterion (string-ref str i))
-                    (cast i Index)
+                    (assert i index?)
                     (lp (- i 1))))))
         ((char-set? criterion)
          (let lp ((i (- end 1)))
            (and (>= i start)
                 (if (char-set-contains? criterion (string-ref str i))
-                    (cast i Index)
+                    (assert i index?)
                     (lp (- i 1))))))
         ((char-pred? criterion)
          (let lp ((i (- end 1)))
            (and (>= i start)
                 (if (criterion (string-ref str i))
-                    (cast i Index)
+                    (assert i index?)
                     (lp (- i 1))))))))
 
 (define-string-criterion-fun (string-skip str criterion start end (Option Index))
@@ -1161,18 +1161,18 @@
            (and (< i end)
                 (if (char=? criterion (string-ref str i))
                     (lp (+ i 1))
-                    (cast i Index)))))
+                    (assert i index?)))))
         ((char-set? criterion)
          (let lp ((i start))
            (and (< i end)
                 (if (char-set-contains? criterion (string-ref str i))
                     (lp (+ i 1))
-                    (cast i Index)))))
+                    (assert i index?)))))
         ((char-pred? criterion)
          (let lp ((i start))
            (and (< i end)
                 (if (criterion (string-ref str i)) (lp (+ i 1))
-                    (cast i Index)))))))
+                    (assert i index?)))))))
 
 (define-string-criterion-fun (string-skip-right str criterion start end (Option Index))
   (cond ((char? criterion)
@@ -1180,18 +1180,18 @@
            (and (>= i start)
                 (if (char=? criterion (string-ref str i))
                     (lp (- i 1))
-                    (cast i Index)))))
+                    (assert i index?)))))
         ((char-set? criterion)
          (let lp ((i (- end 1)))
            (and (>= i start)
                 (if (char-set-contains? criterion (string-ref str i))
                     (lp (- i 1))
-                    (cast i Index)))))
+                    (assert i index?)))))
         ((char-pred? criterion)
          (let lp ((i (- end 1)))
            (and (>= i start)
                 (if (criterion (string-ref str i)) (lp (- i 1))
-                    (cast i Index)))))))
+                    (assert i index?)))))))
 
 (define-string-criterion-fun (string-count s criterion start end Integer)
   (cond ((char? criterion)
@@ -1284,7 +1284,7 @@
 	     (pj plen))		 ; (- plen pi) -- how many chars left.
 
       (if (= pi plen)
-	  (cast (- ti plen) Index)			; Win.
+	  (assert (- ti plen) index?)			; Win.
 	  (and (<= pj tj)		; Lose.
 	       (if (c= (string-ref text ti) ; Search.
 		       (string-ref pattern (+ p-start pi)))
@@ -1371,7 +1371,7 @@
 (define (kmp-step pat rv c i c= p-start)
   (let lp ((i i))
     (if (c= c (string-ref pat (+ i p-start)))	; Match =>
-	(cast (+ i 1) Index)					;   Done.
+	(assert (+ i 1) index?)					;   Done.
 	(let ((i (vector-ref rv i)))		; Back up in PAT.
 	  (if (= i -1) 0			; Can't back up further.
 	      (lp i))))))			; Keep trying for match.
@@ -1657,7 +1657,7 @@
 (define (xsubstring s from [to (+ (string-length s) 1)] [start 0] [end (string-length s)])
   (check-string-range 'xsubstring s from)
   (check-string-range 'xsubstring s start end)
-  (let* ([to (cast (if (= to (+ (string-length s) 1)) (+ from (- end start)) to) Index)]
+  (let* ([to (assert (if (= to (+ (string-length s) 1)) (+ from (- end start)) to) index?)]
          [slen   (- end start)]
          [anslen (- to  from)])
     (cond ((zero? anslen) "")
@@ -1690,7 +1690,7 @@
   (check-string-range 'string-xcopy! target tstart)
   (check-string-range 'string-xcopy! s sfrom)
   (check-string-range 'string-xcopy! s start end)
-  (let* ([sto (cast (if (= sto (+ (string-length s) 1)) (+ sfrom (- end start)) sto) Index)]
+  (let* ([sto (assert (if (= sto (+ (string-length s) 1)) (+ sfrom (- end start)) sto) index?)]
          [tocopy (- sto sfrom)]
          [tend (+ tstart tocopy)]
          [slen (- end start)])
