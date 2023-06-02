@@ -8,7 +8,7 @@
 (provide
  ; Reexported functions from racket/base and racket/vector
  vector-copy vector-append vector-empty?
- 
+
  (contract-out
   [vector-unfold (-> procedure? exact-nonnegative-integer? any/c ... vector?)]
   [vector-unfold-right (-> procedure? exact-nonnegative-integer? any/c ... vector?)]
@@ -41,9 +41,20 @@
   [reverse-list->vector (-> list? vector?)]
   [string->vector (->* (string?) (exact-nonnegative-integer? exact-nonnegative-integer?) vector?)]
   [vector->string (->* ((vectorof char?)) (exact-nonnegative-integer? exact-nonnegative-integer?) string?)]
+  [vector-append-subvectors (->i () ()
+                                 #:rest [triplets list?]
+                                 #:pre/name (triplets)
+                                 "expecting 0 or more triplets of vector start-index end-index"
+                                 (and (= (remainder (length triplets) 3) 0)
+                                      (let loop ([triplets triplets])
+                                        (cond
+                                          ((null? triplets) #t)
+                                          ((not (vector? (car triplets))) #f)
+                                          ((not (exact-nonnegative-integer? (cadr triplets))) #f)
+                                          ((not (exact-nonnegative-integer? (caddr triplets))) #f)
+                                          (else (loop (cdddr triplets))))))
+                                 [result vector?])]
   )
- ; Need to figure out contracts for these
- vector-append-subvectors
  )
  
 ;;;;;; SRFI 43: Vector library                           -*- Scheme -*-
