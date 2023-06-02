@@ -177,11 +177,15 @@ being aliases for the non-side-effect versions.
 @section{SRFI-133 Vector Library (R7RS-compatible)}
 
 @defmodule[srfi/133]
+@defmodule[typed/srfi/133]
 
-@hyperlink{"https://srfi.schemers.org/srfi-133/srfi-133.html"{Reference documentation}.
+@hyperlink["https://srfi.schemers.org/srfi-133/srfi-133.html"]{Reference documentation}.
 
-@bold{Notes}: See also @hyperlink["https://srfi.schemers.org/srfi-43/srfi-43.html"]{SRFI-43} included with Racket.
- Notable differences are functions that take callbacks not passing the current index like they do in 43.
+See also @hyperlink["https://srfi.schemers.org/srfi-43/srfi-43.html"]{SRFI-43} included with Racket.
+Notable differences are functions that take callbacks not passing the current index like they do in 43.
+
+Also available in a Typed Racket version. @code{vector-append-subvectors} is not currently provided by that module,
+because I can't figure out how to express a type signature for it.
 
 @section{SRFI-134 Immutable Deques}
 
