@@ -111,7 +111,7 @@ documentation}. Also includes
 @hyperlink["https://srfi.schemers.org/srfi-162/srfi-162.html"]{SRFI-162
 Comparators sublibrary} and
 @hyperlink["https://srfi.schemers.org/srfi-228/srfi-228.html"]{SRFI-228
-Composing Comparators) routines and variables.
+Composing Comparators} routines and variables.
 
 The @code{make-eq-comparator}, @code{make-eqv-comparator},
 @code{make-equal-comparator} and @code{make-equal-always} functions
