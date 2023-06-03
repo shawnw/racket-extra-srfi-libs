@@ -1,9 +1,26 @@
 #lang racket/base
 
-(require racket/contract racket/vector racket/unsafe/ops)
+(require racket/contract racket/list racket/vector racket/unsafe/ops)
 (module+ test (require rackunit))
 
 (define mutable-vector? (and/c vector? (not/c immutable?)))
+
+(define (rest-star/c . contracts)
+  (define ncontracts (length contracts))
+  (make-flat-contract
+   #:name (apply build-compound-type-name 'rest-star/c contracts)
+   #:list-contract? #t
+   #:first-order
+   (lambda (vals)
+     (and (list? vals)
+          (= (remainder (length vals) ncontracts) 0)
+          (let loop ([vals vals])
+            (if (null? vals)
+                #t
+                (let-values ([(this-set rest) (split-at vals ncontracts)])
+                  (if (andmap (lambda (contract val) (contract val)) contracts this-set)
+                      (loop rest)
+                      #f))))))))
 
 (provide
  ; Reexported functions from racket/base and racket/vector
@@ -41,21 +58,8 @@
   [reverse-list->vector (-> list? vector?)]
   [string->vector (->* (string?) (exact-nonnegative-integer? exact-nonnegative-integer?) vector?)]
   [vector->string (->* ((vectorof char?)) (exact-nonnegative-integer? exact-nonnegative-integer?) string?)]
-  [vector-append-subvectors (->i () ()
-                                 #:rest [triplets list?]
-                                 #:pre/name (triplets)
-                                 "expecting 0 or more triplets of vector start-index end-index"
-                                 (and (= (remainder (length triplets) 3) 0)
-                                      (let loop ([triplets triplets])
-                                        (cond
-                                          ((null? triplets) #t)
-                                          ((not (vector? (car triplets))) #f)
-                                          ((not (exact-nonnegative-integer? (cadr triplets))) #f)
-                                          ((not (exact-nonnegative-integer? (caddr triplets))) #f)
-                                          (else (loop (cdddr triplets))))))
-                                 [result vector?])]
-  )
- )
+  [vector-append-subvectors (->* () () #:rest (rest-star/c vector? exact-nonnegative-integer? exact-nonnegative-integer?) vector?)]
+  ))
  
 ;;;;;; SRFI 43: Vector library                           -*- Scheme -*-
 ;;;

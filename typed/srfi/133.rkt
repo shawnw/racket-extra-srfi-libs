@@ -5,7 +5,7 @@
 ;;; functions tht take multiple vectors of different types playing nice with the type checker.
 ;;; Also helps test shallow typing.
 
-(require/typed
+(require/typed/provide
  "../../srfi/133.rkt"
  [vector-unfold (All (a b ...) (Index b ... -> (Values a b ...)) Integer b ... -> (Mutable-Vectorof a))]
  [vector-unfold-right (All (a b ...) (Index b ... -> (Values a b ...)) Integer b ... -> (Mutable-Vectorof a))]
@@ -38,12 +38,14 @@
  [reverse-list->vector (All (a) (Listof a) -> (Mutable-Vectorof a))]
  [string->vector (->* (String) (Integer Integer) (Mutable-Vectorof Char))]
  [vector->string (->* ((Vectorof Char)) (Integer Integer) String)]
-  )
-(require/typed
+ [vector-append-subvectors (All (a) (->* () #:rest-star ((Vectorof a) Integer Integer) (Mutable-Vectorof a)))])
+
+(require/typed/provide
  racket/vector
  [vector-empty? (VectorTop -> Boolean)])
+
 (require (only-in racket/vector vector-append vector-copy))
-(provide vector-empty? vector-append vector-copy (all-from-out "../../srfi/133.rkt"))
+(provide vector-append vector-copy)
 
 (module+ test
   (require typed/rackunit)
@@ -52,7 +54,7 @@
     (let () tests ...))
   (define-syntax-rule (test-assert expr) (check-not-false expr))
   (define-syntax-rule (test expected expr) (check-equal? expr expected))
-  
+  (time
 (test-group "vectors"
   (test-group "vectors/basics"
     (define v (make-vector 3 3))
@@ -86,7 +88,7 @@
     (test '#(a b c d) (vector-append '#(a) '#(b c d)))
     (test '#(a #(b) #(c)) (vector-append '#(a #(b)) '#(#(c))))
     (test '#(a b c d) (vector-concatenate '(#(a b) #(c d))))
-    #;(test '#(a b h i) (vector-append-subvectors '#(a b c d e) 0 2 '#(f g h i j) 2 4))
+    (test '#(a b h i) (vector-append-subvectors '#(a b c d e) 0 2 '#(f g h i j) 2 4))
   ) ; end vectors/constructors
 
   (test-group "vectors/predicates"
@@ -246,4 +248,4 @@
     (test '#(#\a #\b) (string->vector "abc" 0 2))
   ) ; end vectors/conversion
 ) ; end vectors
-)
+))
