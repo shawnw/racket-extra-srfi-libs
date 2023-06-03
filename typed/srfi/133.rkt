@@ -7,32 +7,32 @@
 
 (require/typed/provide
  "../../srfi/133.rkt"
- [vector-unfold (All (a b ...) (Index b ... -> (Values a b ...)) Integer b ... -> (Mutable-Vectorof a))]
- [vector-unfold-right (All (a b ...) (Index b ... -> (Values a b ...)) Integer b ... -> (Mutable-Vectorof a))]
+ [vector-unfold (All (a b ...) (Index b ... b -> (Values a b ... b)) Integer b ... b -> (Mutable-Vectorof a))]
+ [vector-unfold-right (All (a b ...) (Index b ... b -> (Values a b ... b)) Integer b ... b -> (Mutable-Vectorof a))]
  [vector-reverse-copy (All (a) (->* ((Vectorof a)) (Integer Integer) (Mutable-Vectorof a)))]
  [vector-concatenate (All (a) (Listof (Vectorof a)) -> (Mutable-Vectorof a))]
  [vector= (All (a) (a a -> Any) (Vectorof a) * -> Boolean)]
- [vector-fold (All (a b ...) (a b ... -> a) a (Vectorof b) ... -> a)]
- [vector-fold-right (All (a b ...) (a b ... -> a) a (Vectorof b) ... -> a)]
- [vector-map (All (a b c ...) (a c ... -> b) (Vectorof a) (Vectorof c) ... -> (Mutable-Vectorof b))]
- [vector-map! (All (a c ...) (a c ... -> a) (Mutable-Vectorof a) (Vectorof c) ... -> Void)]
- [vector-for-each (All (a b ...) (a b ... -> Any) (Vectorof a) (Vectorof b) ... -> Void)]
- [vector-count (All (a b ...) (a b ... -> Any) (Vectorof a) (Vectorof b) ... -> Nonnegative-Integer)]
+ [vector-fold (All (a b ...) (a b ... b -> a) a (Vectorof b) ... b -> a)]
+ [vector-fold-right (All (a b ...) (a b ... b -> a) a (Vectorof b) ... b -> a)]
+ [vector-map (All (a b c ...) (a c ... c -> b) (Vectorof a) (Vectorof c) ... c -> (Mutable-Vectorof b))]
+ [vector-map! (All (a c ...) (a c ... c -> a) (Mutable-Vectorof a) (Vectorof c) ... c -> Void)]
+ [vector-for-each (All (a b ...) (a b ... b -> Any) (Vectorof a) (Vectorof b) ... b -> Void)]
+ [vector-count (All (a b ...) (a b ... b -> Any) (Vectorof a) (Vectorof b) ... b -> Nonnegative-Integer)]
  [vector-cumulate (All (a b) (a b -> a) a (Vectorof b) -> (Mutable-Vectorof a))]
- [vector-index (All (a b ...) (a b ... -> Any) (Vectorof a) (Vectorof b) ... -> (Option Index))]
- [vector-index-right (All (a b ...) (a b ... -> Any) (Vectorof a) (Vectorof b) ... -> (Option Index))]
- [vector-skip (All (a b ...) (a b ... -> Any) (Vectorof a) (Vectorof b) ... -> (Option Index))]
- [vector-skip-right (All (a b ...) (a b ... -> Any) (Vectorof a) (Vectorof b) ... -> (Option Index))]
+ [vector-index (All (a b ...) (a b ... b -> Any) (Vectorof a) (Vectorof b) ... b -> (Option Index))]
+ [vector-index-right (All (a b ...) (a b ... b -> Any) (Vectorof a) (Vectorof b) ... b -> (Option Index))]
+ [vector-skip (All (a b ...) (a b ... b -> Any) (Vectorof a) (Vectorof b) ... b -> (Option Index))]
+ [vector-skip-right (All (a b ...) (a b ... b -> Any) (Vectorof a) (Vectorof b) ... b -> (Option Index))]
  [vector-binary-search (All (a) (->* ((Vectorof a) a (a a -> Integer)) (Integer Integer) (Option Index)))]
- [vector-any (All (a c b ...) (a b ... -> c) (Vectorof a) (Vectorof b) ... -> (Option c))]
- [vector-every (All (a c b ...) (a b ... -> c) (Vectorof a) (Vectorof b) ... -> (Option c))]
+ [vector-any (All (a c b ...) (a b ... b -> c) (Vectorof a) (Vectorof b) ... b -> (Option c))]
+ [vector-every (All (a c b ...) (a b ... b -> c) (Vectorof a) (Vectorof b) ... b -> (Option c))]
  [vector-partition (All (a) (a -> Any) (Vectorof a) -> (Values (Mutable-Vectorof a) Index))]
  [vector-swap! (All (a) (Mutable-Vectorof a) Integer Integer -> Void)]
  [vector-fill! (All (a) (->* ((Mutable-Vectorof a) a) (Integer Integer) Void))]
  [vector-reverse! (All (a) (->* ((Mutable-Vectorof a)) (Integer Integer) Void))]
  [vector-reverse-copy! (All (a) (->* ((Mutable-Vectorof a) Integer (Vectorof a)) (Integer Integer) Void))]
- [vector-unfold! (All (a b ...) (Index b ... -> (Values a b ...)) (Mutable-Vectorof a) Integer Integer b ... -> Void)]
- [vector-unfold-right! (All (a b ...) (Index b ... -> (Values a b ...)) (Mutable-Vectorof a) Integer Integer b ... -> Void)]
+ [vector-unfold! (All (a b ...) (Index b ... b -> (Values a b ... b)) (Mutable-Vectorof a) Integer Integer b ... b -> Void)]
+ [vector-unfold-right! (All (a b ...) (Index b ... b -> (Values a b ... b)) (Mutable-Vectorof a) Integer Integer b ... b -> Void)]
  [vector->list (All (a) (->* ((Vectorof a)) (Integer Integer) (Listof a)))]
  [reverse-vector->list (All (a) (->* ((Vectorof a)) (Integer Integer) (Listof a)))]
  [reverse-list->vector (All (a) (Listof a) -> (Mutable-Vectorof a))]
@@ -54,8 +54,8 @@
     (let () tests ...))
   (define-syntax-rule (test-assert expr) (check-not-false expr))
   (define-syntax-rule (test expected expr) (check-equal? expr expected))
-  (time
-(test-group "vectors"
+
+  (test-group "vectors"
   (test-group "vectors/basics"
     (define v (make-vector 3 3))
     (test-assert (vector? #(1 2 3)))
@@ -246,6 +246,6 @@
     (test '#(#\a #\b #\c) (string->vector "abc"))
     (test '#(#\b #\c) (string->vector "abc" 1))
     (test '#(#\a #\b) (string->vector "abc" 0 2))
-  ) ; end vectors/conversion
-) ; end vectors
-))
+    ) ; end vectors/conversion
+  ) ; end vectors
+)
