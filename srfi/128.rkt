@@ -146,6 +146,9 @@
        0)))
 
 (struct comparator (type-test-predicate equality-predicate ordering-predicate hash-function secondary-hash-function ordered? hashable?)
+  #:property prop:flat-contract
+  (build-flat-contract-property #:name 'comparator
+                                #:first-order (lambda (comp) (comparator-type-test-predicate comp)))
   #:methods gen:equal+hash
   [(define (equal-proc a b real-equal?)
      (and
@@ -1181,4 +1184,10 @@
                         mnd
                         bob
                         revolver)))))
+
+  (test-group "contracts"
+              (test-assert (flat-contract? char-comparator))
+              (test-assert (char-comparator #\a))
+              (check-false (char-comparator 1)))
+
   ) ; end comparators

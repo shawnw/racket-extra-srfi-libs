@@ -111,9 +111,7 @@ documentation}. Also includes
 @hyperlink["https://srfi.schemers.org/srfi-162/srfi-162.html"]{SRFI-162
 Comparators sublibrary} and
 @hyperlink["https://srfi.schemers.org/srfi-228/srfi-228.html"]{SRFI-228
-Composing Comparators)} routines and variables.
-
-@bold{Notes}:
+Composing Comparators) routines and variables.
 
 The @code{make-eq-comparator}, @code{make-eqv-comparator},
 @code{make-equal-comparator} and @code{make-equal-always} functions
@@ -126,6 +124,9 @@ etc. hash functions instead of @code{default-hash}.
 @code{#f}. This is used for better compability with Racket's custom
 hash tables, which take two hash functions. Hash functions can also return
 negative numbers, contrary to the SRFI spec.
+
+Comparators can be used as flat contracts (And thus predicates) that test their argument
+against their type test predicate. 
 
 @subsection{Additional definitions}
 
