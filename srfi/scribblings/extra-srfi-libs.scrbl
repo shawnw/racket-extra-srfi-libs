@@ -139,7 +139,7 @@ hash tables, which take two hash functions. Hash functions can also return
 negative numbers, contrary to the SRFI spec.
 
 Comparators can be used as flat contracts (And thus predicates) that test their argument
-against their type test predicate. 
+against their type test predicate.
 
 @subsection{Additional definitions}
 
@@ -279,12 +279,15 @@ The type of exception raised by @code{assume}.
 @defmodule[srfi/146]
 
 @code{mapping?} objects are also @code{ordered-dict?}s and many
-functions in this module can be used with other ordered dicts. The
-mapping implementation uses
-@hyperlink["https://en.wikipedia.org/wiki/Scapegoat_tree"]{scapegoat
-trees}.
+functions in this module can be used with other ordered dicts or even unordered-ones for operations where order doens't matter.
+The mapping implementation uses
+@hyperlink["https://en.wikipedia.org/wiki/Scapegoat_tree"]{scapegoat trees}.
 
 The current @code{make-mapping-comparator} and @code{mapping-comparator} do not provide ordering.
+
+The linear update versions of functions with names ending in !, if passed an external dict object that supports side effect operations, will update it in place and return it.
+If passed an immutable dict, they will just return a new object like the non-linear versions. Basically, as long as you follow the guideline of never using a particular dict
+object again after passing it to a linear update function, everything will Just Work no matter what.
 
 @bold{Additional functions}:
 
@@ -316,7 +319,7 @@ Like @code{in-ordered-dict} but only returns the values.
 
 @code{hashmap?} objects are also @code{dict?}s and many functions in
 this module can be used with other types of dicts. The hashmap implementation
-uses Racket's built in hash tables.
+uses Racket's immutable hash tables, but also support mutable side-effect functionality.
 
 @section{SRFI-151 Bitwise Operations}
 
