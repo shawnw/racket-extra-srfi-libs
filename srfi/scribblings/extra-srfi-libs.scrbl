@@ -15,6 +15,19 @@ A note on licensings: Most of the included SRFIs are the reference implementatio
 Typical changes to the reference versions include adding contracts and removing now-redundant type checking, avoiding things Scheme allows
 that Racket doesn't like @code{if} missing an else clause, reorganization of source files, etc.
 
+@section{SRFI-1 List Library}
+
+@defmodule[typed/srfi/1]
+
+@hyperlink["https://srfi.schemers.org/srfi-1/srfi-1.html"]{Reference documentation}.
+
+Imports SRFI-1 functions into a Shallow Typed Racket module.
+Circular and dotted lists aren't always accepted where the documentation says they should be; I still need to work out if it's even possible to represent a circular list in TR.
+
+The linear update procedures ending with a ! are just aliases for the normal ones, thanks to Racket's immutable cons cells. This behavior is allowed by the SRFI.
+
+
+
 @section{SRFI-13 String Libraries}
 
 @defmodule[typed/srfi/13]
@@ -185,8 +198,7 @@ being aliases for the non-side-effect versions.
 See also @hyperlink["https://srfi.schemers.org/srfi-43/srfi-43.html"]{SRFI-43} included with Racket.
 Notable differences are functions that take callbacks not passing the current index like they do in 43.
 
-Also available in a Typed Racket version. @code{vector-append-subvectors} is not currently provided by that module,
-because I can't figure out how to express a type signature for it.
+Also available in a shallow Typed Racket version.
 
 @section{SRFI-134 Immutable Deques}
 
