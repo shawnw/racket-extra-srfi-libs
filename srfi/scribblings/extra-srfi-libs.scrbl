@@ -26,7 +26,11 @@ Circular and dotted lists aren't always accepted where the documentation says th
 
 The linear update procedures ending with a ! are just aliases for the normal ones, thanks to Racket's immutable cons cells. This behavior is allowed by the SRFI.
 
+@defform[#:kind "type" (Circular-Listof a)]{
 
+The type of a homogeneous circular list as returned by @code{circular-list}.
+
+}
 
 @section{SRFI-13 String Libraries}
 
