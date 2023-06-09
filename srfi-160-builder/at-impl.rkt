@@ -502,7 +502,7 @@
           (r (make-@vector len)))
      (let loop ((i 0) (yes 0) (no cnt))
        (cond
-         ((= i len) r)
+         ((= i len) (values r cnt))
          ((pred (@vector-ref vec i))
           (@vector-set! r yes (@vector-ref vec i))
           (loop (+ i 1) (+ yes 1) no))
