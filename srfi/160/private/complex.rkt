@@ -27,6 +27,15 @@
   [list->c64vector (-> (listof complex?) c64vector?)]
   [list->c128vector (-> (listof complex?) c128vector?)]))
 
+(module+ unsafe
+  (provide c64vector? c128vector?
+           make-c64vector make-c128vector
+           c64vector c128vector
+           c64vector-length c128vector-length
+           c64vector-ref c128vector-ref
+           c64vector-set! c128vector-set!
+           list->c64vector list->c128vector))
+
 (define (fl n) (real->double-flonum n))
 
 ;;; Main constructor

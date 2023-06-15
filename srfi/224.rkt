@@ -24,6 +24,7 @@
 
 (provide
  (contract-out
+  #:unprotected-submodule unsafe
   [fxmapping? predicate/c]
   [fxmapping (->i () () #:rest [kvs list?]
                   #:pre/desc (kvs) (validate-args kvs)

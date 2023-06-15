@@ -27,6 +27,7 @@
  vector-copy vector-append vector-empty?
 
  (contract-out
+  #:unprotected-submodule unsafe
   [vector-unfold (-> procedure? exact-nonnegative-integer? any/c ... vector?)]
   [vector-unfold-right (-> procedure? exact-nonnegative-integer? any/c ... vector?)]
   [vector-reverse-copy (->* (vector?) (exact-nonnegative-integer? exact-nonnegative-integer?) vector?)]

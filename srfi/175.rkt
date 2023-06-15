@@ -25,6 +25,7 @@
 
 (provide
  (contract-out
+  #:unprotected-submodule unsafe
   [ascii-codepoint? predicate/c]
   [ascii-char? predicate/c]
   [ascii-string? predicate/c]

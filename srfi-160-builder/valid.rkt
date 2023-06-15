@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/contract)
+(require racket/contract racket/unsafe/ops)
 
 (provide
  (contract-out
@@ -19,13 +19,17 @@
   [fl? predicate/c]
   [fx? predicate/c]))
 
+(module+ unsafe
+  (provide u8? s8? u16? s16? u32? s32? u64? s64? f32? f64?
+           c64? c128? fl? fx?))
+
 (define u8? (procedure-rename byte? 'u8?))
 
-(define (s8? n) (and (fixnum? n) (<= -128 n 127)))
+(define (s8? n) (and (fixnum? n) (unsafe-fx<= -128 n 127)))
 
-(define (u16? n) (and (fixnum? n) (<= 0 n 65535)))
+(define (u16? n) (and (fixnum? n) (unsafe-fx<= 0 n 65535)))
 
-(define (s16? n) (and (fixnum? n) (<= -32768 n 32767)))
+(define (s16? n) (and (fixnum? n) (unsafe-fx<= -32768 n 32767)))
 
 (define (u32? n) (and (exact-integer? n) (<= 0 n 4294967295)))
 

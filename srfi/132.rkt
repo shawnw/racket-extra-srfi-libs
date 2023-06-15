@@ -7,7 +7,7 @@
 (module+ test (require rackunit))
 
 (provide
- (contract-out
+ (contract-out #:unprotected-submodule unsafe
   [list-sorted? (-> (-> any/c any/c any/c) list? boolean?)]
   [vector-sorted? (->* ((-> any/c any/c any/c) vector?) (exact-nonnegative-integer? exact-nonnegative-integer?) boolean?)]
   [list-sort (-> (-> any/c any/c any/c) list? list?)]

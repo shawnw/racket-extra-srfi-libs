@@ -15,6 +15,9 @@ A note on licensings: Most of the included SRFIs are the reference implementatio
 Typical changes to the reference versions include adding contracts and removing now-redundant type checking, avoiding things Scheme allows
 that Racket doesn't like @code{if} missing an else clause, reorganization of source files, etc.
 
+Modules that are noted as providing an @tt{unsafe} option have a submodule named @tt{unsafe} that exports functions without contracts and potentially other run time checks.
+Passing those functions invalid or out of range arguments can have unpredictable results. Use with caution.
+
 @section{SRFI-1 List Library}
 
 @defmodule[typed/srfi/1]
@@ -179,8 +182,6 @@ A comparator returned by @code{make-equal-always-comparator}.
 @hyperlink["https://srfi.schemers.org/srfi-132/srfi-132.html"]{Reference
 documentation}.
 
-@bold{Notes}:
-
 @code{vector-sort} and @code{vector-sort!} conflict with
 the ones in @code{racket/vector} - the order of the vector and
 ordering predicate is reversed.
@@ -192,6 +193,8 @@ test cases pass, but if this becomes an issue in practice (The
 function has lots of warnings attached), I'll switch them to just
 being aliases for the non-side-effect versions.
 
+Available as an unsafe module via @code{(require (submod srfi/132 unsafe))}.
+
 @section{SRFI-133 Vector Library (R7RS-compatible)}
 
 @defmodule[srfi/133]
@@ -202,7 +205,7 @@ being aliases for the non-side-effect versions.
 See also @hyperlink["https://srfi.schemers.org/srfi-43/srfi-43.html"]{SRFI-43} included with Racket.
 Notable differences are functions that take callbacks not passing the current index like they do in 43.
 
-Also available in a shallow Typed Racket version.
+Also available in a shallow Typed Racket version and an unsafe version as @code{(require (submod srfi/133 unsafe))}.
 
 @section{SRFI-134 Immutable Deques}
 
@@ -351,6 +354,8 @@ These generators are @bold{not} compatible with the ones in
 wrap Racket generators in SRFI-158 ones, but beware of conflicting
 @code{generator} identifiers in the two modules.
 
+Available as an unsafe module via @code{(require (submod srfi/158 unsafe))}.
+
 @defproc[(generator? [obj any/c]) boolean?]{
 
 Returns @code{#t} if the object appears to be a generator - a
@@ -376,13 +381,15 @@ Adapt a Racket sequence to a SRFI-158 generator.
 
 @hyperlink["https://srfi.schemers.org/srfi-160/srfi-160.html"]{Reference
 documentation}. In addition to all the numeric types in the SRFI,
-functions for @code{flvector?} and @code{fxvector?} vectors are also
+functions for @code{flvector} and @code{fxvector} vectors are also
 provided, with a @racketid{fl} and @racketid{fx} prefix
 respectively. If Racket CS ever gains support for 80-bit
 @code{extflonum?}  numbers on x86, I'll add support for
 @code{extflvector?} and @code{f80vector?} vectors too (And might
 adjust the @code{f32vector?} contracts to explicitly work with
 @code{single-flonum?} values if CS ever gets them).
+
+All these modules have an unsafe submodule.
 
 @defmodule[srfi/160/base]
 
@@ -438,7 +445,9 @@ Implemented as a distinct type (A transparent structure), with the range of the 
 
 @hyperlink["https://srfi.schemers.org/srfi-175/srfi-175.html"]{Reference documentation}.
 
-@bold{Notes}: What the SRFI calls a bytevector is what Racket calls a byte string.
+What the SRFI documentation calls a bytevector is what Racket calls a byte string.
+
+Available as an unsafe module via @code{(require (submod srfi/175 unsafe))}.
 
 @section{SRFI-190 Coroutine Generators}
 
@@ -464,7 +473,7 @@ The @code{command-line} procedure conflicts with the one in
 
 @section{SRFI-194 Random data generators}
 
-@defmodule[srif/194]
+@defmodule[srfi/194]
 
 @hyperlink["https://srfi.schemers.org/srfi-194/srfi-194.html"]{Reference documentation}.
 
@@ -550,7 +559,9 @@ Uses @code{match} style pattern matching.
 
 @hyperlink["https://srfi.schemers.org/srfi-207/srfi-207.html"]{Reference documentation}.
 
-@bold{Notes}: The @racket{u8"..."} reader syntax and I/O functions are not supported.
+The @code{u8"..."} reader syntax and I/O functions are not supported.
+
+Available in an unsafe version as @code{(require (submod srfi/207 unsafe))}.
 
 @section{SRFI-208 NaN Procedures}
 
@@ -660,8 +671,6 @@ Do a binary search in @code{fv} for @code{val} per SRFI-223 @code{bisect-right}.
 
 @hyperlink["https://srfi.schemers.org/srfi-217/srfi-217.html"]{Reference documentation}.
 
-@bold{Notes}:
-
 @racket{iset} objects also support the Racket @code{gen:set} interface
 and can be used with @racket{racket/set} functions. The set-theory
 functions like @code{set-union} only work when all sets are isets (The
@@ -674,6 +683,8 @@ such sets apply.
 The reference implementation, using Patricia trees, is currently being
 used. I'm considering replacing it with one that can more compactly
 store ranges of numbers.
+
+Available as an unsafe module via @code{(require (submod srfi/217 unsafe))}.
 
 @section{SRFI-223 Generalized binary search procedures}
 
@@ -742,11 +753,13 @@ Do a binary search in @code{fv} for @code{val} per SRFI-223 @code{bisect-right}.
 
 @hyperlink["https://srfi.schemers.org/srfi-224/srfi-224.html"]{Reference documentation}.
 
-@bold{Notes}: @racket{fxmapping} objects support the @code{gen:dict}
+@racket{fxmapping} objects support the @code{gen:dict}
 interface and can thus be used with @racket{racket/dict} functions.
 They also support @code{equal?} and are hashable so they can be used
 as keys in hash tables and sets. The usual warnings about mutating
 values stored in such mappings apply.
+
+Available as an unsafe module via @code{(require (submod srfi/224 unsafe))}.
 
 @section{SRFI-232 Flexible curried procedures}
 

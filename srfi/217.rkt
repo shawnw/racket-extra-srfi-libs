@@ -16,6 +16,7 @@
 
 (provide
  (contract-out
+  #:unprotected-submodule unsafe
   [iset (-> fixnum? ... iset?)]
   [list->iset (-> (listof fixnum?) iset?)]
   [list->iset! (-> iset? (listof fixnum?) iset?)]

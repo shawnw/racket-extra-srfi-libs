@@ -5,6 +5,7 @@
 (module+ test (require rackunit))
 (provide
  (contract-out
+  #:unprotected-submodule unsafe
   ;; SRFI-158
   [generator (-> any/c ... (-> any/c))]
   [circular-generator (-> any/c ... (-> any/c))]

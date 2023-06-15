@@ -48,6 +48,59 @@
   [flvector->list (->* (flvector?) (exact-nonnegative-integer? exact-nonnegative-integer?) (listof flonum?))]
   [fxvector->list (->* (fxvector?) (exact-nonnegative-integer? exact-nonnegative-integer?) (listof fixnum?))]))
 
+(module+ unsafe
+  (require
+   racket/unsafe/ops
+   (only-in ffi/vector
+            make-u8vector u8vector u8vector? list->u8vector
+            make-s8vector s8vector s8vector? list->s8vector
+            s8vector-ref s8vector-set! s8vector-length
+            make-u16vector u16vector u16vector? list->u16vector
+            u16vector-length
+            make-s16vector s16vector s16vector? list->s16vector
+            s16vector-length
+            make-u32vector u32vector u32vector? list->u32vector
+            u32vector-ref u32vector-set! u32vector-length
+            make-s32vector s32vector s32vector? list->s32vector
+            s32vector-ref s32vector-set! s32vector-length
+            make-u64vector u64vector u64vector? list->u64vector
+            u64vector-ref u64vector-set! u64vector-length
+            make-s64vector s64vector s64vector? list->s64vector
+            s64vector-ref s64vector-set! s64vector-length
+            make-f32vector f32vector f32vector? list->f32vector
+            f32vector-ref f32vector-set! f32vector-length
+            make-f64vector f64vector f64vector? list->f64vector
+            f64vector-length)
+   (submod "private/complex.rkt" unsafe)
+   (submod "private/flvector.rkt" unsafe)
+   (submod "private/fxvector.rkt" unsafe)
+   (submod "private/valid.rkt" unsafe))
+  (provide
+   (all-from-out ffi/vector)
+   (rename-out
+    [unsafe-bytes-ref u8vector-ref]
+    [unsafe-bytes-set! u8vector-set!]
+    [unsafe-bytes-length u8vector-length]
+    [unsafe-u16vector-ref u16vector-ref]
+    [unsafe-u16vector-set! u16vector-set!]
+    [unsafe-s16vector-ref s16vector-ref]
+    [unsafe-s16vector-set! s16vector-set!]
+    [unsafe-f64vector-ref f64vector-ref]
+    [unsafe-f64vector-set! f64vector-set!])
+   (all-from-out (submod "private/complex.rkt" unsafe))
+   (all-from-out (submod "private/flvector.rkt" unsafe))
+   (all-from-out (submod "private/fxvector.rkt" unsafe))
+   (all-from-out (submod "private/valid.rkt" unsafe))
+   u8vector->list s8vector->list
+   u16vector->list s16vector->list
+   u32vector->list s32vector->list
+   u64vector->list s64vector->list
+   f32vector->list f64vector->list
+   c64vector->list c128vector->list
+   flvector->list
+   fxvector->list
+   ))
+
 (module+ test
   ;;;; Shared tests
   ;;; Hvector = homogeneous vector

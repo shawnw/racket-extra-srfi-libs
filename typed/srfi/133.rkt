@@ -6,7 +6,7 @@
 ;;; Also helps test shallow typing.
 
 (require/typed/provide
- "../../srfi/133.rkt"
+ (submod "../../srfi/133.rkt" unsafe)
  [vector-unfold (All (a b ...) (Index b ... b -> (Values a b ... b)) Integer b ... b -> (Mutable-Vectorof a))]
  [vector-unfold-right (All (a b ...) (Index b ... b -> (Values a b ... b)) Integer b ... b -> (Mutable-Vectorof a))]
  [vector-reverse-copy (All (a) (->* ((Vectorof a)) (Integer Integer) (Mutable-Vectorof a)))]

@@ -115,6 +115,28 @@
   [write-@vector (->* (@vector?) (output-port?) void?)]
   [@vector-comparator comparator?]))
 
+(module+ unsafe
+  (require
+   (only-in
+    (submod "base.rkt" unsafe)
+    @? @vector? @vector make-@vector @vector-ref @vector-set! @vector-length
+    @vector->list list->@vector))
+
+  (provide
+   (all-from-out (submod "base.rkt" unsafe))
+   @vector-unfold @vector-unfold-right @vector-copy @vector-copy!
+   @vector-reverse-copy @vector-reverse-copy!
+   @vector-append @vector-concatenate @vector-empty?
+   @vector= @vector-take @vector-take-right @vector-drop @vector-drop-right
+   @vector-segment @vector-fold @vector-fold-right @vector-map @vector-map!
+   @vector-for-each @vector-count @vector-cumulate @vector-take-while
+   @vector-take-while-right @vector-drop-while @vector-drop-while-right
+   @vector-index @vector-index-right @vector-skip @vector-skip-right
+   @vector-any @vector-every @vector-partition @vector-filter
+   @vector-remove @vector-swap! @vector-fill! @vector-reverse! @vector-unfold!
+   @vector-unfold-right! reverse-@vector->list @vector->vector
+   make-@vector-generator write-@vector @vector-comparator
+   @vector-append-subvectors))
 
 (define (@vector-unfold f len seed)
   (unsafe

@@ -26,6 +26,7 @@
 
 (provide
  (contract-out
+  #:unprotected-submodule unsafe
   [bytestring-error? predicate/c]
   [bytestring (-> bytestring-args/c ... bytes?)]
   [make-bytestring (-> (listof bytestring-args/c) bytes?)]

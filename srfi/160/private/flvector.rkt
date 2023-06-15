@@ -18,6 +18,16 @@
   [f32vector->flvector (->* (f32vector?) (exact-nonnegative-integer? exact-nonnegative-integer?) flvector?)]
   [f64vector->flvector (->* (f64vector?) (exact-nonnegative-integer? exact-nonnegative-integer?) flvector?)]))
 
+(module+ unsafe
+  (provide
+   flvector? flvector make-flvector
+   (rename-out
+    [unsafe-flvector-ref flvector-ref]
+    [unsafe-flvector-set! flvector-set!]
+    [unsafe-flvector-length flvector-length])
+   list->flvector flvector->f32vector flvector->f64vector
+   f32vector->flvector f64vector->flvector))
+
 (define (list->flvector lst)
   (for/flvector #:length (length lst) ([elem (in-list lst)]) elem))
 
