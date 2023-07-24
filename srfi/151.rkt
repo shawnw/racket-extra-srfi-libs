@@ -2,8 +2,7 @@
 ;;; SRFI-151 Bitwise Operations
 
 (require/typed racket/unsafe/ops
-  [unsafe-fxpopcount (-> Nonnegative-Fixnum Exact-Nonnegative-Integer)])
-
+  [unsafe-fxpopcount (-> Nonnegative-Fixnum Nonnegative-Fixnum)])
 
 (module+ test (require typed/rackunit))
 
@@ -80,7 +79,7 @@
 (: bitwise-orc2 (-> Integer Integer Integer))
 (define (bitwise-orc2  i j)  (bitwise-ior i (bitwise-not j)))
 
-(: bitwise-eqv (->* () () #:rest Integer Integer))
+(: bitwise-eqv : Integer * -> Integer)
 (define (bitwise-eqv . args)
   (let lp ((args args) (ans -1))
     (if (pair? args)
@@ -209,7 +208,7 @@
        (acc : Exact-Nonnegative-Integer 0 (+ acc acc (if (car bs) 1 0))))
       ((null? bs) acc)))
 
-(: bits (->* () () #:rest Boolean Exact-Nonnegative-Integer))
+(: bits : Boolean * -> Exact-Nonnegative-Integer)
 (define (bits . bools)
   (list->bits bools))
 
