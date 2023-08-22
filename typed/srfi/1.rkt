@@ -40,26 +40,28 @@
  [unzip4 (All (a b c d e ...) (Listof (List a b c d e ... e)) -> (Values (Listof a) (Listof b) (Listof c) (Listof d)))]
  [unzip5 (All (a b c d e f ...) (Listof (List a b c d e f ... f)) -> (Values (Listof a) (Listof b) (Listof c) (Listof d) (Listof e)))]
  [count (All (a b ...) (a b ... b -> Any) (CListof a) (CListof b) ... b -> Nonnegative-Integer)]
+ ;Doesn't compile, sigh
+ ;[fold (All (a c b ...) (a b ... b c -> c) c (CListof a) (CListof b) ... b -> c)]
  [fold (All (a b c d)
             (case->
-             (-> (-> a b b) b (CListof a) b)
-             (-> (-> a b c c) c (CListof a) (CListof b) c)
-             (-> (-> a b c d d) d (CListof a) (CListof b) (CListof c) d)))] ; Like foldl, doesn't support unlimited lists
+             (-> (a b -> b) b (CListof a) b)
+             (-> (a b c -> c) c (CListof a) (CListof b) c)
+             (-> (a b c d -> d) d (CListof a) (CListof b) (CListof c) d)))] ; Like foldl, doesn't support unlimited lists
  [fold-right (All (a b c d)
                   (case->
-                   (-> (-> a b b) b (CListof a) b)
-                   (-> (-> a b c c) c (CListof a) (CListof b) c)
-                   (-> (-> a b c d d) d (CListof a) (CListof b) (CListof c) d)))] ; Like foldr, doesn't support unlimited lists
+                   (-> (a b -> b) b (CListof a) b)
+                   (-> (a b c -> c) c (CListof a) (CListof b) c)
+                   (-> (a b c d -> d) d (CListof a) (CListof b) (CListof c) d)))] ; Like foldr, doesn't support unlimited lists
  [pair-fold (All (a b c d)
                  (case->
-                  (-> (-> (Listof a) b b) b (Listof a) b)
-                  (-> (-> (Listof a) (Listof b) c c) c (Listof a) (Listof b) c)
-                  (-> (-> (Listof a) (Listof b) (Listof c) d d) d (Listof a) (Listof b) (Listof c) d)))] ; Like foldl, doesn't support unlimited lists
+                  (-> ((Listof a) b -> b) b (Listof a) b)
+                  (-> ((Listof a) (Listof b) c -> c) c (Listof a) (Listof b) c)
+                  (-> ((Listof a) (Listof b) (Listof c) d -> d) d (Listof a) (Listof b) (Listof c) d)))] ; Like foldl, doesn't support unlimited lists
  [pair-fold-right (All (a b c d)
                        (case->
-                        (-> (-> (Listof a) b b) b (Listof a) b)
-                        (-> (-> (Listof a) (Listof b) c c) c (Listof a) (Listof b) c)
-                        (-> (-> (Listof a) (Listof b) (Listof c) d d) d (Listof a) (Listof b) (Listof c) d)))] ; Like foldr, doesn't support unlimited lists
+                        (-> ((Listof a) b -> b) b (Listof a) b)
+                        (-> ((Listof a) (Listof b) c -> c) c (Listof a) (Listof b) c)
+                        (-> ((Listof a) (Listof b) (Listof c) d -> d) d (Listof a) (Listof b) (Listof c) d)))] ; Like foldr, doesn't support unlimited lists
  [reduce (All (a b)
               (case->
                (-> (a a -> a) b Null b)
@@ -77,15 +79,15 @@
  [append-map (All (a b c ...) (a c ... c -> (Listof b)) (CListof a) (CListof c) ... c -> (Listof b))]
  [map-in-order (All (a b c ...) (a c ... c -> b) (CListof a) (CListof c) ... c -> (Listof b))]
  [pair-for-each (All (a b ...) ((Listof a) (Listof b) ... b -> Any) (Listof a) (Listof b) ... b -> Void)]
- [filter-map (All (a b c ...) (a c ... c -> b) (CListof a) (CListof c) ... c -> (Listof b))]
+ [filter-map (All (a b c ...) (a c ... c -> (Option b)) (CListof a) (CListof c) ... c -> (Listof b))]
  [filter (All (a) (a -> Any) (Listof a) -> (Listof a))]
  [remove (All (a) (a -> Any) (Listof a) -> (Listof a))]
  [take-while (All (a) (a -> Any) (Listof a) -> (Listof a))]
  [drop-while (All (a) (a -> Any) (Listof a) -> (Listof a))]
  [span (All (a) (a -> Any) (CListof a) -> (Values (Listof a) (CListof a)))]
  [break (All (a) (a -> Any) (CListof a) -> (Values (Listof a) (CListof a)))]
- [any (All (a c b ...) (a b ... b -> c) (CListof a) (CListof b) ... b -> (Option c))]
- [every (All (a c b ...) (a b ... b -> c) (CListof a) (CListof b) ... b -> (Option c))]
+ [any (All (a c b ...) (a b ... b -> (Option c)) (CListof a) (CListof b) ... b -> (Option c))]
+ [every (All (a c b ...) (a b ... b -> (Option c)) (CListof a) (CListof b) ... b -> (Option c))]
  [list-index (All (a b ...) (a b ... b -> Any) (CListof a) (CListof b) ... b -> (Option Nonnegative-Integer))]
  [delete (All (a) (->* (a (Listof a)) ((a a -> Any)) (Listof a)))]
  [alist-cons (All (a b) a b (Listof (Pairof a b)) -> (Listof (Pairof a b)))]
