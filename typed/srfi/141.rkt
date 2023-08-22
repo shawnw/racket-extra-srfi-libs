@@ -77,7 +77,7 @@
         (else
          (ceiling+/+ n d))))
 
-(: ceiling-/- (-> Integer Integer (Values Integer Integer)))
+(: ceiling-/- (-> Negative-Integer Negative-Integer (Values Integer Integer)))
 (define (ceiling-/- n d)
   (let ((n (- 0 n)) (d (- 0 d)))
     (let ((q (quotient n d)) (r (remainder n d)))
@@ -85,7 +85,7 @@
           (values q r)
           (values (+ q 1) (- d r))))))
 
-(: ceiling+/+ (-> Integer Integer (Values Integer Integer)))
+(: ceiling+/+ (-> Nonnegative-Integer Nonnegative-Integer (Values Integer Integer)))
 (define (ceiling+/+ n d)
   (let ((q (quotient n d)) (r (remainder n d)))
     (if (zero? r)
@@ -148,7 +148,7 @@
         ((negative? d) (floor+/- n d))
         (else (values (quotient n d) (remainder n d)))))
 
-(: floor-/+ (-> Integer Integer (Values Integer Integer)))
+(: floor-/+ (-> Negative-Integer Nonnegative-Integer (Values Integer Integer)))
 (define (floor-/+ n d)
   (let ((n (- 0 n)))
     (let ((q (quotient n d)) (r (remainder n d)))
@@ -156,7 +156,7 @@
           (values (- 0 q) r)
           (values (- (- 0 q) 1) (- d r))))))
 
-(: floor+/- (-> Integer Integer (Values Integer Integer)))
+(: floor+/- (-> Nonnegative-Integer Negative-Integer (Values Integer Integer)))
 (define (floor+/- n d)
   (let ((d (- 0 d)))
     (let ((q (quotient n d)) (r (remainder n d)))
@@ -317,7 +317,7 @@
         (else
          (fxceiling+/+ n d))))
 
-(: fxceiling-/- (-> Fixnum Fixnum (Values Fixnum Fixnum)))
+(: fxceiling-/- (-> Negative-Fixnum Negative-Fixnum (Values Fixnum Fixnum)))
 (define (fxceiling-/- n d)
   (let ((n (fx- 0 n)) (d (fx- 0 d)))
     (let ((q (fxquotient n d)) (r (fxremainder n d)))
@@ -325,7 +325,7 @@
           (values q r)
           (values (fx+ q 1) (fx- d r))))))
 
-(: fxceiling+/+ (-> Fixnum Fixnum (Values Fixnum Fixnum)))
+(: fxceiling+/+ (-> Nonnegative-Fixnum Nonnegative-Fixnum (Values Fixnum Fixnum)))
 (define (fxceiling+/+ n d)
   (let ((q (fxquotient n d)) (r (fxremainder n d)))
     (if (fxzero? r)
@@ -388,7 +388,7 @@
         ((fxnegative? d) (fxfloor+/- n d))
         (else (values (fxquotient n d) (fxremainder n d)))))
 
-(: fxfloor-/+ (-> Fixnum Fixnum (Values Fixnum Fixnum)))
+(: fxfloor-/+ (-> Negative-Fixnum Nonnegative-Fixnum (Values Fixnum Fixnum)))
 (define (fxfloor-/+ n d)
   (let ((n (fx- 0 n)))
     (let ((q (fxquotient n d)) (r (fxremainder n d)))
@@ -396,7 +396,7 @@
           (values (fx- 0 q) r)
           (values (fx- (fx- 0 q) 1) (fx- d r))))))
 
-(: fxfloor+/- (-> Fixnum Fixnum (Values Fixnum Fixnum)))
+(: fxfloor+/- (-> Nonnegative-Fixnum Negative-Fixnum (Values Fixnum Fixnum)))
 (define (fxfloor+/- n d)
   (let ((d (fx- 0 d)))
     (let ((q (fxquotient n d)) (r (fxremainder n d)))
