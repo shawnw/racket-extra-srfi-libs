@@ -113,7 +113,11 @@
 ;;; the file for further notes on porting & performance tuning.)
 
 (require (for-syntax typed/racket/base)
-         typed/srfi/14 racket/fixnum)
+         typed/srfi/14 racket/fixnum
+         (only-in typed/racket/base
+                  [string-upcase rkt-string-upcase]
+                  [string-downcase rkt-string-downcase]
+                  [string-titlecase rkt-string-titlecase]))
 
 (provide
  string-map string-map!
@@ -125,7 +129,7 @@
  string-compare string-compare-ci
  string=    string<    string>    string<=    string>=    string<>
  string-ci= string-ci< string-ci> string-ci<= string-ci>= string-ci<>
- string-downcase-13  string-upcase-13  string-titlecase-13
+ string-downcase  string-upcase  string-titlecase
  string-downcase! string-upcase! string-titlecase!
  string-take string-take-right
  string-drop string-drop-right
@@ -151,7 +155,7 @@
  string-replace
 
  ;;R5RS extended:
- string->list-13 string-copy-13 string-fill!-13
+ string->list string-copy string-fill!
 
  ;;R5RS re-exports:
  string? make-string string-length string-ref string-set!
@@ -261,7 +265,7 @@
       s
       (substring s start end)))
 
-(define-string-fun (string-copy-13 s start end String)
+(define-string-fun (string-copy s start end String)
   (substring s start end))
 
 ;(: %string-copy (String Index Index -> String))
@@ -889,18 +893,18 @@
       (if (fx>= i end) (fxmodulo ans bound)
 	  (lp (fx+ i 1) (bitwise-and mask (fx+ (fx* ans 37) (iref s i))))))))
 
-(: string-hash (->* (String) (Nonnegative-Fixnum Index Index) Fixnum))
+(: string-hash (->* (String) (Nonnegative-Fixnum Integer Integer) Fixnum))
 (define (string-hash s [bound 4194304] [start 0] [end (string-length s)])
   (check-string-range 'string-hash s start end)
   (let ((bound (if (zero? bound) 4194304 bound)))	; 0 means default.
-    (%string-hash s char->integer bound start end)))
+    (%string-hash s char->integer bound (assert start index?) (assert end index?))))
 
-(: string-hash-ci (->* (String) (Nonnegative-Fixnum Index Index) Fixnum))
+(: string-hash-ci (->* (String) (Nonnegative-Fixnum Integer Integer) Fixnum))
 (define (string-hash-ci s [bound 4194304] [start 0] [end (string-length s)])
   (check-string-range 'string-hash-ci s start end)
   (let ((bound (if (zero? bound) 4194304 bound)))	; 0 means default.
     (%string-hash s (lambda ([c : Char]) : Fixnum (char->integer (char-foldcase c)))
-                  bound start end)))
+                  bound (assert start index?) (assert end index?))))
 
 ;;; Case hacking
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -914,18 +918,18 @@
 ;;;   Capitalize every contiguous alpha sequence: capitalise
 ;;;   first char, lowercase rest.
 
-(define-string-fun (string-upcase-13 s start end String)
+(define-string-fun (string-upcase s start end String)
   (if (and (= start 0) (= end (string-length s)))
-      (string-upcase s)
-      (string-upcase (%substring/shared s start end))))
+      (rkt-string-upcase s)
+      (rkt-string-upcase (%substring/shared s start end))))
 
 (define-string-fun (string-upcase! s start end Void)
   (%string-map! char-upcase s start end))
 
-(define-string-fun (string-downcase-13 s start end String)
+(define-string-fun (string-downcase s start end String)
   (if (and (= start 0) (= end (string-length s)))
-      (string-downcase s)
-      (string-downcase (%substring/shared s start end))))
+      (rkt-string-downcase s)
+      (rkt-string-downcase (%substring/shared s start end))))
 
 (define-string-fun (string-downcase! s start end Void)
   (%string-map! char-downcase s start end))
@@ -950,10 +954,10 @@
 (define-string-fun (string-titlecase! s start end Void)
   (%string-titlecase! s start end))
 
-(define-string-fun (string-titlecase-13 s start end String)
+(define-string-fun (string-titlecase s start end String)
   (if (and (= start 0) (= end (string-length s)))
-      (string-titlecase s)
-      (string-titlecase (%substring/shared s start end))))
+      (rkt-string-titlecase s)
+      (rkt-string-titlecase (%substring/shared s start end))))
 
 
 ;;; Cutting & pasting strings
@@ -1222,8 +1226,8 @@
 ;;; string-copy! to tstart from [fstart fend]
 ;;; 	Guaranteed to work, even if s1 eq s2.
 
-(: string-fill!-13 (->* (String Char) (Integer Integer) Void))
-(define (string-fill!-13 s char [start 0] [end (string-length s)])
+(: string-fill! (->* (String Char) (Integer Integer) Void))
+(define (string-fill! s char [start 0] [end (string-length s)])
   (do ((i (- end 1) (- i 1)))
       ((< i start))
     (string-set! s i char)))
@@ -1449,7 +1453,7 @@
 ;(define (string->list s . maybe-start+end)
 ;  (apply string-fold-right cons '() s maybe-start+end))
 
-(define-string-fun (string->list-13 s start end (Listof Char))
+(define-string-fun (string->list s start end (Listof Char))
   (do : (Listof Char)
     ([i : Integer (- end 1) (- i 1)]
      [ans : (Listof Char) '() (cons (string-ref s i) ans)])
@@ -1507,14 +1511,17 @@
 ; Alas, Scheme 48's APPLY blows up if you have many, many arguments.
 ;(define (string-concatenate strings) (apply string-append strings))
 
+
 ;;; Here it is written out. I avoid using REDUCE to add up string lengths
-;;; to avoid non-R5RS dependencies.
+;;; to avoid non-R5RS dependencies. -- no such problem in Racket!
+(: %sum-of-lengths : (Listof String) -> Nonnegative-Integer)
+(define (%sum-of-lengths strs)
+  (for/sum : Nonnegative-Integer ([s (in-list strs)]) (string-length s))) 
+
 (: string-concatenate ((Listof String) -> String))
 (define (string-concatenate strings)
-  (let* ((total : Integer (do ((strings strings (cdr strings))
-                               (i : Integer 0 (+ i (string-length (car strings)))))
-                              ((not (pair? strings)) i)))
-	 (ans (make-string total)))
+  (let* ([total (%sum-of-lengths strings)]
+         (ans (make-string total)))
     (let lp ((i 0) (strings strings))
       (when (pair? strings)
         (let* ((s (car strings))
@@ -1538,11 +1545,7 @@
 (: string-concatenate-reverse (->* ((Listof String)) (String Integer) String))
 (define (string-concatenate-reverse string-list [final ""] [end (string-length final)])
   (check-string-range 'string-concatenate-reverse final end)
-  (let ((len (let lp : Integer ((sum : Integer 0) (lis string-list))
-               (if (pair? lis)
-                   (lp (+ sum (string-length (car lis))) (cdr lis))
-                   sum))))
-
+  (let ((len (%sum-of-lengths string-list)))
     (%finish-string-concatenate-reverse len string-list final end)))
 
 (: string-concatenate-reverse/shared (->* ((Listof String)) (String Integer) String))
@@ -1701,7 +1704,7 @@
                                target tstart s sfrom sto start end))
 
           ((= 1 slen)			; Fast path for 1-char replication.
-           (string-fill!-13 target (string-ref s start) tstart tend))
+           (string-fill! target (string-ref s start) tstart tend))
 
           ;; Selected text falls entirely within one span.
           ((= (floor (/ sfrom slen)) (floor (/ sto slen)))

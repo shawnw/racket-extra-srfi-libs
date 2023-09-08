@@ -44,15 +44,7 @@ The type of a homogeneous circular list as returned by @code{circular-list}.
 @bold{Notes}: While Racket comes with a SRFI-13 implementation, it's
 only for normal Racket, not Typed Racket. This module can be used
 instead of having to @racketid{require/typed} specific functions from it
-that you might need in Typed Racket. A few functions conflict with
-base string functions; usually with the SRFI-13 version adding extra
-range arguments. These have been given a @racketid{-13} suffix -
-@code{string-downcase-13}, @code{string-upcase-13},
-@code{string-titlecase-13}, @code{string->list-13},
-@code{string-copy-13} and @code{string-fill!-13}. Unless you need the
-range arguments, you should use the standard Racket versions. The
-SRFI-13 functions that have name conflicts with ones in
-@racket{racket/string} have @emph{not} been adjusted.
+that you might need in Typed Racket.
 
 @section{SRFI-27 Sources of Random Bits}
 
