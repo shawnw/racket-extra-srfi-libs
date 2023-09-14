@@ -68,6 +68,15 @@ Typed Racket.
 a serious bug in that the "native" endianness is always big-endian. This version, besides being written in Typed Racket, fixes that,
 and uses a more Racket-specific implementation. You should probably use always use this one, at least until the bug is fixed.
 
+@section{SRFI-87 => in case clauses}
+
+@defmodule[srfi/87x]
+
+@hyperlink["https://srfi.schemers.org/srfi-87/srfi-87.html"]{Reference documentation}.
+
+While Racket comes with a SRFI-87 implementation in @code{srfi-lib}, trying to use it causes syntax errors.
+This version actually works, and it follows the Racket convention of using @code{equal?} instead of @code{eqv?} to test values in @code{case}.
+
 @section{SRFI-111 Boxes}
 
 @defmodule[srfi/111]
