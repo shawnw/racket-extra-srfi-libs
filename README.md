@@ -12,6 +12,8 @@ Currently includes:
 * [SRFI-1 List Library](https://srfi.schemers.org/srfi-1/srfi-1.html) (Typed Racket port)
 * [SRFI-13 String Libraries](https://srfi.schemers.org/srfi-13/srfi-13.html) (Typed Racket port)
 * [SRFI-27 Sources of Random Bits](https://srfi.schemers.org/srfi-27/srfi-27.html) (Typed Racket port)
+* [SRFI-74 Octect-Addressed Binary Blocks](https://srfi.schemers.org/srfi-74/srfi-74.html) (Typed Racket port)
+* [SRFI-87 => in case clauses](https://srfi.schemers.org/srfi-87/srfi-87.html)
 * [SRFI-111 Boxes](https://srfi.schemers.org/srfi-111/srfi-111.html)
 * [SRFI-112 Environment Inquiry](https://srfi.schemers.org/srfi-112/srfi-112.html)
 * [SRFI-127 Lazy Sequences](https://srfi.schemers.org/srfi-127/srfi-127.html)
