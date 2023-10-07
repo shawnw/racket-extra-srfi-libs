@@ -113,7 +113,8 @@
   [vector->@vector (->* ((vectorof @?)) (exact-nonnegative-integer? exact-nonnegative-integer?) @vector?)]
   [make-@vector-generator (->* (@vector?) (exact-nonnegative-integer? exact-nonnegative-integer?) (-> (or/c @? eof-object?)))]
   [write-@vector (->* (@vector?) (output-port?) void?)]
-  [@vector-comparator comparator?]))
+  [@vector-comparator comparator?]
+  [in-@vector (->* (@vector?) (exact-nonnegative-integer? exact-nonnegative-integer?) sequence?)]))
 
 (module+ unsafe
   (require
@@ -136,7 +137,7 @@
    @vector-remove @vector-swap! @vector-fill! @vector-reverse! @vector-unfold!
    @vector-unfold-right! reverse-@vector->list @vector->vector
    make-@vector-generator write-@vector @vector-comparator
-   @vector-append-subvectors))
+   @vector-append-subvectors in-@vector))
 
 (define (@vector-unfold f len seed)
   (unsafe
@@ -671,3 +672,15 @@
 
 (define @vector-comparator
   (make-comparator @vector? @vector= @vector< @vector-hash))
+
+(define (in-@vector vec [start 0] [end (@vector-length vec)])
+  (make-do-sequence
+   (lambda ()
+     (values
+      (lambda (i) (@vector-ref vec i))
+      #f
+      add1
+      start
+      (lambda (i) (< i end))
+      #f
+      #f))))

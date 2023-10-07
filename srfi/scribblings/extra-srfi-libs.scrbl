@@ -419,6 +419,14 @@ Additional functions for converting between flvectors and SRFI-4 vectors:
 @defmodule[srfi/160/fl]
 @defmodule[srfi/160/fx]
 
+Additional functions:
+
+@defproc[(in-@vector [vec @vector?] [start exact-nonnegative-integer? 0] [end exact-nonnegative-integer? (@vector-length vec)]) sequence?]{
+
+Sequence constructor that iterates over the given range of the numeric vector.
+
+}
+
 @section{SRFI-173 Hooks}
 
 @defmodule[srfi/173]
