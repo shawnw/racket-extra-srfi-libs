@@ -421,7 +421,7 @@ Additional functions for converting between flvectors and SRFI-4 vectors:
 
 Additional functions:
 
-@defproc[(in-@vector [vec @vector?] [start exact-nonnegative-integer? 0] [end exact-nonnegative-integer? (@vector-length vec)]) sequence?]{
+@defproc[(in-\@vector [vec \@vector?] [start exact-nonnegative-integer? 0] [end exact-nonnegative-integer? (\@vector-length vec)]) sequence?]{
 
 Sequence constructor that iterates over the given range of the numeric vector.
 
