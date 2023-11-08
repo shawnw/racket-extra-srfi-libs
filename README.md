@@ -32,6 +32,7 @@ Currently includes:
 * [SRFI-173 Hooks](https://srfi.schemers.org/srfi-173/srfi-173.html)
 * [SRFI-174 POSIX Timespecs](https://srfi.schemers.org/srfi-174/srfi-174.html)
 * [SRFI-175 ASCII character library](https://srfi.schemers.org/srfi-175/srfi-175.html)
+* [SRFI-180 JSON](https://srfi.schemers.org/srfi-180/srfi-180.html)
 * [SRFI-190 Coroutine Generators](https://srfi.schemers.org/srfi-190/srfi-190.html)
 * [SRFI-193 Command line](https://srfi.schemers.org/srfi-193/srfi-193.html)
 * [SRFI-194 Random data generators](https://srfi.schemers.org/srfi-194/srfi-194.html)

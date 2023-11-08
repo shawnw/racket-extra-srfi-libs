@@ -458,6 +458,14 @@ What the SRFI documentation calls a bytevector is what Racket calls a byte strin
 
 Available as an unsafe module via @code{(require (submod srfi/175 unsafe))}.
 
+@section{SRFI-180 JSON}
+
+@defmodule[srfi/180]
+
+@hyperlink["https://srfi.schemers.org/srfi-180/srfi-180.html"]{Reference documentation}.
+
+You can never have too many JSON parsers available for a language.
+
 @section{SRFI-190 Coroutine Generators}
 
 @defmodule[srfi/190]
