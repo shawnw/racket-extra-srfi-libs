@@ -110,7 +110,7 @@
    (procedure-arity-includes? obj 0)
    (let ([returns (procedure-result-arity obj)])
      (or (eq? returns #f)
-         (equal? returns 1)))))
+         (eqv? returns 1)))))
 
 ;; generator
 (define (generator . args)
@@ -210,51 +210,39 @@
 
 
 ;; vector->generator
-(define vector->generator
-  (case-lambda ((vec) (vector->generator vec 0 (vector-length vec)))
-               ((vec start) (vector->generator vec start (vector-length vec)))
-               ((vec start end)
-                (lambda () (if (>= start end)
-                             eof
-                             (let ((next (vector-ref vec start)))
-                              (set! start (+ start 1))
-                              next))))))
+(define (vector->generator vec [start 0] [end (vector-length vec)])
+  (lambda () (if (>= start end)
+                 eof
+                 (let ((next (vector-ref vec start)))
+                   (set! start (+ start 1))
+                   next))))
 
 
 ;; reverse-vector->generator
-(define reverse-vector->generator
-  (case-lambda ((vec) (reverse-vector->generator vec 0 (vector-length vec)))
-               ((vec start) (reverse-vector->generator vec start (vector-length vec)))
-               ((vec start end)
-                (lambda () (if (>= start end)
-                             eof
-                             (let ((next (vector-ref vec (- end 1))))
-                              (set! end (- end 1))
-                              next))))))
+(define (reverse-vector->generator vec [start 0] [end (vector-length vec)])
+  (lambda () (if (>= start end)
+                 eof
+                 (let ((next (vector-ref vec (- end 1))))
+                   (set! end (- end 1))
+                   next))))
 
 
 ;; string->generator
-(define string->generator
-  (case-lambda ((str) (string->generator str 0 (string-length str)))
-               ((str start) (string->generator str start (string-length str)))
-               ((str start end)
-                (lambda () (if (>= start end)
-                             eof
-                             (let ((next (string-ref str start)))
-                              (set! start (+ start 1))
-                              next))))))
+(define (string->generator str [start 0] [end (string-length str)])
+  (lambda () (if (>= start end)
+                 eof
+                 (let ((next (string-ref str start)))
+                   (set! start (+ start 1))
+                   next))))
 
 
 ;; bytevector->generator
-(define bytevector->generator
-  (case-lambda ((str) (bytevector->generator str 0 (bytes-length str)))
-               ((str start) (bytevector->generator str start (bytes-length str)))
-               ((str start end)
-                (lambda () (if (>= start end)
-                             eof
-                             (let ((next (bytes-ref str start)))
-                              (set! start (+ start 1))
-                              next))))))
+(define (bytevector->generator str [start 0] [end (bytes-length str)])
+  (lambda () (if (>= start end)
+                 eof
+                 (let ((next (bytes-ref str start)))
+                   (set! start (+ start 1))
+                   next))))
 
 
 ;; make-for-each-generator
@@ -533,7 +521,7 @@
   (case-lambda ((gen n)
 		(generator->list (gtake gen n)))
                ((gen)
-		(reverse (generator->reverse-list gen)))))
+		(for/list ([elem (in-producer gen eof)]) elem))))
 
 ;; generator->reverse-list
 (define generator->reverse-list
@@ -544,7 +532,7 @@
 
 ;; generator->vector
 (define generator->vector
-  (case-lambda ((gen) (list->vector (generator->list gen)))
+  (case-lambda ((gen) (for/vector ([elem (in-producer gen eof)]) elem))
                ((gen n) (list->vector (generator->list gen n)))))
 
 
