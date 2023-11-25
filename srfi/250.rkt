@@ -38,7 +38,7 @@
   [hash-table-map->list (-> (-> any/c any/c any/c) hash-table? list?)]
   [hash-table-fold (-> (-> any/c any/c any/c any/c) any/c hash-table? any/c)]
   [hash-table-prune! (-> (-> any/c any/c any/c) hash-table? exact-nonnegative-integer?)]
-  [hash-table-copy (-> hash-table? hash-table?)]
+  [hash-table-copy (->* (hash-table?) (any/c) hash-table?)]
   [hash-table-empty-copy (-> hash-table? hash-table-empty?)]
   [hash-table->alist (-> hash-table? (listof (cons/c any/c any/c)))]
   [hash-table-union! (-> hash-table? hash-table? hash-table?)]
@@ -95,6 +95,14 @@
      (if (procedure? to-set)
          (hash-table-intern! ht k to-set)
          (hash-table-intern! ht k (thunk to-set))))
+   (define (dict-map ht proc)
+     (hash-table-map->list proc ht))
+   (define (dict-map-copy ht proc)
+     (define new-ht (make-hash-table (hash-table-comparator ht)))
+     (for ([elem (in-elements ht)])
+       (define-values (new-k new-v) (proc (element-key elem) (element-value elem)))
+       (hash-table-set! new-ht new-k new-v))
+     new-ht)
    (define (dict-empty? ht)
      (hash-table-empty? ht))
    (define (dict-count ht)
