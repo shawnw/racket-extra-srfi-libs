@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/contract racket/dict racket/function racket/match racket/sequence "128.rkt" "146/hash.rkt")
+(require racket/contract racket/dict racket/function racket/match racket/sequence racket/struct "128.rkt" "146/hash.rkt")
 
 (provide
  (contract-out
@@ -71,6 +71,23 @@
 
 (struct ordered-hash (table head tail)
   #:mutable
+
+  #:property prop:custom-print-quotable 'always
+
+  #:methods gen:custom-write
+  [(define write-proc
+     (make-constructor-style-printer
+      (lambda (ht) 'ordered-hash-table)
+      (lambda (ht)
+        (make-do-sequence
+         (thunk
+          (values
+           (lambda (elem) (cons (element-key elem) (element-value elem)))
+           element-next
+           (ordered-hash-head ht)
+           element?
+           #f
+           #f))))))]
 
   #:methods gen:dict
   [(define (dict-ref ht key [failure raise-no-such-key-error])
