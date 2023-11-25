@@ -1,8 +1,6 @@
 #lang racket/base
 
-(require racket/contract racket/dict racket/function racket/list racket/match racket/sequence (only-in racket/stream in-stream)
-         srfi/41 "128.rkt" "146/hash.rkt")
-
+(require racket/contract racket/dict racket/function racket/match racket/sequence "128.rkt" "146/hash.rkt")
 
 (provide
  (contract-out
@@ -39,7 +37,7 @@
   [hash-table-map! (-> (-> any/c any/c any/c) hash-table? void?)]
   [hash-table-map->list (-> (-> any/c any/c any/c) hash-table? list?)]
   [hash-table-fold (-> (-> any/c any/c any/c any/c) any/c hash-table? any/c)]
-  [hash-table-prune! (-> (-> any/c any/c any/c) hash-table? void?)]
+  [hash-table-prune! (-> (-> any/c any/c any/c) hash-table? exact-nonnegative-integer?)]
   [hash-table-copy (-> hash-table? hash-table?)]
   [hash-table-empty-copy (-> hash-table? hash-table-empty?)]
   [hash-table->alist (-> hash-table? (listof (cons/c any/c any/c)))]
@@ -49,14 +47,29 @@
   [hash-table-xor! (-> hash-table? hash-table? hash-table?)]
   ))
 
-(struct element (key [value #:mutable] [deleted? #:mutable])
-  #:transparent
-  #:extra-constructor-name make-element)
+(struct element (key [value #:mutable] [prev #:mutable] [next #:mutable])
+  #:extra-constructor-name make-element
+  )
+
+(define (in-elements ht)
+  (make-do-sequence
+   (thunk
+    (values
+     identity
+     element-next
+     (ordered-hash-head ht)
+     element?
+     #f
+     #f))))
+
+(define (element-append! end new-elem)
+  (set-element-next! end new-elem)
+  (set-element-prev! new-elem end))
 
 (define (raise-no-such-key-error)
   (raise (make-exn:fail "no such key" (current-continuation-marks))))
 
-(struct ordered-hash (table order)
+(struct ordered-hash (table head tail)
   #:mutable
 
   #:methods gen:dict
@@ -67,21 +80,13 @@
    (define (dict-remove! ht key)
      (hash-table-delete! ht key))
    (define (dict-iterate-first ht)
-     (if (hash-table-empty? ht)
-         #f
-         (stream-filter element-present? (ordered-hash-order ht))))
+     (ordered-hash-head ht))
    (define (dict-iterate-next ht pos)
-     (if (stream-null? pos)
-         #f
-         (let ([next-pos (stream-cdr pos)])
-           (cond
-             [(stream-null? next-pos) #f]
-             [(eq? (stream-car next-pos) stream-null) #f]
-             [else next-pos]))))
+     (element-next pos))
    (define (dict-iterate-key ht pos)
-     (element-key (weak-box-value (stream-car pos))))
+     (element-key pos))
    (define (dict-iterate-value ht pos)
-     (element-value (weak-box-value (stream-car pos))))
+     (element-value pos))
    (define (dict-hash-key? ht k)
      (hash-table-contains? ht k))
    (define (dict-set*! ht . key+values)
@@ -109,17 +114,30 @@
 (define hash-table? ordered-hash?)
 
 (define (make-hash-table comparator [k 0])
-  (ordered-hash (hashmap comparator) stream-null))
+  (ordered-hash (hashmap comparator) #f #f))
 
 (define (elements->hash-table comparator elems)
-  (ordered-hash
-   (hashmap-unfold null? (lambda (elem-list) (let ([elem (car elem-list)]) (values (element-key elem) elem))) cdr elems comparator)
-   (list->stream (map make-weak-box elems))))
+  (define ht
+    (ordered-hash
+     (hashmap-unfold null? (lambda (elem-list) (let ([elem (car elem-list)]) (values (element-key elem) elem))) cdr elems comparator)
+     #f #f))
+  (unless (null? elems)
+    (set-ordered-hash-head! ht (car elems))
+    (let loop ([prev (car elems)]
+               [elems (cdr elems)])
+      (match elems
+        ['()
+         (set-ordered-hash-tail! ht prev)]
+        [(list* curr rest)
+         (set-element-prev! curr prev)
+         (set-element-next! prev curr)
+         (loop curr rest)])))
+  ht)
 
 (define (hash-table comparator . key+vals)
   (define elems (for/list ([k+v (in-slice 2 (in-list key+vals))])
-                  (match-let ([(list k v) k+v])
-                    (make-element k v #f))))
+                  (match-define (list k v) k+v)
+                  (make-element k v #f #f)))
   (elements->hash-table comparator elems))
 
 (define (hash-table-unfold stop? mapper successor seed comparator [k 0])
@@ -130,12 +148,12 @@
           (reverse elems)
           (let-values ([(k v) (mapper seed)])
             (loop (successor seed)
-                  (cons (make-element k v #f) elems))))))
+                  (cons (make-element k v #f #f) elems))))))
   (elements->hash-table comparator elems))
 
 (define (alist->hash-table alist comparator [k 0])
   (elements->hash-table comparator
-                        (map (lambda (elem) (make-element (car elem) (cdr elem) #f)) alist)))
+                        (map (lambda (elem) (make-element (car elem) (cdr elem) #f #f)) alist)))
 
 (define (hash-table-contains? ht key)
   (hashmap-contains? (ordered-hash-table ht) key))
@@ -144,7 +162,7 @@
   (hashmap-empty? (ordered-hash-table ht)))
 
 (define (hash-table=? value-comparator ht1 ht2)
-  (hashmap=? (make-wrapper-comparator element? element-value value-comparator) ht1 ht2))
+  (hashmap=? (make-wrapper-comparator element? element-value value-comparator) (ordered-hash-table ht1) (ordered-hash-table ht2)))
 
 (define (hash-table-mutable? ht) #t)
 
@@ -167,33 +185,40 @@
   (match key+values
     ['() (void)]
     [(list k v) ; Adding a single element
-     (define elem (hashmap-ref/default (ordered-hash-table ht) k #f))
+     (define-values (elem found?) (try-hash-table-ref ht k))
      (cond
-       [elem
+       [found?
         (set-element-value! elem v)]
        [else
-        (let ([elem (make-element k v #f)])
-          (set-ordered-hash-table! ht (hashmap-set! (ordered-hash-table ht) k elem))
-          (set-ordered-hash-order! ht (stream-append (ordered-hash-order ht) (stream-cons (make-weak-box elem) stream-null))))])]
-    [_ ; adding multiple elements
-     (let loop ([key+values key+values]
-                [elements '()])
-       (cond
-         [(null? key+values)
-          (unless (null? elements)
-            (set-ordered-hash-order! ht (stream-append (ordered-hash-order ht) (list->stream (reverse elements)))))]
-         [else
-          (define k (first key+values))
-          (define v (second key+values))
-          (define elem (hashmap-ref/default (ordered-hash-table ht) k #f))
+        (define elem (make-element k v #f #f))
+        (set-ordered-hash-table! ht (hashmap-set! (ordered-hash-table ht) k elem))
+        (cond
+          [(ordered-hash-tail ht)
+           (element-append! (ordered-hash-tail ht) elem)
+           (set-ordered-hash-tail! ht elem)]
+          [else
+           (set-ordered-hash-head! ht elem)
+           (set-ordered-hash-tail! ht elem)])])]
+     [_ ; adding multiple elements
+     (let loop ([key+values key+values])
+       (match key+values
+         ['() (void)]
+         [(list* k v remaining-key+values)
+          (define-values (elem found?) (try-hash-table-ref ht k))
           (cond
-            [elem
-             (set-element-value! elem v)
-             (loop (cddr key+values) elements)]
+            [found?
+             (set-element-value! elem v)]
             [else
-             (let ([elem (make-element k v #f)])
-               (set-ordered-hash-table! ht (hashmap-set! (ordered-hash-table ht) k elem))
-               (loop (cddr key+values) (cons (make-weak-box elem) elements)))])]))]))
+             (define elem (make-element k v #f #f))
+             (set-ordered-hash-table! ht (hashmap-set! (ordered-hash-table ht) k elem))
+             (cond
+               [(ordered-hash-tail ht)
+                (element-append! (ordered-hash-tail ht) elem)
+                (set-ordered-hash-tail! ht elem)]
+               [else
+                (set-ordered-hash-head! ht elem)
+                (set-ordered-hash-tail! ht elem)])])
+          (loop remaining-key+values)]))]))
 
 (define (hash-table-set! ht . key+values)
   (hash-table-set-from-list! ht key+values))
@@ -208,165 +233,173 @@
      val]))
 
 (define (hash-table-delete! ht . keys)
-  (define deleted 0)
-  (for ([key (in-list keys)]
-        #:do [(define-values (elem found?) (try-hash-table-ref ht key))]
-        #:when found?)
-    (set-element-deleted?! elem #t)
+  (for/fold ([deleted 0])
+            ([key (in-list keys)]
+             #:do [(define-values (elem found?) (try-hash-table-ref ht key))]
+             #:when found?)
+    (match-define (struct element (_ _ prev next)) elem)
+    (when (eq? (ordered-hash-head ht) elem)
+      (set-ordered-hash-head! ht next))
+    (when (eq? (ordered-hash-tail ht) elem)
+      (set-ordered-hash-tail! ht prev))
+    (when prev
+      (set-element-next! prev next))
+    (when next
+      (set-element-prev! next prev))
     (set-ordered-hash-table! ht (hashmap-delete! (ordered-hash-table ht) key))
-    (set! deleted (add1 deleted)))
-  deleted)
+    (add1 deleted)))
 
 (define (hash-table-update! ht key updater [failure raise-no-such-key-error] [success identity])
-  (hash-table-set! ht key (updater (hash-table-ref ht key failure success))))
+  (define-values (elem found?) (try-hash-table-ref ht key))
+  (if found?
+      (set-element-value! elem (updater (success (element-value elem))))
+      (hash-table-set! ht key (updater (failure)))))
 
 (define (hash-table-update/default! ht key updater default)
-   (hash-table-set! ht key (updater (hash-table-ref/default ht key default))))
-
-(define (element-present? maybe-elem)
-  (define elem (weak-box-value maybe-elem))
-  (and elem (not (element-deleted? elem))))
-
-(define (drop-leading-deleted! ht)
-  (set-ordered-hash-order! ht (stream-drop-while (negate element-present?) (ordered-hash-order ht))))
-
-(define (present-elements ht)
-  (stream-filter element-present? (ordered-hash-order ht)))
-
-(define (prune-order-stream! ht)
-  (set-ordered-hash-order! ht (stream-filter element-present? (ordered-hash-order ht))))
+  (define-values (elem found?) (try-hash-table-ref ht key))
+  (if found?
+      (set-element-value! elem (updater (element-value elem)))
+      (hash-table-set! ht key (updater default))))
 
 (define (hash-table-pop! ht)
   (when (hash-table-empty? ht)
     (raise-argument-error 'hash-table-pop! "(not/c hash-table-empty?)" ht))
-  (drop-leading-deleted! ht)
-  (let ([first-elem (weak-box-value (stream-car (ordered-hash-order ht)))])
-    (set-ordered-hash-table! ht (hashmap-delete! (ordered-hash-table ht) (element-key first-elem)))
-    (set-element-deleted?! first-elem #t)
-    (values (element-key first-elem) (element-value first-elem))))
+  (define elem (ordered-hash-head ht))
+  (match-define (struct element (k v prev next)) elem)
+  (set-ordered-hash-table! ht (hashmap-delete! (ordered-hash-table ht) k))
+  (set-ordered-hash-head! ht next)
+  (when next
+    (set-element-prev! next #f))
+  (when (eq? (ordered-hash-tail ht) elem)
+    (set-ordered-hash-tail! ht #f))
+  (values k v))
 
 (define (hash-table-clear! ht)
   (set-ordered-hash-table! ht (hashmap (hash-table-comparator ht)))
-  (set-ordered-hash-order! ht stream-null))
+  (set-ordered-hash-head! #f)
+  (set-ordered-hash-tail! #f))
 
 (define (hash-table-size ht)
   (hashmap-size (ordered-hash-table ht)))
 
 (define (hash-table-keys ht)
-  (for/list ([elem (in-stream (present-elements ht))])
-    (element-key (weak-box-value elem))))
+  (for/list ([elem (in-elements ht)])
+    (element-key elem)))
 
 (define (hash-table-key-vector ht)
   (for/vector #:length (hash-table-size ht)
-    ([elem (in-stream (present-elements ht))])
-    (element-key (weak-box-value elem))))
+    ([elem (in-elements ht)])
+    (element-key elem)))
 
 (define (hash-table-values ht)
-  (for/list ([elem (in-stream (present-elements ht))])
-    (element-value (weak-box-value elem))))
+  (for/list ([elem (in-elements ht)])
+    (element-value elem)))
 
 (define (hash-table-value-vector ht)
   (for/vector #:length (hash-table-size ht)
-    ([elem (in-stream (present-elements ht))])
-    (element-value (weak-box-value elem))))
+    ([elem (in-elements ht)])
+    (element-value elem)))
 
 (define (hash-table-entries ht)
   (for/lists (keys entries)
-             ([e (in-stream (present-elements ht))])
-    (define elem (weak-box-value e))
+             ([elem (in-elements ht)])
     (values (element-key elem) (element-value elem))))
 
 (define (hash-table-entry-vectors ht)
-  (define-values (keys entries) (hash-table-entries ht))
-  (values (list->vector keys) (list->vector entries)))
+  (define len (hash-table-size ht))
+  (define key-vec (make-vector len))
+  (define value-vec (make-vector len))
+  (for ([elem (in-elements ht)]
+        [i (in-naturals)])
+    (vector-set! key-vec i (element-key elem))
+    (vector-set! value-vec i (element-value elem)))
+  (values key-vec value-vec))
 
 (define (hash-table-find proc ht failure)
-  (prune-order-stream! ht)
-  (let loop ([order (ordered-hash-order ht)])
-    (if (stream-null? order)
-        (failure)
-        (let* ([elem (weak-box-value (stream-car order))]
-               [result (proc (element-key elem) (element-value elem))])
-          (if result
-              result
-              (loop (stream-cdr order)))))))
+  (define result
+    (for/first ([elem (in-elements ht)])
+      (proc (element-key elem) (element-value elem))))
+  (if result
+      result
+      (failure)))
 
 (define (hash-table-count pred? ht)
-  (inexact->exact
-   (for/sum ([e (in-stream (present-elements ht))])
-     (define elem (weak-box-value e))
-     (if (pred? (element-key elem) (element-value elem))
-         1
-         0))))
+  (if (hash-table-empty? ht)
+      0
+      (for/sum ([elem (in-elements ht)])
+        (if (pred? (element-key elem) (element-value elem))
+            1
+            0))))
 
 (define (hash-table-map proc comparator ht)
   (define new-ht (make-hash-table comparator))
-  (for ([e (in-stream (present-elements ht))])
-    (define elem (weak-box-value e))
+  (for ([elem (in-elements ht)])
     (hash-table-set! new-ht (element-key elem) (proc (element-value elem))))
   new-ht)
 
 (define (hash-table-for-each proc ht)
-  (for ([e (in-stream (present-elements ht))])
-    (define elem (weak-box-value e))
+  (for ([elem (in-elements ht)])
     (proc (element-key elem) (element-value elem))))
 
 (define (hash-table-map! proc ht)
-  (for ([e (in-stream (present-elements ht))])
-    (define elem (weak-box-value e))
+  (for ([elem (in-elements ht)])
     (set-element-value! elem (proc (element-key elem) (element-value elem)))))
 
 (define (hash-table-map->list proc ht)
-  (for/list ([e (in-stream (present-elements ht))])
-    (define elem (weak-box-value e))
+  (for/list ([elem (in-elements ht)])
     (proc (element-key elem) (element-value elem))))
 
 (define (hash-table-fold proc seed ht)
   (for/fold ([val seed])
-            ([e (in-stream (present-elements ht))])
-    (define elem (weak-box-value e))
+            ([elem (in-elements ht)])
     (proc (element-key elem) (element-value elem) val)))
 
 (define (hash-table-prune! proc ht)
-  (for ([e (in-stream (present-elements ht))])
-    (define elem (weak-box-value e))
-    (when (proc (element-key elem) (element-value elem))
-      (set-ordered-hash-table! ht (hashmap-delete! (ordered-hash-table ht) (element-key elem)))
-      (set-element-deleted?! elem #t)))
-  (prune-order-stream! ht))
+  (let loop ([elem (ordered-hash-head ht)]
+             [deleted 0])
+    (match elem
+      [#f deleted]
+      [(struct element (k v prev next))
+       (cond
+         [(proc k v)
+          (when (eq? (ordered-hash-head ht) elem)
+            (set-ordered-hash-head! ht next))
+          (when (eq? (ordered-hash-tail ht) elem)
+            (set-ordered-hash-tail! ht prev))
+          (when prev
+            (set-element-next! prev next))
+          (when next
+            (set-element-prev! next prev))
+          (loop next (add1 deleted))]
+         [else (loop next deleted)])])))
 
 (define (hash-table-copy ht [mutable? #t])
   (define new-ht (hash-table-empty-copy ht))
-  (for ([e (in-stream (present-elements ht))])
-    (define elem (weak-box-value e))
+  (for ([elem (in-elements ht)])
     (hash-table-set! new-ht (element-key elem) (element-value elem)))
   new-ht)
 
 (define (hash-table-empty-copy ht)
-  (ordered-hash (hashmap (hashmap-comparator ht)) stream-null))
+  (ordered-hash (hashmap (hashmap-comparator ht)) #f #f))
 
 (define (hash-table->alist ht)
-  (for/list ([e (in-stream (present-elements ht))])
-    (define elem (weak-box-value e))
+  (for/list ([elem (in-elements ht)])
     (cons (element-key elem) (element-value elem))))
 
 (define (hash-table-union! ht1 ht2)
-  (for ([e (in-stream (present-elements ht2))])
-    (define elem (weak-box-value e))
+  (for ([elem (in-elements ht2)])
     (unless (hash-table-contains? ht1 (element-key elem))
       (hash-table-set! ht1 (element-key elem) (element-value elem))))
   ht1)
 
 (define (hash-table-intersection! ht1 ht2)
-  (for ([e (in-stream (present-elements ht1))])
-    (define elem (weak-box-value e))
+  (for ([elem (in-elements ht1)])
     (unless (hash-table-contains? ht2 (element-key elem))
       (hash-table-delete! ht1 (element-key elem))))
   ht1)
 
 (define (hash-table-difference! ht1 ht2)
-  (for ([e (in-stream (present-elements ht1))])
-    (define elem (weak-box-value e))
+  (for ([elem (in-elements ht1)])
     (when (hash-table-contains? ht2 (element-key elem))
       (hash-table-delete! ht1 (element-key elem))))
   ht1)
