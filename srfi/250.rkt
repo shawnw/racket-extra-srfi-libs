@@ -47,9 +47,7 @@
   [hash-table-xor! (-> hash-table? hash-table? hash-table?)]
   ))
 
-(struct element (key [value #:mutable] [prev #:mutable] [next #:mutable])
-  #:extra-constructor-name make-element
-  )
+(struct element (key [value #:mutable] [prev #:mutable] [next #:mutable]) #:extra-constructor-name make-element)
 
 (define (in-elements ht)
   (make-do-sequence
@@ -72,22 +70,15 @@
 (struct ordered-hash (table head tail)
   #:mutable
 
+  #:extra-constructor-name make-ordered-hash
+
   #:property prop:custom-print-quotable 'always
 
   #:methods gen:custom-write
   [(define write-proc
      (make-constructor-style-printer
       (lambda (ht) 'ordered-hash-table)
-      (lambda (ht)
-        (make-do-sequence
-         (thunk
-          (values
-           (lambda (elem) (cons (element-key elem) (element-value elem)))
-           element-next
-           (ordered-hash-head ht)
-           element?
-           #f
-           #f))))))]
+      in-dict-pairs))]
 
   #:methods gen:dict
   [(define (dict-ref ht key [failure raise-no-such-key-error])
@@ -95,7 +86,7 @@
    (define (dict-set! ht key v)
      (hash-table-set! ht key v))
    (define (dict-remove! ht key)
-     (hash-table-delete! ht key))
+     (void (hash-table-delete! ht key)))
    (define (dict-iterate-first ht)
      (ordered-hash-head ht))
    (define (dict-iterate-next ht pos)
@@ -104,7 +95,7 @@
      (element-key pos))
    (define (dict-iterate-value ht pos)
      (element-value pos))
-   (define (dict-hash-key? ht k)
+   (define (dict-has-key? ht k)
      (hash-table-contains? ht k))
    (define (dict-set*! ht . key+values)
      (hash-table-set-from-list! ht key+values))
@@ -112,38 +103,30 @@
      (if (procedure? to-set)
          (hash-table-intern! ht k to-set)
          (hash-table-intern! ht k (thunk to-set))))
-   (define (dict-map ht proc)
-     (hash-table-map->list proc ht))
-   (define (dict-map-copy ht proc)
+   (define (dict-map/copy ht proc)
      (define new-ht (make-hash-table (hash-table-comparator ht)))
      (for ([(old-k old-v) (in-dict ht)])
        (define-values (new-k new-v) (proc old-k old-v))
        (hash-table-set! new-ht new-k new-v))
      new-ht)
-   (define (dict-empty? ht)
-     (hash-table-empty? ht))
    (define (dict-count ht)
-     (hash-table-count ht))
+     (hash-table-size ht))
    (define (dict-copy ht)
      (hash-table-copy ht))
+   (define (dict-clear ht)
+     (hash-table-empty-copy ht))
    (define (dict-clear! ht)
      (hash-table-clear! ht))
-   (define (dict-keys ht)
-     (hash-table-keys ht))
-   (define (dict-values ht)
-     (hash-table-values ht))
-   (define (dict->list ht)
-     (hash-table->alist ht))
    ])
 
 (define hash-table? ordered-hash?)
 
 (define (make-hash-table comparator [k 0])
-  (ordered-hash (hashmap comparator) #f #f))
+  (make-ordered-hash (hashmap comparator) #f #f))
 
 (define (elements->hash-table comparator elems)
   (define ht
-    (ordered-hash
+    (make-ordered-hash
      (hashmap-unfold null? (lambda (elem-list) (let ([elem (car elem-list)]) (values (element-key elem) elem))) cdr elems comparator)
      #f #f))
   (unless (null? elems)
@@ -184,7 +167,7 @@
   (hashmap-contains? (ordered-hash-table ht) key))
 
 (define (hash-table-empty? ht)
-  (hashmap-empty? (ordered-hash-table ht)))
+  (eq? (ordered-hash-head ht) #f))
 
 (define (hash-table=? value-comparator ht1 ht2)
   (hashmap=? (make-wrapper-comparator element? element-value value-comparator) (ordered-hash-table ht1) (ordered-hash-table ht2)))
@@ -403,7 +386,7 @@
   new-ht)
 
 (define (hash-table-empty-copy ht)
-  (ordered-hash (hashmap (hashmap-comparator ht)) #f #f))
+  (make-ordered-hash (hashmap (hashmap-comparator ht)) #f #f))
 
 (define (hash-table->alist ht)
   (hash-table-map->list cons ht))
