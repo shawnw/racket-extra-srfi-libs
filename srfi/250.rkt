@@ -116,8 +116,8 @@
      (hash-table-map->list proc ht))
    (define (dict-map-copy ht proc)
      (define new-ht (make-hash-table (hash-table-comparator ht)))
-     (for ([elem (in-elements ht)])
-       (define-values (new-k new-v) (proc (element-key elem) (element-value elem)))
+     (for ([(old-k old-v) (in-dict ht)])
+       (define-values (new-k new-v) (proc old-k old-v))
        (hash-table-set! new-ht new-k new-v))
      new-ht)
    (define (dict-empty? ht)
@@ -308,42 +308,40 @@
   (hashmap-size (ordered-hash-table ht)))
 
 (define (hash-table-keys ht)
-  (for/list ([elem (in-elements ht)])
-    (element-key elem)))
+  (sequence->list (in-dict-keys ht)))
 
 (define (hash-table-key-vector ht)
   (for/vector #:length (hash-table-size ht)
-    ([elem (in-elements ht)])
-    (element-key elem)))
+    ([k (in-dict-keys ht)])
+    k))
 
 (define (hash-table-values ht)
-  (for/list ([elem (in-elements ht)])
-    (element-value elem)))
+  (sequence->list (in-dict-values ht)))
 
 (define (hash-table-value-vector ht)
   (for/vector #:length (hash-table-size ht)
-    ([elem (in-elements ht)])
-    (element-value elem)))
+    ([v (in-dict-values ht)])
+    v))
 
 (define (hash-table-entries ht)
-  (for/lists (keys entries)
-             ([elem (in-elements ht)])
-    (values (element-key elem) (element-value elem))))
+  (for/lists (keys vals)
+             ([(k v) (in-dict ht)])
+    (values k v)))
 
 (define (hash-table-entry-vectors ht)
   (define len (hash-table-size ht))
   (define key-vec (make-vector len))
   (define value-vec (make-vector len))
-  (for ([elem (in-elements ht)]
+  (for ([(k v) (in-dict ht)]
         [i (in-naturals)])
-    (vector-set! key-vec i (element-key elem))
-    (vector-set! value-vec i (element-value elem)))
+    (vector-set! key-vec i k)
+    (vector-set! value-vec i v))
   (values key-vec value-vec))
 
 (define (hash-table-find proc ht failure)
   (define result
-    (for/first ([elem (in-elements ht)])
-      (proc (element-key elem) (element-value elem))))
+    (for/first ([(k v) (in-dict ht)])
+      (proc k v)))
   (if result
       result
       (failure)))
@@ -351,33 +349,33 @@
 (define (hash-table-count pred? ht)
   (if (hash-table-empty? ht)
       0
-      (for/sum ([elem (in-elements ht)])
-        (if (pred? (element-key elem) (element-value elem))
+      (for/sum ([(k v) (in-dict ht)])
+        (if (pred? k v)
             1
             0))))
 
 (define (hash-table-map proc comparator ht)
   (define new-ht (make-hash-table comparator))
-  (for ([elem (in-elements ht)])
-    (hash-table-set! new-ht (element-key elem) (proc (element-value elem))))
+  (for ([(k v) (in-dict ht)])
+    (hash-table-set! new-ht k (proc v)))
   new-ht)
 
 (define (hash-table-for-each proc ht)
-  (for ([elem (in-elements ht)])
-    (proc (element-key elem) (element-value elem))))
+  (for ([(k v) (in-dict ht)])
+    (proc k v)))
 
 (define (hash-table-map! proc ht)
   (for ([elem (in-elements ht)])
     (set-element-value! elem (proc (element-key elem) (element-value elem)))))
 
 (define (hash-table-map->list proc ht)
-  (for/list ([elem (in-elements ht)])
-    (proc (element-key elem) (element-value elem))))
+  (for/list ([(k v) (in-dict ht)])
+    (proc k v)))
 
 (define (hash-table-fold proc seed ht)
   (for/fold ([val seed])
-            ([elem (in-elements ht)])
-    (proc (element-key elem) (element-value elem) val)))
+            ([(k v) (in-dict ht)])
+    (proc k v val)))
 
 (define (hash-table-prune! proc ht)
   (let loop ([elem (ordered-hash-head ht)]
@@ -400,35 +398,33 @@
 
 (define (hash-table-copy ht [mutable? #t])
   (define new-ht (hash-table-empty-copy ht))
-  (for ([elem (in-elements ht)])
-    (hash-table-set! new-ht (element-key elem) (element-value elem)))
+  (for ([(k v) (in-dict ht)])
+    (hash-table-set! new-ht k v))
   new-ht)
 
 (define (hash-table-empty-copy ht)
   (ordered-hash (hashmap (hashmap-comparator ht)) #f #f))
 
 (define (hash-table->alist ht)
-  (for/list ([elem (in-elements ht)])
-    (cons (element-key elem) (element-value elem))))
+  (hash-table-map->list cons ht))
 
 (define (hash-table-union! ht1 ht2)
-  (for ([elem (in-elements ht2)])
-    (unless (hash-table-contains? ht1 (element-key elem))
-      (hash-table-set! ht1 (element-key elem) (element-value elem))))
+  (for ([(k v) (in-dict ht2)])
+    (unless (hash-table-contains? ht1 k)
+      (hash-table-set! ht1 k v)))
   ht1)
 
 (define (hash-table-intersection! ht1 ht2)
-  (for ([elem (in-elements ht1)])
-    (unless (hash-table-contains? ht2 (element-key elem))
-      (hash-table-delete! ht1 (element-key elem))))
+  (for ([(k v) (in-dict ht1)])
+    (unless (hash-table-contains? ht2 k)
+      (hash-table-delete! ht1 k)))
   ht1)
 
 (define (hash-table-difference! ht1 ht2)
-  (for ([elem (in-elements ht1)])
-    (when (hash-table-contains? ht2 (element-key elem))
-      (hash-table-delete! ht1 (element-key elem))))
+  (for ([(k v) (in-dict ht1)])
+    (when (hash-table-contains? ht2 k)
+      (hash-table-delete! ht1 k)))
   ht1)
 
 (define (hash-table-xor! ht1 ht2)
   (hash-table-union! (hash-table-difference! ht1 ht2) ht2))
-
