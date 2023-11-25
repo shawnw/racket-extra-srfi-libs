@@ -885,3 +885,11 @@ Normally you'd use @code{match} in Racket, but this is a lightweight alternative
  Predicate for the exceptions raised by @code{list-case} when no matching clause is provided.
 
 }
+
+@section{SRFI-250 Insertion-ordered hash tables}
+
+@defmodule[srfi/250]
+
+@hyperlink["https://srfi.schemers.org/srfi-250/srfi-250.html"]{Reference documentation}.
+
+@code{hash-table?} objects are also @code{dict?}s.
