@@ -41,11 +41,10 @@
 
 ;;; Internal routines and struct definitions
 
-;; Needs to be something where order of entries doesn't matter, which rules out hash-code-combine for the entire thing
 (define (%apply-hash hm hash-func)
    (for/fold ([hash (hash-func (hashmap-key-comparator hm))])
              ([(k v) (in-dict (hashmap-table hm))])
-     (bitwise-xor hash (hash-code-combine (hash-func k) (hash-func v)))))
+     (hash-code-combine-unordered hash (hash-func k) (hash-func v))))
 
 (struct hashmap (key-comparator [table #:mutable])
   #:name %hashmap
