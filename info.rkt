@@ -1,7 +1,7 @@
 #lang info
 (define collection 'multi)
 (define deps '("base" "typed-racket-lib" "typed-racket-more" "srfi-lib"
-                      "math-lib" "data-lib"
+                      "math-lib" "data-lib" "compatibility-lib"
                       ("racket" #:version "8.9")))
 (define build-deps '("scribble-lib" "racket-doc" "rackunit-lib"
                                     "rackunit-typed" "data-doc"))

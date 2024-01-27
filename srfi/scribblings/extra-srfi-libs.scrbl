@@ -20,6 +20,8 @@ Passing those functions invalid or out of range arguments can have unpredictable
 
 @section{SRFI-1 List Library}
 
+@subsection{Typed Racket}
+
 @defmodule[typed/srfi/1]
 
 @hyperlink["https://srfi.schemers.org/srfi-1/srfi-1.html"]{Reference documentation}.
@@ -34,6 +36,13 @@ The linear update procedures ending with a ! are just aliases for the normal one
 The type of a homogeneous circular list as returned by @code{circular-list}.
 
 }
+
+@subsection{Mutable lists}
+
+@defmodule[srfi/1m]
+
+SRFI-1 for mutable lists. Procedures have the same name with an @tt{m} prepended, except ones with @tt{list} or @tt{pair} in the name, which turns into @tt{mlist} or @tt{mpair}.
+So, for example, @code{make-mlist}, @code{not-mpair?} and @code{mxcons}.
 
 @section{SRFI-13 String Libraries}
 

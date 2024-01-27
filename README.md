@@ -9,7 +9,7 @@ beyond what's included in the standard srfi-lib collection.
 
 Currently includes:
 
-* [SRFI-1 List Library](https://srfi.schemers.org/srfi-1/srfi-1.html) (Typed Racket port)
+* [SRFI-1 List Library](https://srfi.schemers.org/srfi-1/srfi-1.html) (Typed Racket port and a version for mutable lists)
 * [SRFI-13 String Libraries](https://srfi.schemers.org/srfi-13/srfi-13.html) (Typed Racket port)
 * [SRFI-27 Sources of Random Bits](https://srfi.schemers.org/srfi-27/srfi-27.html) (Typed Racket port)
 * [SRFI-74 Octect-Addressed Binary Blocks](https://srfi.schemers.org/srfi-74/srfi-74.html) (Typed Racket port)
