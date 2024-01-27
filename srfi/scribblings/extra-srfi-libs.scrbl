@@ -112,7 +112,7 @@ Racket natively supports SRFI-111 single-valued boxes, but this module re-export
 normal, mutable Scheme @code{cons} cells. Racket @code{cons} cells are
 in theory immutable, so this implementation instead uses @code{mcons}
 cells; lists of which aren't compatible with list functions. There's a
-few extra functions to help make that easier to work with.
+few extra functions to help make that easier to work with, as well as the @code{srfi/1m} module.
 
 @defproc[(list->lseq [lst list?]) lseq?]{
 

@@ -3,15 +3,17 @@
 
 ;;; Based on the reference implementation but translated to Racket mcons lists.
 
-(require racket/contract
-         (only-in "158.rkt" gappend make-coroutine-generator generator->list generator?))
+(require racket/contract racket/function
+         (only-in compatibility/mlist [list->mlist list->lseq])
+         "1m.rkt"
+         (only-in "158.rkt" gappend generator->list generator?) "190.rkt")
 (module+ test (require rackunit))
 (provide
+ list->lseq
  (contract-out
   [lseq? predicate/c]
-  [make-lseq (-> any/c ... lseq?)]
+  [make-lseq (-> any/c ... proper-mlist?)]
   [generator->lseq (-> (-> any/c) lseq?)]
-  [list->lseq (-> list? lseq?)]
   [lseq=? (-> (-> any/c any/c any/c) lseq? lseq? boolean?)]
   [lseq-car (-> lseq? any/c)]
   [lseq-first (-> lseq? any/c)]
@@ -65,30 +67,21 @@
 (define (lseq? obj)
   (cond
     ((null? obj) #t)
-    ((not (mpair? obj)) #f)
+    ((not-mpair? obj) #f)
     ((generator? (mcdr obj)) #t)
     (else (lseq? (mcdr obj)))))
 
-(define (make-generator . args)
-  (lambda ()
-    (if (null? args)
-        eof
-        (let ((next (car args)))
-          (set! args (cdr args))
-          next))))
+#;(define-coroutine-generator (make-generator . args)
+  (for ([elem (in-list args)])
+    (yield elem)))
 
-;; Lazy
-(define (make-lseq . args) (generator->lseq (apply make-generator args)))
+(define (make-lseq . args) (list->lseq args))
 
 (define (generator->lseq g)
   (let ([value (g)])
     (if (eof-object? value)
         '()
         (mcons value g))))
-
-;; Not lazy
-(define (list->lseq lst)
-  (foldr mcons '() lst))
 
 (define (lseq=? = a b)
   (cond
@@ -117,15 +110,12 @@
 
 (define (lseq-take lseq i)
   (generator->lseq
-   (make-coroutine-generator
-    (lambda (yield)
-      (let loop ([i i]
-                 [lseq lseq])
-        (if (= i 0)
-            eof
-            (begin
-              (yield (mcar lseq))
-              (loop (- i 1) (lseq-cdr lseq)))))))))
+   (coroutine-generator
+    (let loop ([i i]
+               [lseq lseq])
+      (unless (= i 0)
+        (yield (mcar lseq))
+        (loop (- i 1) (lseq-cdr lseq)))))))
 
 (define (lseq-drop lseq i)
   (if (= i 0)
@@ -139,15 +129,11 @@
   (generator->list (lseq->generator lseq)))
 
 ;; Return a generator that steps through the elements of the lseq
-(define (lseq->generator lseq)
-  (make-coroutine-generator
-   (lambda (yield)
-     (let loop ([lseq lseq])
-       (if (null? lseq)
-           eof
-           (begin
-             (yield (mcar lseq))
-             (loop (lseq-cdr lseq))))))))
+(define-coroutine-generator (lseq->generator lseq)
+  (let loop ([lseq lseq])
+    (unless (null? lseq)
+      (yield (mcar lseq))
+      (loop (lseq-cdr lseq)))))
 
 (define (lseq-length lseq)
   (length (lseq-realize lseq)))
@@ -172,14 +158,11 @@
 
 (define (%lseq-map proc lseqs)
   (generator->lseq
-   (make-coroutine-generator
-    (lambda (yield)
-      (let loop ([lseqs lseqs])
-        (if (any-null? lseqs)
-            eof
-            (begin
-              (yield (apply proc (map mcar lseqs)))
-              (loop (map safe-lseq-cdr lseqs)))))))))
+   (coroutine-generator
+    (let loop ([lseqs lseqs])
+      (unless (any-null? lseqs)
+        (yield (apply proc (map mcar lseqs)))
+        (loop (map safe-lseq-cdr lseqs)))))))
 
 ;; Zip cars of lseqs into a list and return an lseq of those lists
 (define (lseq-zip . lseqs) (%lseq-map list lseqs))
@@ -192,15 +175,13 @@
 ;; Filter an lseq lazily to include only elements that satisfy pred
 (define (lseq-filter pred lseq)
   (generator->lseq
-   (make-coroutine-generator
-    (lambda (yield)
-      (let loop ([lseq1 lseq])
-        (if (null? lseq1)
-            eof
-            (let ([result (mcar lseq1)])
-              (when (pred result)
-                (yield result))
-              (loop (lseq-cdr lseq1)))))))))
+   (coroutine-generator
+    (let loop ([lseq1 lseq])
+      (unless (null? lseq1)
+        (let ([result (mcar lseq1)])
+          (when (pred result)
+            (yield result))
+          (loop (lseq-cdr lseq1))))))))
 
 ;; Negated filter
 (define (lseq-remove pred lseq)
@@ -223,14 +204,11 @@
 ;; Return initial elements of lseq that satisfy pred
 (define (lseq-take-while pred lseq)
   (generator->lseq
-   (make-coroutine-generator
-    (lambda (yield)
-      (let loop ([lseq lseq])
-        (if (not (pred (mcar lseq)))
-            eof
-            (begin
-              (yield (mcar lseq))
-              (loop (lseq-cdr lseq)))))))))
+   (coroutine-generator
+    (let loop ([lseq lseq])
+      (when (pred (mcar lseq))
+        (yield (mcar lseq))
+        (loop (lseq-cdr lseq)))))))
 
 ;; Return all but initial of lseq that satisfy pred
 ;; No reason not to do it eagerly
@@ -289,7 +267,7 @@
       lseq-car
       lseq-cdr
       lseq
-      (lambda (ls) (not (null? ls)))
+      (negate null?)
       #f
       #f))))
 
@@ -309,47 +287,47 @@
               (test-group "lseqs/constructor"
                           (define one23 (make-lseq 1 2 3))
                           (test 1 (mcar one23))
-                          (test-assert (procedure? (mcdr one23)))
+                          #;(test-assert (procedure? (mcdr one23)))
                           (test '(1 2 3) (lseq-realize one23))
                           ) ; end lseqs/constructor
 
               (test-group "lseqs/predicates"
                           (test-assert (lseq? '()))
-                          (test-assert (lseq? (list->lseq '(1 2 3))))
+                          (test-assert (lseq? (mlist 1 2 3)))
                           (test-assert (lseq? (make-lseq 1 2 3)))
                           (test-assert (lseq? (mcons 'x (lambda () 'x))))
 
                           (test-assert (lseq=? = '() '()))
-                          (test-assert (lseq=? = (list->lseq '(1 2 3)) (list->lseq '(1 2 3))))
+                          (test-assert (lseq=? = (mlist 1 2 3) (mlist 1 2 3)))
                           (test-assert (lseq=? = (make-lseq 1 2 3)
                                                (make-lseq 1 2 3)))
                           #;(test-assert (lseq=? = (make-lseq 1 2 3) (list->lseq '(1 2 3))))
                           ) ; end lseqs/predicates
 
               (test-group "lseqs/selectors"
-                          (test-error (lseq-car (make-generator)))
+                          #;(test-error (lseq-car (make-generator)))
                           (test 1 (lseq-car (make-lseq 1 2 3)))
-                          (test 1 (lseq-car (list->lseq '(1 2 3))))
+                          (test 1 (lseq-car (mlist 1 2 3)))
                           (test-error (lseq-car 2))
-                          (test-error (lseq-first (make-generator)))
+                          #;(test-error (lseq-first (make-generator)))
                           (test 1 (lseq-first (make-lseq 1 2 3)))
-                          (test 1 (lseq-first (list->lseq '(1 2 3))))
+                          (test 1 (lseq-first (mlist 1 2 3)))
                           (test-error (lseq-first 2))
 
-                          (test-error (lseq-cdr (make-generator)))
+                          #;(test-error (lseq-cdr (make-generator)))
                           #;(test 2 (lseq-cdr '(1 . 2)))
-                          (test 2 (lseq-car (lseq-cdr (list->lseq '(1 2 3 4)))))
+                          (test 2 (lseq-car (lseq-cdr (mlist 1 2 3 4))))
                           (test 2 (lseq-car (lseq-cdr (make-lseq 1 2 3))))
 
-                          (test-error (lseq-rest (make-generator)))
+                          #;(test-error (lseq-rest (make-generator)))
                           #;(test 2 (lseq-rest '(1 . 2)))
-                          (test 2 (lseq-car (lseq-rest (list->lseq '(1 2 3)))))
+                          (test 2 (lseq-car (lseq-rest (mlist 1 2 3))))
                           (test 2 (lseq-car (lseq-rest (make-lseq 1 2 3))))
                           (test-error (lseq-rest 2))
 
                           (test-error (lseq-ref '() 0))
-                          (test 1 (lseq-ref (list->lseq '(1)) 0))
-                          (test 2 (lseq-ref (list->lseq '(1 2)) 1))
+                          (test 1 (lseq-ref (mlist 1) 0))
+                          (test 2 (lseq-ref (mlist 1 2) 1))
                           (test-error (lseq-ref (make-lseq) 0))
                           (test 1 (lseq-ref (make-lseq 1) 0))
                           (test 1 (lseq-ref (make-lseq 1 2) 0))
@@ -362,17 +340,17 @@
 
                           (test-error (lseq-drop '() 1))
                           (test-error (lseq-drop (make-lseq 1) 2))
-                          (test '(3 4 5) (lseq-realize (lseq-drop (list->lseq '(1 2 3 4 5)) 2)))
+                          (test '(3 4 5) (lseq-realize (lseq-drop (mlist 1 2 3 4 5) 2)))
                           (test '(3 4 5) (lseq-realize (lseq-drop (make-lseq 1 2 3 4 5) 2)))
                           ) ; end lseqs/selectors
 
               (test-group "lseqs/whole"
                           (test '() (lseq-realize '()))
-                          (test '(1 2 3) (lseq-realize (list->lseq '(1 2 3))))
+                          (test '(1 2 3) (lseq-realize (mlist 1 2 3)))
                           (test '() (lseq-realize (make-lseq)))
                           (test '(1 2 3) (lseq-realize (make-lseq 1 2 3)))
 
-                          (define g (lseq->generator (list->lseq '(1 2 3))))
+                          (define g (lseq->generator (mlist 1 2 3)))
                           (begin
                             (test 1 (g))
                             (test 2 (g))
@@ -386,10 +364,10 @@
                             (test-assert (eof-object? (g2))))
 
                           (test 0 (lseq-length '()))
-                          (test 3 (lseq-length (list->lseq '(1 2 3))))
+                          (test 3 (lseq-length (mlist 1 2 3)))
                           (test 3 (lseq-length (make-lseq 1 2 3)))
 
-                          (test '(1 2 3 a b c) (lseq-realize (lseq-append (list->lseq '(1 2 3)) (list->lseq '(a b c)))))
+                          (test '(1 2 3 a b c) (lseq-realize (lseq-append (mlist 1 2 3) (mlist 'a 'b 'c))))
                           (define one23abc (lseq-append (make-lseq 1 2 3) (make-lseq 'a 'b 'c)))
                           (test-assert (procedure? (mcdr one23abc)))
                           (test-assert (lseq-realize one23abc))
@@ -397,32 +375,32 @@
                           (define one2345 (make-lseq 1 2 3 4 5))
                           (define oddeven (make-lseq 'odd 'even 'odd 'even 'odd 'even 'odd 'even))
                           (test '((one 1 odd) (two 2 even) (three 3 odd))
-                                (lseq-realize (lseq-zip (list->lseq '(one two three)) one2345 oddeven)))
+                                (lseq-realize (lseq-zip (mlist 'one 'two 'three) one2345 oddeven)))
                           ) ; end lseqs/whole
 
               (test-group "lseqs/mapping"
                           (test '() (lseq-map - '()))
-                          (test '(-1 -2 -3) (lseq-realize (lseq-map - (list->lseq '(1 2 3)))))
+                          (test '(-1 -2 -3) (lseq-realize (lseq-map - (mlist 1 2 3))))
                           (test '(-1 -2 -3) (lseq-realize (lseq-map - (make-lseq 1 2 3))))
-                          (test-assert (procedure? (mcdr (lseq-map - (list->lseq '(1 2 3))))))
+                          (test-assert (procedure? (mcdr (lseq-map - (mlist 1 2 3)))))
 
                           (define output '())
                           (define out! (lambda (x) (set! output (cons x output))))
                           (lseq-for-each out! '())
                           (test output '())
-                          (lseq-for-each out! (list->lseq '(a b c)))
+                          (lseq-for-each out! (mlist 'a 'b 'c))
                           (test output '(c b a))
                           (lseq-for-each out! (make-lseq 1 2 3))
                           (test output '(3 2 1 c b a))
 
                           (test '() (lseq-filter odd? '()))
-                          (define odds (lseq-filter odd? (list->lseq '(1 2 3 4 5))))
+                          (define odds (lseq-filter odd? (mlist 1 2 3 4 5)))
                           (test-assert (procedure? (mcdr odds)))
                           (test '(1 3 5) (lseq-realize odds))
                           (test '(1 3 5) (lseq-realize (lseq-filter odd? (make-lseq 1 2 3 4 5))))
 
                           (test '() (lseq-remove even? '()))
-                          (define odds2 (lseq-remove even? (list->lseq '(1 2 3 4 5))))
+                          (define odds2 (lseq-remove even? (mlist 1 2 3 4 5)))
                           (test-assert (procedure? (mcdr odds2)))
                           (test '(1 3 5) (lseq-realize odds2))
                           (test '(1 3 5) (lseq-realize (lseq-remove even? (make-lseq 1 2 3 4 5))))
@@ -430,50 +408,50 @@
                           ) ; end lseqs/mapping
 
               (test-group "lseqs/searching"
-                          (test 4 (lseq-find even? (list->lseq '(3 1 4 1 5 9 2 6))))
+                          (test 4 (lseq-find even? (mlist 3 1 4 1 5 9 2 6)))
                           (test 4 (lseq-find even? (make-lseq 3 1 4 1 5 9 2 6)))
                           (test #f (lseq-find negative? (make-lseq 1 2 3 4 5)))
 
-                          (test '(-8 -5 0 0) (lseq-realize (lseq-find-tail even? (list->lseq '(3 1 37 -8 -5 0 0)))))
+                          (test '(-8 -5 0 0) (lseq-realize (lseq-find-tail even? (mlist 3 1 37 -8 -5 0 0))))
                           (test '(-8 -5 0 0) (lseq-realize (lseq-find-tail even?
                                                                            (make-lseq 3 1 37 -8 -5 0 0))))
                           (test #f (lseq-find-tail even? '()))
                           (test #f (lseq-find-tail negative? (make-lseq 1 2 3 4 5)))
 
-                          (test '(2 18) (lseq-realize (lseq-take-while even? (list->lseq '(2 18 3 10 22 9)))))
+                          (test '(2 18) (lseq-realize (lseq-take-while even? (mlist 2 18 3 10 22 9))))
                           (test '(2 18) (lseq-realize (lseq-take-while even?
                                                                        (make-lseq 2 18 3 10 22 9))))
                           (test '(2 18) (lseq-realize (lseq-take-while even?
                                                                        (make-lseq 2 18 3 10 22 9))))
 
-                          (test '(3 10 22 9) (lseq-realize (lseq-drop-while even? (list->lseq '(2 18 3 10 22 9)))))
+                          (test '(3 10 22 9) (lseq-realize (lseq-drop-while even? (mlist 2 18 3 10 22 9))))
                           (test '(3 10 22 9) (lseq-realize (lseq-drop-while even?
                                                                             (make-lseq 2 18 3 10 22 9))))
 
-                          (test #t (lseq-any integer? (list->lseq '(a 3 b 2.7))))
+                          (test #t (lseq-any integer? (mlist 'a 3 'b 2.7)))
                           (test #t (lseq-any integer? (make-lseq 'a 3 'b 2.7)))
-                          (test #f (lseq-any integer? (list->lseq '(a 3.1 b 2.7))))
+                          (test #f (lseq-any integer? (mlist 'a 3.1 'b 2.7)))
                           (test #f (lseq-any integer? (make-lseq 'a 3.1 'b 2.7)))
-                          (test #t (lseq-any < (list->lseq '(3 1 4 1 5)) (list->lseq '(2 7 1 8 2))))
+                          (test #t (lseq-any < (mlist 3 1 4 1 5) (mlist 2 7 1 8 2)))
                           (define (factorial n)
                             (cond
                               ((< n 0) #f)
                               ((= n 0) 1)
                               (else (* n (factorial (- n 1))))))
-                          (test 6 (lseq-any factorial (list->lseq '(-1 -2 3 4))))
+                          (test 6 (lseq-any factorial (mlist -1 -2 3 4)))
                           (test 6 (lseq-any factorial (make-lseq -1 -2 3 4)))
 
-                          (test 24 (lseq-every factorial (list->lseq '(1 2 3 4))))
+                          (test 24 (lseq-every factorial (mlist 1 2 3 4)))
                           (test 24 (lseq-every factorial (make-lseq 1 2 3 4)))
 
-                          (test 2 (lseq-index even? (list->lseq '(3 1 4 1 5 9))))
-                          (test 1 (lseq-index < (list->lseq '(3 1 4 1 5 9 2 5 6)) (list->lseq '(2 7 1 8 2))))
-                          (test #f (lseq-index = (list->lseq '(3 1 4 1 5 9 2 5 6)) (list->lseq '(2 7 1 8 2))))
+                          (test 2 (lseq-index even? (mlist 3 1 4 1 5 9)))
+                          (test 1 (lseq-index < (mlist 3 1 4 1 5 9 2 5 6) (mlist 2 7 1 8 2)))
+                          (test #f (lseq-index = (mlist 3 1 4 1 5 9 2 5 6) (mlist 2 7 1 8 2)))
 
-                          (test '(a b c) (lseq-realize (lseq-memq 'a (list->lseq '(a b c)))))
+                          (test '(a b c) (lseq-realize (lseq-memq 'a (mlist 'a 'b 'c))))
                           (test '(a b c) (lseq-realize (lseq-memq 'a (make-lseq 'a 'b 'c))))
                           (test #f (lseq-memq 'a (make-lseq 'b 'c 'd)))
-                          (test #f (lseq-memq (list 'a) (list->lseq '(b c d))))
+                          (test #f (lseq-memq (list 'a) (mlist 'b 'c 'd)))
                           (test #f (lseq-memq (list 'a) (make-lseq 'b 'c 'd)))
 
                           (test '(101 102) (lseq-realize (lseq-memv 101 (make-lseq 100 101 102))))
