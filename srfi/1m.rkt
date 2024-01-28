@@ -276,7 +276,7 @@
             [names (map (lambda (combo) (format-id stx "mc~ar" (apply string combo))) combos)])
        #`(begin
            #,@(map (lambda (name combo)
-                     #`(define #,name (compose #,@(map (lambda (sel) (if (char=? sel #\a) #'mcar #'mcdr)) combo))))
+                     #`(define #,name (compose1 #,@(map (lambda (sel) (if (char=? sel #\a) #'mcar #'mcdr)) combo))))
                    names combos)
            (provide #,@names)))]))
 
