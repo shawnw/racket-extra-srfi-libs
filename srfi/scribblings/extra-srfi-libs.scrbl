@@ -1,6 +1,6 @@
 #lang scribble/manual
-@require[@for-label[racket/base racket/generator racket/dict racket/set racket/unsafe/ops
-                    racket/fixnum racket/flonum racket/fixnum racket/extflonum
+@require[@for-label[racket/base racket/contract racket/generator racket/dict racket/set racket/unsafe/ops
+                    racket/fixnum racket/flonum racket/fixnum racket/extflonum racket/match
                     data/order data/gvector ffi/vector]]
 
 @title{Extra SRFI Libraries}
@@ -821,5 +821,21 @@ The only predefined codeset is @code{'errno} with POSIX errno values.
 @defproc[(register-codeset! [name symbol?] [data (listof (list/c (or/c symbol? #f) (or/c exact-integer? #f) (or/c string? #f)))]) void?]{
 
 Define and register a new codeset with the given names, numbers and messages. The message is optional, and either the name or number is, but not both.
+
+}
+
+@section{SRFI-239 Destructuring Lists}
+
+@defmodule[srfi/239]
+
+@hyperlink["https://srfi.schemers.org/srfi-239/srfi-239.html"]{Reference documentation}.
+
+Normally you'd use @code{match} in Racket, but this is a lightweight alternative when just dealing with cons cells and empty lists.
+
+@subsection{Additional functions}
+
+@defproc[(exn:fail:list-case? [obj any/c]) boolean?]{
+
+ Predicate for the exceptions raised by @code{list-case} when no matching clause is provided.
 
 }

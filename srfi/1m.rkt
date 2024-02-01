@@ -5,7 +5,7 @@
 (require (only-in compatibility/mlist mlistof list->mlist [mlist? proper-mlist?] mlist mlist-ref mlength
                   mappend mappend! mreverse mreverse! mmemq mmemv massq massv)
          racket/contract racket/function racket/undefined
-         (only-in srfi/1 car+cdr null-list? reduce reduce-right delete) (only-in "235.rkt" flip))
+         (only-in srfi/1 car+cdr null-list? reduce reduce-right delete) (only-in "235.rkt" flip) "239.rkt")
 (module+ test
   (require racket/local rackunit)
 
@@ -204,22 +204,23 @@
     [else source]))
 
 (define (circular-mlist element . elements)
+  (define head (mcons element '()))
   (cond
     [(null? elements)
-     (define clist (mcons element '()))
-     (set-mcdr! clist clist)
-     clist]
+     (set-mcdr! head head)
+     head]
     [else
-     (define head (mcons element '()))
      (let loop ([clist head]
                 [elements elements])
-       (cond
-         [(null? elements)
-          (set-mcdr! clist head)
-          head]
-         [else
-          (set-mcdr! clist (mcons (car elements) '()))
-          (loop (mcdr clist) (cdr elements))]))]))
+       (list-case elements
+         [()
+          (begin
+            (set-mcdr! clist head)
+            head)]
+         [(ecar . ecdr)
+          (begin
+            (set-mcdr! clist (mcons ecar '()))
+            (loop (mcdr clist) ecdr))]))]))
 
 (define (miota count [start 0] [step 1])
   (if (= count 0)
@@ -562,17 +563,19 @@
 (define (%cdrs lists)
   (let/ec abort
     (let recur ((lists lists))
-      (if (pair? lists)
-	    (let ((lis (car lists)))
-	      (if (null-mlist? lis) (abort '())
-		  (cons (mcdr lis) (recur (cdr lists)))))
-	    '()))))
+      (list-case lists
+        ((lis . lcdr)
+         (if (null-mlist? lis) (abort '())
+             (cons (mcdr lis) (recur lcdr))))
+        (() '())))))
 
 (define (%cars+ lists last-elt)	; (append! (map car lists) (list last-elt))
   (let recur ((lists lists))
-    (if (pair? lists)
-        (cons (mcar (car lists)) (recur (cdr lists)))
-        (list last-elt))))
+    (list-case lists
+      ((lcar . lcdr)
+       (cons (mcar lcar) (recur lcdr)))
+      (()
+       (list last-elt)))))
 
 ;;; LISTS is a (not very long) non-empty list of lists.
 ;;; Return two lists: the cars & the cdrs of the lists.
@@ -582,14 +585,14 @@
 (define (%cars+cdrs lists)
   (let/ec abort
     (let recur ((lists lists))
-      (if (pair? lists)
-          (let-values ([(list other-lists) (car+cdr lists)])
-            (if (null-mlist? list)
-                (abort '() '()) ; LIST is empty -- bail out
-                (let-values ([(a d) (mcar+mcdr list)]
-                             [(cars cdrs) (recur other-lists)])
-                  (values (cons a cars) (cons d cdrs)))))
-          (values '() '())))))
+      (list-case lists
+          [(list . other-lists)
+           (if (null-mlist? list)
+               (abort '() '()) ; LIST is empty -- bail out
+               (let-values ([(a d) (mcar+mcdr list)]
+                            [(cars cdrs) (recur other-lists)])
+                 (values (cons a cars) (cons d cdrs))))]
+        [() (values '() '())]))))
 
 #|
 (require racket/control)
@@ -610,24 +613,24 @@
 (define (%cars+cdrs+ lists cars-final)
   (let/ec abort
     (let recur ((lists lists))
-      (if (pair? lists)
-          (let-values ([(list other-lists) (car+cdr lists)])
-            (if (null-mlist? list)
-                (abort '() '()) ; LIST is empty -- bail out
-                (let-values ([(a d) (mcar+mcdr list)]
-                             [(cars cdrs) (recur other-lists)])
-                  (values (cons a cars) (cons d cdrs)))))
-          (values (list cars-final) '())))))
+      (list-case lists
+        [(list . other-lists)
+         (if (null-mlist? list)
+             (abort '() '()) ; LIST is empty -- bail out
+             (let-values ([(a d) (mcar+mcdr list)]
+                          [(cars cdrs) (recur other-lists)])
+               (values (cons a cars) (cons d cdrs))))]
+          [() (values (list cars-final) '())]))))
 
 ;;; Like %CARS+CDRS, but blow up if any list is empty.
 (define (%cars+cdrs/no-test lists)
   (let recur ((lists lists))
-    (if (pair? lists)
-	(let*-values ([(list other-lists) (car+cdr lists)]
-                      [(a d) (mcar+mcdr list)]
-                      [(cars cdrs) (recur other-lists)])
-          (values (cons a cars) (cons d cdrs)))
-	(values '() '()))))
+    (list-case lists
+    [(list . other-lists)
+     (let-values ([(a d) (mcar+mcdr list)]
+                  [(cars cdrs) (recur other-lists)])
+       (values (cons a cars) (cons d cdrs)))]
+      [() (values '() '())])))
 
 ;;; fold/unfold
 ;;;;;;;;;;;;;;;
@@ -720,7 +723,7 @@
       ridentity
       (let recur ((head (mcar lis))
                   (lis (mcdr lis)))
-        (if (pair? lis)
+        (if (mpair? lis)
             (f head (recur (mcar lis) (mcdr lis)))
             head))))
 
