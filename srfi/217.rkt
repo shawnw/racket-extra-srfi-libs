@@ -1203,27 +1203,27 @@
   ;(assume (valid-integer? elt))
   ;(assume (procedure? failure))
   ;(assume (procedure? success))
-  (call-with-current-continuation
+  (call-with-escape-continuation
    (lambda (return)
      (let-values
-      (((trie obj)
-        (trie-search (iset-trie set)
-                     elt
-                     (lambda (insert ignore)
-                       (failure insert
-                                (lambda (obj)
-                                  (return set obj))))
-                     (lambda (key update remove)
-                       (success
-                        key
-                        (lambda (new obj)
-                          (assume (valid-integer? new))
-                          (if (fx= key new)
-                              (update new obj)
-                              (return (iset-adjoin (iset-delete set key)
-                                                   new)
-                                      obj)))
-                        remove)))))
+         (((trie obj)
+           (trie-search (iset-trie set)
+                        elt
+                        (lambda (insert ignore)
+                          (failure insert
+                                   (lambda (obj)
+                                     (return set obj))))
+                        (lambda (key update remove)
+                          (success
+                           key
+                           (lambda (new obj)
+                             (assume (valid-integer? new))
+                             (if (fx= key new)
+                                 (update new obj)
+                                 (return (iset-adjoin (iset-delete set key)
+                                                      new)
+                                         obj)))
+                           remove)))))
        (values (raw-iset trie) obj)))))
 
 (define (iset-search! set elt failure success)
@@ -1261,7 +1261,7 @@
 
 (define (iset-find pred set failure)
   ;(assume (procedure? failure))
-  (call-with-current-continuation
+  (call-with-escape-continuation
    (lambda (return)
      (or (iset-fold (lambda (n _)
                       (and (pred n) (return n)))
@@ -1278,7 +1278,7 @@
 
 (define (iset-any? pred set)
   ;(assume (procedure? pred))
-  (call-with-current-continuation
+  (call-with-escape-continuation
    (lambda (return)
      (iset-fold (lambda (n _)
                   (and (pred n) (return #t)))
@@ -1287,7 +1287,7 @@
 
 (define (iset-every? pred set)
   ;(assume (procedure? pred))
-  (call-with-current-continuation
+  (call-with-escape-continuation
    (lambda (return)
      (iset-fold (lambda (n _)
                   (or (pred n) (return #f)))

@@ -1284,27 +1284,33 @@
              (assume (valid-integer? k))
              (lp (trie-adjoin trie k v) seeds*)))))))
 
-(define fxmapping-accumulate
-  (case-lambda
-    ((proc seed)                                ; fast path
-     (call-with-current-continuation
-      (lambda (k)
-        (let lp ((trie the-empty-trie) (seed seed))
-          (let-values (((k v seed*)
-                        (proc (lambda xs (apply k (raw-fxmapping trie) xs))
-                              seed)))
-            (lp (trie-adjoin trie k v) seed*))))))
-    ((proc . seeds)                             ; variadic path
-     (call-with-current-continuation
-      (lambda (k)
-        (let lp ((trie the-empty-trie) (seeds seeds))
-          (let-values (((k v seeds*)
-                        (call-with-values
-                         (lambda () (apply proc
-                                           (lambda xs (apply k (raw-fxmapping trie) xs))
-                                           seeds))
-                         (lambda (k v . seeds*) (values k v seeds*)))))
-            (lp (trie-adjoin trie k v) seeds*))))))))
+(define (fxmapping-accumulate proc seed . seeds)
+  (define prompt-tag (make-continuation-prompt-tag))
+  (call-with-continuation-prompt
+   (lambda ()
+     (if (null? seeds)
+         ; fast path
+         (call-with-current-continuation
+          (lambda (k)
+            (let lp ((trie the-empty-trie) (seed seed))
+              (let-values (((k v seed*)
+                            (proc (lambda xs (apply k (raw-fxmapping trie) xs))
+                                  seed)))
+                (lp (trie-adjoin trie k v) seed*))))
+          prompt-tag)
+         ; variadic path
+         (call-with-current-continuation
+          (lambda (k)
+            (let lp ((trie the-empty-trie) (seeds (cons seed seeds)))
+              (let-values (((k v seeds*)
+                            (call-with-values
+                             (lambda () (apply proc
+                                               (lambda xs (apply k (raw-fxmapping trie) xs))
+                                               seeds))
+                             (lambda (k v . seeds*) (values k v seeds*)))))
+                (lp (trie-adjoin trie k v) seeds*))))
+          prompt-tag)))
+   prompt-tag))
 
 ;;;; Predicates
 
@@ -1461,7 +1467,7 @@
                   fxmap))
 
 (define (fxmapping-any? pred fxmap)
-  (call-with-current-continuation
+  (call-with-escape-continuation
    (lambda (return)
      (fxmapping-fold (lambda (k v _)
                        (and (pred k v) (return #t)))
@@ -1469,7 +1475,7 @@
                      fxmap))))
 
 (define (fxmapping-every? pred fxmap)
-  (call-with-current-continuation
+  (call-with-escape-continuation
    (lambda (return)
      (fxmapping-fold (lambda (k v _)
                        (or (pred k v) (return #f)))
