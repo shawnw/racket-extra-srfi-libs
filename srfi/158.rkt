@@ -1,6 +1,7 @@
 #lang racket/base
 
-(require racket/contract (only-in racket/list make-list) srfi/41 racket/format
+(require racket/contract (only-in racket/list make-list) racket/format data/gvector
+         srfi/13 srfi/41 "133.rkt" "160/u8.rkt"
          (only-in racket/generator [generator? rkt-generator?] [generator-state rkt-generator-state]))
 (module+ test (require rackunit))
 (provide
@@ -132,10 +133,8 @@
 
 
 ;; make-iota-generator
-(define make-iota-generator
-  (case-lambda ((count) (make-iota-generator count 0 1))
-               ((count start) (make-iota-generator count start 1))
-               ((count start step) (make-iota count start step))))
+(define (make-iota-generator count [start 0] [step 1])
+  (make-iota count start step))
 
 ;; make-iota
 (define (make-iota count start step)
@@ -450,37 +449,32 @@
 
 
 ;; gdelete
-(define gdelete
-  (case-lambda ((item gen) (gdelete item gen equal?))
-               ((item gen ==)
-                (lambda () (let loop ((v (gen)))
-                            (cond
-                              ((eof-object? v) eof)
-                              ((== item v) (loop (gen)))
-                              (else v)))))))
+(define (gdelete item gen [== equal?])
+  (lambda () (let loop ((v (gen)))
+               (cond
+                 ((eof-object? v) eof)
+                 ((== item v) (loop (gen)))
+                 (else v)))))
 
 
 
 ;; gdelete-neighbor-dups
-(define gdelete-neighbor-dups
-  (case-lambda ((gen)
-                (gdelete-neighbor-dups gen equal?))
-               ((gen ==)
-                (define firsttime #t)
-                (define prev #f)
-                (lambda () (if firsttime
-                             (begin (set! firsttime #f)
-                                    (set! prev (gen))
-                                    prev)
-                             (let loop ((v (gen)))
-                              (cond
-                                ((eof-object? v)
-                                 v)
-                                ((== prev v)
-                                 (loop (gen)))
-                                (else
-                                  (set! prev v)
-                                  v))))))))
+(define (gdelete-neighbor-dups gen [== equal?])
+  (define firsttime #t)
+  (define prev #f)
+  (lambda () (if firsttime
+                 (begin (set! firsttime #f)
+                        (set! prev (gen))
+                        prev)
+                 (let loop ((v (gen)))
+                   (cond
+                     ((eof-object? v)
+                      v)
+                     ((== prev v)
+                      (loop (gen)))
+                     (else
+                      (set! prev v)
+                      v))))))
 
 
 ;; gindex
@@ -631,21 +625,25 @@
 
 ;; count-accumulator
 (define (count-accumulator) (make-accumulator
-                            (lambda (obj state) (+ 1 state)) 0 (lambda (x) x)))
+                            (lambda (obj state) (+ 1 state)) 0 identity))
 
 ;; list-accumulator
 (define (list-accumulator) (make-accumulator cons '() reverse))
 
 ;; reverse-list-accumulator
-(define (reverse-list-accumulator) (make-accumulator cons '() (lambda (x) x)))
+(define (reverse-list-accumulator) (make-accumulator cons '() identity))
+
+(define (%gvector-add-back! val gv)
+  (gvector-add! gv val)
+  gv)
 
 ;; vector-accumulator
 (define (vector-accumulator)
-  (make-accumulator cons '() (lambda (x) (list->vector (reverse x)))))
+  (make-accumulator %gvector-add-back! (gvector) gvector->vector))
 
 ;; reverse-vector-accumulator
 (define (reverse-vector-accumulator)
-  (make-accumulator cons '() list->vector))
+  (make-accumulator %gvector-add-back! (gvector) (lambda (gv) (let ([v (gvector->vector gv)]) (vector-reverse! v) v))))
 
 ;; vector-accumulator!
 (define (vector-accumulator! vec at)
@@ -658,7 +656,7 @@
 
 ;; bytevector-accumulator
 (define (bytevector-accumulator)
-  (make-accumulator cons '() (lambda (x) (list->bytes (reverse x)))))
+  (make-accumulator cons '() reverse-list->u8vector))
 
 (define (bytevector-accumulator! bytevec at)
   (lambda (obj)
@@ -670,14 +668,13 @@
 
 ;; string-accumulator
 (define (string-accumulator)
-  (make-accumulator cons '()
-        (lambda (lst) (list->string (reverse lst)))))
+  (make-accumulator cons '() reverse-list->string))
 
 ;; sum-accumulator
-(define (sum-accumulator) (make-accumulator + 0 (lambda (x) x)))
+(define (sum-accumulator) (make-accumulator + 0 identity))
 
 ;; product-accumulator
-(define (product-accumulator) (make-accumulator * 1 (lambda (x) x)))
+(define (product-accumulator) (make-accumulator * 1 identity))
 
 ;;; SRFI-221 functions
 
@@ -689,10 +686,8 @@
          (acc value)
          (accumulate-generated-values acc gen)))))
 
-(define gdelete-duplicates
-  (case-lambda
-    ((gen) (gdelete-duplicates* gen equal?))
-    ((gen =) (gdelete-duplicates* gen =))))
+(define (gdelete-duplicates gen [= equal?])
+  (gdelete-duplicates* gen =))
 
 (define (gdelete-duplicates* gen =)
   (define seen '())
