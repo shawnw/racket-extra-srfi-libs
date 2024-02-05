@@ -78,7 +78,7 @@
   [msplit-at (-> mlist-or-null/c exact-nonnegative-integer? (values proper-mlist? any/c))]
   [msplit-at! (-> mlist-or-null/c exact-nonnegative-integer? (values proper-mlist? any/c))]
   [mlast (-> non-empty-finite-mlist/c any/c)]
-  [mlast-pair (-> non-empty-finite-mlist/c mpair?)]
+  [last-mpair (-> non-empty-finite-mlist/c mpair?)]
   [mlength+ (-> proper-or-circular-mlist/c (or/c exact-nonnegative-integer? #f))]
   [mconcatenate (-> (mlistof proper-mlist?) proper-mlist?)]
   [mconcatenate! (-> (mlistof proper-mlist?) proper-mlist?)]
@@ -408,15 +408,15 @@
   (test-values "msplit-at! 1" (msplit-at! (mlist 'a 'b 'c 'd 'e 'f 'g 'h) 3)
                (values (mlist 'a 'b 'c) (mlist 'd 'e 'f 'g 'h))))
 
-(define (mlast lis) (mcar (mlast-pair lis)))
-(define (mlast-pair lis)
+(define (mlast lis) (mcar (last-mpair lis)))
+(define (last-mpair lis)
   (let lp ((lis lis))
     (let ((tail (mcdr lis)))
       (if (mpair? tail) (lp tail) lis))))
 
 (module+ test
   (test-equal? "mlast 1" (mlast (mlist 'a 'b 'c)) 'c)
-  (test-equal? "mlast-pair 1" (mlast-pair (mlist 'a 'b 'c)) (mcons 'c '())))
+  (test-equal? "mlast-pair 1" (last-mpair (mlist 'a 'b 'c)) (mcons 'c '())))
 
 ;;; Miscellaneous
 
