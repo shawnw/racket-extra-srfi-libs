@@ -15,6 +15,7 @@ Currently includes:
 * [SRFI-74 Octect-Addressed Binary Blocks](https://srfi.schemers.org/srfi-74/srfi-74.html) (Typed Racket port)
 * [SRFI-87 => in case clauses](https://srfi.schemers.org/srfi-87/srfi-87.html)
 * [SRFI-111 Boxes](https://srfi.schemers.org/srfi-111/srfi-111.html)
+* [SRFI-117 Queues based on lists](https://srfi.schemers.org/srfi-117/srfi-117.html) (Uses mutable lists)
 * [SRFI-112 Environment Inquiry](https://srfi.schemers.org/srfi-112/srfi-112.html)
 * [SRFI-127 Lazy Sequences](https://srfi.schemers.org/srfi-127/srfi-127.html)
 * [SRFI-128 Comparators (reduced)](https://srfi.schemers.org/srfi-128/srfi-128.html)

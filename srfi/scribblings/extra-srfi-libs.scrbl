@@ -102,6 +102,16 @@ Racket natively supports SRFI-111 single-valued boxes, but this module re-export
 
 @bold{Notes}: @code{(os-version)} always returns @code{#f}, but the other functions are all implemented.
 
+@section{SRFI-117 Queues based on (mutable) lists}
+
+@defmodule[srfi/117]
+
+@hyperlink["https://srfi.schemers.org/srfi-117/srfi-117.html"]{Reference documentation}.
+
+The SRFI uses normal lists, which are immutable in Racket. Therefore, this implemention uses mutable lists of @code{mcons} pairs.
+The single argument form of @code{make-list-queue} and two argument form of @code{list-queue-set-list!} can be passed normal lists, though.
+@code{list-queue-list} returns a mutable list.
+
 @section{SRFI-127 Lazy Sequences}
 
 @defmodule[srfi/127]
