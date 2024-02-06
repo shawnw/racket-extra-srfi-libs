@@ -2,7 +2,7 @@
 
 ;;; SRFI-1 for mutable lists
 
-(require (only-in compatibility/mlist mlistof list->mlist [mlist? proper-mlist?] mlist mlist-ref mlength
+(require (only-in compatibility/mlist mlistof list->mlist mlist->list [mlist? proper-mlist?] mlist mlist-ref mlength
                   mappend mappend! mreverse mreverse! mmemq mmemv massq massv)
          racket/contract racket/function racket/undefined
          (only-in srfi/1 car+cdr null-list? reduce reduce-right delete) (only-in "235.rkt" flip) "239.rkt")
