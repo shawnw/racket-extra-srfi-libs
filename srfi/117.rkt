@@ -1,7 +1,7 @@
 #lang racket/base
 
 ;;; SRFI-117 implementation using mcons
-(require racket/contract racket/list racket/match "1m.rkt")
+(require racket/contract racket/list racket/match racket/struct "1m.rkt")
 (module+ test (require rackunit))
 
 (provide
@@ -29,9 +29,19 @@
   [list-queue-map (-> (-> any/c any/c) list-queue? list-queue?)]
   [list-queue-map! (-> (-> any/c any/c) list-queue? list-queue?)]
   [list-queue-for-each (-> (-> any/c any/c) list-queue? void?)]
+  [in-list-queue (-> list-queue? sequence?)]
   ))
 
-(struct lqueue (first last) #:mutable #:transparent)
+(struct lqueue (first last)
+  #:mutable
+  #:property prop:sequence
+  (lambda (s) (in-list-queue s))
+  #:methods gen:custom-write
+  [(define write-proc (make-constructor-style-printer (lambda (obj) 'list-queue) (lambda (obj) (in-list-queue obj))))])
+
+(define (in-list-queue lq)
+  (in-mlist (lqueue-first lq)))
+
 (define list-queue? lqueue?)
 
 (define (mpair-in-mlist? lst p)
