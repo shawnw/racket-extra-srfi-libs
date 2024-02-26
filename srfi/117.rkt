@@ -6,6 +6,7 @@
 
 (provide
  (contract-out
+  #:unprotected-submodule unsafe
   [list-queue? predicate/c]
   [make-list-queue (case-> (-> (or/c list? proper-mlist?) list-queue?) (-> proper-mlist? (or/c mpair? null?) list-queue?))]
   [list-queue (-> any/c ... list-queue?)]

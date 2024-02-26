@@ -129,6 +129,9 @@ The SRFI uses normal lists, which are immutable in Racket. Therefore, this imple
 The single argument form of @code{make-list-queue} and two argument form of @code{list-queue-set-list!} can be passed normal lists, though.
 @code{list-queue-list} returns a mutable list.
 
+Also available in an unsafe module with @code{(require (submod srfi/117 unsafe))}.
+
+
 @defproc[(in-list-queue [lq list-queue?]) sequence?]{
 
 Return a sequence that iterates over the elements of the queue. List queues can also be used directly as sequences.
