@@ -47,6 +47,7 @@
 (provide
  (all-from-out compatibility/mlist)
  (contract-out
+  #:unprotected-submodule unsafe
   [dotted-mlist? predicate/c]
   [circular-mlist? predicate/c]
   [mxcons (-> any/c any/c mpair?)]
@@ -149,6 +150,11 @@
   [mlset-xor! (-> (-> any/c any/c any/c) proper-mlist? ... proper-mlist?)]
   [mlset-diff+intersection! (-> (-> any/c any/c any/c) proper-mlist? proper-mlist? ... (values proper-mlist? proper-mlist?))]
   ))
+
+(module+ unsafe
+  (require (only-in compatibility/mlist list->mlist mlist->list [mlist? proper-mlist?] mlist mlist-ref mlength
+                    mappend mappend! mreverse mreverse! mmemq mmemv massq massv))
+   (provide (all-from-out compatibility/mlist)))
 
 ;;; Constructors
 ;; mcons - builtin

@@ -44,6 +44,8 @@ The type of a homogeneous circular list as returned by @code{circular-list}.
 SRFI-1 for mutable lists. Procedures have the same name with an @tt{m} prepended, except ones with @tt{list} or @tt{pair} in the name, which turns into @tt{mlist} or @tt{mpair}.
 So, for example, @code{make-mlist}, @code{not-mpair?} and @code{mxcons}.
 
+Also available in an unsafe module with @code{(require (submod srfi/1m unsafe))}.
+
 @subsubsection{Extra functions}
 
 @defproc[(list->mlist [lst list?]) proper-mlist?]{
