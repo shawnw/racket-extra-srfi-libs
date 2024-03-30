@@ -200,14 +200,13 @@
   (test-equal? "mlist-tabulate" (mlist-tabulate 4 values) (mlist 0 1 2 3)))
 
 (define (mlist-copy source)
-  (cond
-    [(null? source)
-     '()]
-    [(mpair? source)
-     (if (mpair? (mcdr source))
-         (mcons (mcar source) (mlist-copy (mcdr source)))
-         (mcons (mcar source) (mcdr source)))]
-    [else source]))
+  (mlist-case source
+    [() '()]
+    [(head . tail)
+     (if (mpair? tail)
+         (mcons head (mlist-copy tail))
+         (mcons head tail))]
+    [_ source]))
 
 (define (circular-mlist element . elements)
   (define head (mcons element '()))
@@ -454,15 +453,18 @@
 
 (define (mappend-reverse rev-head tail)
   (let lp ((rev-head rev-head) (tail tail))
-    (if (null-mlist? rev-head) tail
-	(lp (mcdr rev-head) (mcons (mcar rev-head) tail)))))
+    (mlist-case rev-head
+      [() tail]
+      [(rh-car . rh-cdr)
+       (lp rh-cdr (mcons rh-car tail))])))
 
 (define (mappend-reverse! rev-head tail)
   (let lp ((rev-head rev-head) (tail tail))
-    (if (null-mlist? rev-head) tail
-	(let ((next-rev (mcdr rev-head)))
-	  (set-mcdr! rev-head tail)
-	  (lp next-rev rev-head)))))
+    (mlist-case rev-head
+      [() tail]
+      [(_ . next-rev)
+       (set-mcdr! rev-head tail)
+       (lp next-rev rev-head)])))
 
 (module+ test
   (test-equal? "mappend-reverse 1" (mappend-reverse (mlist 'c 'b 'a) (mlist 'd)) (mlist 'a 'b 'c 'd))
@@ -480,41 +482,45 @@
 
 (define (munzip2 lis)
   (let recur ((lis lis))
-    (if (null-mlist? lis) (values lis lis)	; Use NOT-PAIR? to handle
-	(let ((elt (mcar lis)))			; dotted lists.
-	  (let-values ([(a b) (recur (mcdr lis))])
-            (values (mcons (mcar  elt) a)
-		    (mcons (mcadr elt) b)))))))
+    (mlist-case lis
+      [() (values lis lis)]
+      [(elt . rest)
+       (let-values ([(a b) (recur rest)])
+         (values (mcons (mcar  elt) a)
+                 (mcons (mcadr elt) b)))])))
 
 (define (munzip3 lis)
   (let recur ((lis lis))
-    (if (null-mlist? lis) (values lis lis lis)
-	(let ((elt (mcar lis)))
-	  (let-values ([(a b c) (recur (mcdr lis))])
-	    (values (mcons (mcar   elt) a)
-		    (mcons (mcadr  elt) b)
-		    (mcons (mcaddr elt) c)))))))
+    (mlist-case lis
+      [() (values lis lis lis)]
+      [(elt . rest)
+       (let-values ([(a b c) (recur rest)])
+         (values (mcons (mcar   elt) a)
+                 (mcons (mcadr  elt) b)
+                 (mcons (mcaddr elt) c)))])))
 
 (define (munzip4 lis)
   (let recur ((lis lis))
-    (if (null-mlist? lis) (values lis lis lis lis)
-	(let ((elt (mcar lis)))
-	  (let-values ([(a b c d) (recur (mcdr lis))])
-	    (values (mcons (mcar    elt) a)
-		    (mcons (mcadr   elt) b)
-		    (mcons (mcaddr  elt) c)
-		    (mcons (mcadddr elt) d)))))))
+    (mlist-case lis
+      [() (values lis lis lis lis)]
+      [(elt . rest)
+       (let-values ([(a b c d) (recur rest)])
+         (values (mcons (mcar    elt) a)
+                 (mcons (mcadr   elt) b)
+                 (mcons (mcaddr  elt) c)
+                 (mcons (mcadddr elt) d)))])))
 
 (define (munzip5 lis)
   (let recur ((lis lis))
-    (if (null-mlist? lis) (values lis lis lis lis lis)
-	(let ((elt (mcar lis)))
-	  (let-values ([(a b c d e) (recur (mcdr lis))])
-	    (values (mcons (mcar     elt) a)
-		    (mcons (mcadr    elt) b)
-		    (mcons (mcaddr   elt) c)
-		    (mcons (mcadddr  elt) d)
-		    (mcons (mcar (mcddddr  elt)) e)))))))
+    (mlist-case lis
+      [() (values lis lis lis lis lis)]
+      [(elt . rest)
+       (let-values ([(a b c d e) (recur rest)])
+         (values (mcons (mcar     elt) a)
+                 (mcons (mcadr    elt) b)
+                 (mcons (mcaddr   elt) c)
+                 (mcons (mcadddr  elt) d)
+                 (mcons (mcar (mcddddr  elt)) e)))])))
 
 (module+ test
   (test-values "munzip2" (munzip2 (mlist (mlist 1 'one) (mlist 2 'two) (mlist 3 'three)))
@@ -524,20 +530,24 @@
 ;;; count
 ;;;;;;;;;
 (define (mcount pred list1 . lists)
-  (if (pair? lists)
-
-      ;; N-ary case
-      (let lp ((list1 list1) (lists lists) (i 0))
-	(if (null-mlist? list1) i
-	    (let-values ([(as ds) (%cars+cdrs lists)])
-	      (if (null? as) i
-		  (lp (mcdr list1) ds
-		      (if (apply pred (mcar list1) as) (+ i 1) i))))))
-
-      ;; Fast path
-      (let lp ((lis list1) (i 0))
-	(if (null-mlist? lis) i
-	    (lp (mcdr lis) (if (pred (mcar lis)) (+ i 1) i))))))
+  (list-case lists
+    [(_ . _)
+     ;; N-ary case
+     (let lp ((list1 list1) (lists lists) (i 0))
+       (mlist-case list1
+         [() i]
+         [(l1-car . l1-cdr)
+          (let-values ([(as ds) (%cars+cdrs lists)])
+            (if (null? as) i
+                (lp l1-cdr ds
+                    (if (apply pred l1-car as) (+ i 1) i))))]))]
+    [()
+     ;; Fast path
+     (let lp ((lis list1) (i 0))
+       (mlist-case lis
+         [() i]
+         [(head . rest)
+          (lp rest (if (pred head) (+ i 1) i))]))]))
 
 (module+ test
   (test-equal? "mcount 1" (mcount even? (mlist 3 1 4 1 5 9 2 5 6)) 3)
@@ -676,8 +686,10 @@
 	      (lp cdrs (apply kons cars+ans)))))
 
       (let lp ((lis lis1) (ans knil))			; Fast path
-	(if (null-mlist? lis) ans
-	    (lp (mcdr lis) (kons (mcar lis) ans))))))
+        (mlist-case lis
+          [() ans]
+          [(head . rest)
+           (lp rest (kons head ans))]))))
 
 
 (define (mfold-right kons knil lis1 . lists)
@@ -688,9 +700,10 @@
 	      (apply kons (%cars+ lists (recur cdrs))))))
 
       (let recur ((lis lis1))				; Fast path
-	(if (null-mlist? lis) knil
-	    (let ((head (mcar lis)))
-	      (kons head (recur (mcdr lis))))))))
+        (mlist-case lis
+          [() knil]
+          [(head . rest)
+           (kons head (recur rest))]))))
 
 
 (define (mpair-fold-right f zero lis1 . lists)
@@ -701,7 +714,9 @@
 	      (apply f (append lists (list (recur cdrs)))))))
 
       (let recur ((lis lis1))				; Fast path
-	(if (null-mlist? lis) zero (f lis (recur (mcdr lis)))))))
+        (mlist-case lis
+          [() zero]
+          [(_ . tail) (f lis (recur tail))]))))
 
 (define (mpair-fold f zero lis1 . lists)
   (if (pair? lists)
@@ -711,27 +726,30 @@
 	      (lp tails (apply f (append lists (list ans)))))))
 
       (let lp ((lis lis1) (ans zero))
-	(if (null-mlist? lis) ans
-	    (let ((tail (mcdr lis)))		; Grab the cdr now,
-	      (lp tail (f lis ans)))))))	; in case F SET-CDR!s LIS.
-
+        (mlist-case lis
+          [() ans]
+          [(_ . tail)
+           (lp tail (f lis ans))]))))
 
 ;;; REDUCE and REDUCE-RIGHT only use RIDENTITY in the empty-list case.
 ;;; These cannot meaningfully be n-ary.
 
 (define (mreduce f ridentity lis)
-  (if (null-mlist? lis)
-      ridentity
-      (mfold f (mcar lis) (mcdr lis))))
+  (mlist-case lis
+    [() ridentity]
+    [(head . tail)
+     (mfold f head tail)]))
 
 (define (mreduce-right f ridentity lis)
-  (if (null-mlist? lis)
-      ridentity
-      (let recur ((head (mcar lis))
-                  (lis (mcdr lis)))
-        (if (mpair? lis)
-            (f head (recur (mcar lis) (mcdr lis)))
-            head))))
+  (mlist-case lis
+    [() ridentity]
+    [(head . tail)
+     (let recur ((head head)
+                 (lis tail))
+       (mlist-case lis
+         [() head]
+         [(first . rest)
+          (f head (recur first rest))]))]))
 
 ;;; Mappers: append-map append-map! pair-for-each map! filter-map map-in-order
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -755,12 +773,16 @@
                       (appender vals (recur cars2 cdrs2))))))))
 
       ;; Fast path
-      (if (null-mlist? lis1) '()
-	  (let recur ((elt (mcar lis1))
-                      (rest (mcdr lis1)))
-	    (let ((vals (f elt)))
-	      (if (null-mlist? rest) vals
-		  (appender vals (recur (mcar rest) (mcdr rest)))))))))
+      (mlist-case lis1
+        [() '()]
+        [(elt . rest)
+         (let recur ((elt elt)
+                     (rest rest))
+           (let ((vals (f elt)))
+             (mlist-case rest
+               [() vals]
+               [(head . tail)
+                (appender vals (recur head tail))])))])))
 
 ;;; Map F across lists, guaranteeing to go left-to-right.
 ;;; NOTE: Some implementations of R5RS MAP are compliant with this spec;
@@ -777,10 +799,10 @@
 
       ;; Fast path.
       (let recur ((lis lis1))
-	(if (null-mlist? lis) lis
-	    (let ((tail (mcdr lis))
-		  (x (f (mcar lis))))		; Do head first,
-	      (mcons x (recur tail)))))))	; then tail.
+        (mlist-case lis
+          [() lis]
+          [(head . tail)
+           (mcons (f head) (recur tail))]))))	; then tail.
 
 
 ;;; We extend MAP to handle arguments of unequal length.
@@ -799,12 +821,13 @@
 
       ;; Fast path.
       (let recur ((lis lis1))
-	(if (null-mlist? lis)
-            lis
-	    (let ((tail (recur (mcdr lis))))
-	      (cond
-                ((f (mcar lis)) => (lambda (x) (mcons x tail)))
-                (else tail)))))))
+        (mlist-case lis
+          [() lis]
+          [(head . tail)
+           (let ((tail (recur tail)))
+             (cond
+               ((f head) => (lambda (x) (mcons x tail)))
+               (else tail)))]))))
 
 (module+ test
   (test-equal? "mfilter-map 1"
@@ -823,12 +846,10 @@
 
       ;; Fast path.
       (let recur ((lis lis1))
-	(cond
-          [(null-mlist? lis)
-           (void)]
-          [else
-           (define tail (mcdr lis))
-           (f (mcar lis))
+	(mlist-case lis
+          [() (void)]
+          [(head . tail)
+           (f head)
            (recur tail)]))))
 
 (module+ test
@@ -894,14 +915,14 @@
 
 (define (mfilter pred lis)			; Sleazing with EQ? makes this one faster.
   (let recur ((lis lis))
-    (if (null-mlist? lis) lis			; Use NOT-PAIR? to handle dotted lists.
-	(let ((head (mcar lis))
-	      (tail (mcdr lis)))
-	  (if (pred head)
-	      (let ((new-tail (recur tail)))	; Replicate the RECUR call so
-		(if (eq? tail new-tail) lis
-		    (mcons head new-tail)))
-	      (recur tail))))))			; this one can be a tail call.
+    (mlist-case lis
+      [() lis]
+      [(head . tail)
+       (if (pred head)
+           (let ((new-tail (recur tail)))	; Replicate the RECUR call so
+             (if (eq? tail new-tail) lis
+                 (mcons head new-tail)))
+           (recur tail))])))			; this one can be a tail call.
 
 ;;; This implementation of FILTER!
 ;;; - doesn't cons, and uses no stack;
@@ -951,13 +972,13 @@
 
 (define (mpartition pred lis)
   (let recur ((lis lis))
-    (if (null-mlist? lis) (values lis lis)	; Use NOT-PAIR? to handle dotted lists.
-	(let ((elt (mcar lis))
-	      (tail (mcdr lis)))
-	  (let-values ([(in out) (recur tail)])
-	    (if (pred elt)
-		(values (if (mpair? out) (mcons elt in) lis) out)
-		(values in (if (mpair? in) (mcons elt out) lis))))))))
+    (mlist-case lis
+      [() (values lis lis)]
+      [(elt . tail)
+       (let-values ([(in out) (recur tail)])
+         (if (pred elt)
+             (values (if (mpair? out) (mcons elt in) lis) out)
+             (values in (if (mpair? in) (mcons elt out) lis))))])))
 
 ;;; This implementation of PARTITION!
 ;;; - doesn't cons, and uses no stack;
@@ -1045,11 +1066,12 @@
 
 (define (mtake-while pred lis)
   (let recur ((lis lis))
-    (if (null-mlist? lis) '()
-	(let ((x (mcar lis)))
-	  (if (pred x)
-	      (mcons x (recur (mcdr lis)))
-	      '())))))
+    (mlist-case lis
+      [() '()]
+      [(x . _)
+       (if (pred x)
+           (mcons x (recur (mcdr lis)))
+           '())])))
 
 (define (mtake-while! pred lis)
   (if (or (null-mlist? lis) (not (pred (mcar lis)))) '()
@@ -1062,10 +1084,12 @@
 
 (define (mdrop-while pred lis)
   (let lp ((lis lis))
-    (if (null-mlist? lis) '()
-	(if (pred (mcar lis))
-	    (lp (mcdr lis))
-	    lis))))
+    (mlist-case lis
+      [() '()]
+      [(x . _)
+	(if (pred x)
+            (lp (mcdr lis))
+	    lis)])))
 
 (module+ test
   (test-equal? "mtake-while 1" (mtake-while even? (mlist 2 18 3 10 22 9)) (mlist 2 18))
@@ -1074,12 +1098,13 @@
 
 (define (mspan pred lis)
   (let recur ((lis lis))
-    (if (null-mlist? lis) (values '() '())
-	(let ((x (mcar lis)))
-	  (if (pred x)
-	      (let-values ([(prefix suffix) (recur (mcdr lis))])
-                                (values (mcons x prefix) suffix))
-	      (values '() lis))))))
+    (mlist-case lis
+      [() (values '() '())]
+      [(x . _)
+       (if (pred x)
+           (let-values ([(prefix suffix) (recur (mcdr lis))])
+             (values (mcons x prefix) suffix))
+           (values '() lis))])))
 
 (define (mspan! pred lis)
   (if (or (null-mlist? lis) (not (pred (mcar lis)))) (values '() lis)
@@ -1193,19 +1218,19 @@
 
 (define (mdelete-duplicates lis [elt= equal?])
   (let recur ((lis lis))
-    (if (null-mlist? lis) lis
-        (let* ((x (mcar lis))
-               (tail (mcdr lis))
-               (new-tail (recur (mdelete x tail elt=))))
-          (if (eq? tail new-tail) lis (mcons x new-tail))))))
+    (mlist-case lis
+      [() lis]
+      [(x . tail)
+       (let ((new-tail (recur (mdelete x tail elt=))))
+         (if (eq? tail new-tail) lis (mcons x new-tail)))])))
 
 (define (mdelete-duplicates! lis [elt= equal?])
   (let recur ((lis lis))
-    (if (null-mlist? lis) lis
-        (let* ((x (mcar lis))
-               (tail (mcdr lis))
-               (new-tail (recur (mdelete! x tail elt=))))
-          (if (eq? tail new-tail) lis (mcons x new-tail))))))
+    (mlist-case lis
+      [() lis]
+      [(x . tail)
+       (let ((new-tail (recur (mdelete! x tail elt=))))
+         (if (eq? tail new-tail) lis (mcons x new-tail)))])))
 
 (module+ test
   (test-equal? "mdelete-duplicates 1" (mdelete-duplicates (mlist 'a 'b 'a 'c 'a 'b 'c 'z)) (mlist 'a 'b 'c 'z))

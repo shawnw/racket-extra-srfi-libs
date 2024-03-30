@@ -866,9 +866,15 @@ Define and register a new codeset with the given names, numbers and messages. Th
 
 @hyperlink["https://srfi.schemers.org/srfi-239/srfi-239.html"]{Reference documentation}.
 
-Normally you'd use @code{match} in Racket, but this is a lightweight alternative when just dealing with cons cells and empty lists.
+Normally you'd use @code{match} in Racket, but this is a lightweight alternative when just dealing with lists.
 
 @subsection{Additional functions}
+
+@defform[(mlist-case mlist-expr list-case-clause ...)]{
+
+ Like @code{list-case} but for mutable lists.
+
+}
 
 @defproc[(exn:fail:list-case? [obj any/c]) boolean?]{
 
