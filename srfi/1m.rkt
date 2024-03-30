@@ -4,7 +4,7 @@
 
 (require (only-in compatibility/mlist mlistof list->mlist mlist->list [mlist? proper-mlist?] mlist mlist-ref mlength
                   mappend mappend! mreverse mreverse! mmemq mmemv massq massv)
-         racket/contract racket/function racket/undefined
+         racket/contract racket/function racket/undefined racket/unsafe/ops
          (only-in srfi/1 car+cdr null-list? reduce reduce-right delete) (only-in "235.rkt" flip) "239.rkt")
 (module+ test
   (require racket/local rackunit)
@@ -20,9 +20,9 @@
 (define (dotted-mlist? x)
   (let lp ((x x) (lag x))
     (if (mpair? x)
-	(let ((x (mcdr x)))
+	(let ((x (unsafe-mcdr x)))
 	  (if (mpair? x)
-	      (let ((x   (mcdr x))
+	      (let ((x   (unsafe-mcdr x))
 		    (lag (mcdr lag)))
 		(and (not (eq? x lag)) (lp x lag)))
 	      (not (null? x))))
@@ -31,9 +31,9 @@
 (define (circular-mlist? x)
   (let lp ((x x) (lag x))
     (and (mpair? x)
-         (let ((x (mcdr x)))
+         (let ((x (unsafe-mcdr x)))
 	   (and (mpair? x)
-		(let ((x   (mcdr x))
+		(let ((x   (unsafe-mcdr x))
 		      (lag (mcdr lag)))
 		  (or (eq? x lag) (lp x lag))))))))
 
@@ -172,8 +172,8 @@
 (define (%mcons* args)
   (cond
     [(null? args) '()]
-    [(null? (cdr args)) (car args)]
-    [else (mcons (car args) (%mcons* (cdr args)))]))
+    [(null? (unsafe-cdr args)) (unsafe-car args)]
+    [else (mcons (unsafe-car args) (%mcons* (unsafe-cdr args)))]))
 
 (module+ test
   (test-equal? "mcons* 1" (mcons* 1 2 3 4) (mcons 1 (mcons 2 (mcons 3 4))))
@@ -212,7 +212,7 @@
   (define head (mcons element '()))
   (cond
     [(null? elements)
-     (set-mcdr! head head)
+     (unsafe-set-mcdr! head head)
      head]
     [else
      (let loop ([clist head]
@@ -220,12 +220,12 @@
        (list-case elements
          [()
           (begin
-            (set-mcdr! clist head)
+            (unsafe-set-mcdr! clist head)
             head)]
          [(ecar . ecdr)
           (begin
-            (set-mcdr! clist (mcons ecar '()))
-            (loop (mcdr clist) ecdr))]))]))
+            (unsafe-set-mcdr! clist (mcons ecar '()))
+            (loop (unsafe-mcdr clist) ecdr))]))]))
 
 (define (miota count [start 0] [step 1])
   (if (= count 0)
@@ -341,13 +341,13 @@
 (define (mtake-right lis k)
   (let lp ((lag lis)  (lead (mdrop lis k)))
     (if (mpair? lead)
-	(lp (mcdr lag) (mcdr lead))
+	(lp (mcdr lag) (unsafe-mcdr lead))
 	lag)))
 
 (define (mdrop-right lis k)
   (let recur ((lag lis) (lead (mdrop lis k)))
     (if (mpair? lead)
-	(mcons (mcar lag) (recur (mcdr lag) (mcdr lead)))
+	(mcons (mcar lag) (recur (mcdr lag) (unsafe-mcdr lead)))
 	'())))
 
 (module+ test
@@ -377,10 +377,10 @@
   (let ((lead (mdrop lis k)))
     (if (mpair? lead)
 
-	(let lp ((lag lis)  (lead (mcdr lead)))	; Standard case
+	(let lp ((lag lis)  (lead (unsafe-mcdr lead)))	; Standard case
           (cond
             [(mpair? lead)
-             (lp (mcdr lag) (mcdr lead))]
+             (lp (mcdr lag) (unsafe-mcdr lead))]
             [else
              (set-mcdr! lag '())
              lis]))
@@ -430,10 +430,10 @@
 (define (mlength+ x)			; Returns #f if X is circular.
   (let lp ((x x) (lag x) (len 0))
     (if (mpair? x)
-	(let ((x (mcdr x))
+	(let ((x (unsafe-mcdr x))
 	      (len (+ len 1)))
 	  (if (mpair? x)
-	      (let ((x   (mcdr x))
+	      (let ((x   (unsafe-mcdr x))
 		    (lag (mcdr lag))
 		    (len (+ len 1)))
 		(and (not (eq? x lag)) (lp x lag len)))
@@ -949,16 +949,16 @@
 	  ;;           SCAN-IN.
 	  (else (letrec ((scan-in (lambda (prev lis)
 				    (when (mpair? lis)
-					(if (pred (mcar lis))
-					    (scan-in lis (mcdr lis))
-					    (scan-out prev (mcdr lis))))))
+					(if (pred (unsafe-mcar lis))
+					    (scan-in lis (unsafe-mcdr lis))
+					    (scan-out prev (unsafe-mcdr lis))))))
 			 (scan-out (lambda (prev lis)
 				     (let lp ((lis lis))
 				       (if (mpair? lis)
-					   (if (pred (mcar lis))
+					   (if (pred (unsafe-mcar lis))
 					       (begin (set-mcdr! prev lis)
-						      (scan-in lis (mcdr lis)))
-					       (lp (mcdr lis)))
+						      (scan-in lis (unsafe-mcdr lis)))
+					       (lp (unsafe-mcdr lis)))
 					   (set-mcdr! prev lis))))))
 		  (scan-in ans (mcdr ans))
 		  ans)))))
@@ -999,19 +999,19 @@
       (letrec ((scan-in (lambda (in-prev out-prev lis)
 			  (let lp ((in-prev in-prev) (lis lis))
 			    (if (mpair? lis)
-				(if (pred (mcar lis))
-				    (lp lis (mcdr lis))
+				(if (pred (unsafe-mcar lis))
+				    (lp lis (unsafe-mcdr lis))
 				    (begin (set-mcdr! out-prev lis)
-					   (scan-out in-prev lis (mcdr lis))))
+					   (scan-out in-prev lis (unsafe-mcdr lis))))
 				(set-mcdr! out-prev lis))))) ; Done.
 
 	       (scan-out (lambda (in-prev out-prev lis)
 			   (let lp ((out-prev out-prev) (lis lis))
 			     (if (mpair? lis)
-				 (if (pred (mcar lis))
+				 (if (pred (unsafe-mcar lis))
 				     (begin (set-mcdr! in-prev lis)
-					    (scan-in lis out-prev (mcdr lis)))
-				     (lp lis (mcdr lis)))
+					    (scan-in lis out-prev (unsafe-mcdr lis)))
+				     (lp lis (unsafe-mcdr lis)))
 				 (set-mcdr! in-prev lis)))))) ; Done.
 
 	;; Crank up the scan&splice loops.
@@ -1019,17 +1019,17 @@
 	    ;; LIS begins in-list. Search for out-list's first pair.
 	    (let lp ((prev-l lis) (l (mcdr lis)))
 	      (cond ((not (mpair? l)) (values lis l))
-		    ((pred (mcar l)) (lp l (mcdr l)))
-		    (else (scan-out prev-l l (mcdr l))
+		    ((pred (unsafe-mcar l)) (lp l (unsafe-mcdr l)))
+		    (else (scan-out prev-l l (unsafe-mcdr l))
 			  (values lis l))))	; Done.
 
 	    ;; LIS begins out-list. Search for in-list's first pair.
 	    (let lp ((prev-l lis) (l (mcdr lis)))
 	      (cond ((not (mpair? l)) (values l lis))
-		    ((pred (mcar l))
-		     (scan-in l prev-l (mcdr l))
+		    ((pred (unsafe-mcar l))
+		     (scan-in l prev-l (unsafe-mcdr l))
 		     (values l lis))		; Done.
-		    (else (lp l (mcdr l)))))))))
+		    (else (lp l (unsafe-mcdr l)))))))))
 
 ;;; Inline us, please.
 (define (mremove  pred l) (mfilter  (negate pred) l))
@@ -1077,8 +1077,8 @@
   (if (or (null-mlist? lis) (not (pred (mcar lis)))) '()
       (begin (let lp ((prev lis) (rest (mcdr lis)))
 	       (when (mpair? rest)
-		   (let ((x (mcar rest)))
-		     (if (pred x) (lp rest (mcdr rest))
+		   (let ((x (unsafe-mcar rest)))
+		     (if (pred x) (lp rest (unsafe-mcdr rest))
 			 (set-mcdr! prev '())))))
 	     lis)))
 
@@ -1088,7 +1088,7 @@
       [() '()]
       [(x . _)
 	(if (pred x)
-            (lp (mcdr lis))
+            (lp (unsafe-mcdr lis))
 	    lis)])))
 
 (module+ test
@@ -1102,7 +1102,7 @@
       [() (values '() '())]
       [(x . _)
        (if (pred x)
-           (let-values ([(prefix suffix) (recur (mcdr lis))])
+           (let-values ([(prefix suffix) (recur (unsafe-mcdr lis))])
              (values (mcons x prefix) suffix))
            (values '() lis))])))
 
@@ -1285,19 +1285,19 @@
 
 (define (mlset<= = . lists)
   (or (not (pair? lists)) ; 0-ary case
-      (let lp ((s1 (car lists)) (rest (cdr lists)))
+      (let lp ((s1 (unsafe-car lists)) (rest (unsafe-cdr lists)))
 	(or (not (pair? rest))
-	    (let ((s2 (car rest))  (rest (cdr rest)))
+	    (let ((s2 (unsafe-car rest))  (rest (unsafe-cdr rest)))
 	      (and (or (eq? s2 s1)	; Fast path
 		       (%lset2<= = s1 s2)) ; Real test
 		   (lp s2 rest)))))))
 
 (define (mlset= = . lists)
   (or (not (pair? lists)) ; 0-ary case
-      (let lp ((s1 (car lists)) (rest (cdr lists)))
+      (let lp ((s1 (unsafe-car lists)) (rest (unsafe-cdr lists)))
         (or (not (pair? rest))
-            (let ((s2   (car rest))
-                  (rest (cdr rest)))
+            (let ((s2   (unsafe-car rest))
+                  (rest (unsafe-cdr rest)))
               (and (or (eq? s1 s2)            ; Fast path
                        (and (%lset2<= = s1 s2) ; Real test
                             (%lset2<= (flip =) s2 s1)))
