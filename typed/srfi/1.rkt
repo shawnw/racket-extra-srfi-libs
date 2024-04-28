@@ -130,7 +130,7 @@
   [partition partition!]
   [remove remove!]
   [findf find]
-  [memf find-pair]
+  [memf find-tail]
   [take-while take-while!]
   [span span!]
   [break break!]
