@@ -6,6 +6,7 @@
 
 (require
   (only-in racket/list
+           make-list
            first second third fourth fifth sixth seventh eighth ninth tenth
            take drop take-right drop-right split-at
            last last-pair
@@ -107,6 +108,7 @@
  )
 (provide
  Circular-Listof
+ make-list
  first second third fourth fifth sixth seventh eighth ninth tenth
  take drop take-right drop-right split-at
  last last-pair
