@@ -1,51 +1,224 @@
-#lang typed/racket/base/shallow
+#lang typed/racket/base/deep
 
-;;; Just import the untyped srfi/133 module instead of a full reimplemtentation in Typed Racket
-;;; like the other modules in this directory. Not ideal, but I had a hard time with the internal
-;;; functions tht take multiple vectors of different types playing nice with the type checker.
-;;; Also helps test shallow typing.
+;;; Simple functtions are implemented using deep typing, ones that are difficult to write or type in
+;;; deep typed racket are imported via shallow typing from the untyped srfi/133 module.
 
-(require/typed/provide
- (submod "../../srfi/133.rkt" unsafe)
- [vector-unfold (All (a b ...) (Index b ... b -> (Values a b ... b)) Integer b ... b -> (Mutable-Vectorof a))]
- [vector-unfold-right (All (a b ...) (Index b ... b -> (Values a b ... b)) Integer b ... b -> (Mutable-Vectorof a))]
- [vector-reverse-copy (All (a) (->* ((Vectorof a)) (Integer Integer) (Mutable-Vectorof a)))]
- [vector-concatenate (All (a) (Listof (Vectorof a)) -> (Mutable-Vectorof a))]
- [vector= (All (a) (a a -> Any) (Vectorof a) * -> Boolean)]
- [vector-fold (All (a b ...) (a b ... b -> a) a (Vectorof b) ... b -> a)]
- [vector-fold-right (All (a b ...) (a b ... b -> a) a (Vectorof b) ... b -> a)]
- [vector-map (All (a b c ...) (a c ... c -> b) (Vectorof a) (Vectorof c) ... c -> (Mutable-Vectorof b))]
- [vector-map! (All (a c ...) (a c ... c -> a) (Mutable-Vectorof a) (Vectorof c) ... c -> Void)]
- [vector-for-each (All (a b ...) (a b ... b -> Any) (Vectorof a) (Vectorof b) ... b -> Void)]
- [vector-count (All (a b ...) (a b ... b -> Any) (Vectorof a) (Vectorof b) ... b -> Nonnegative-Integer)]
- [vector-cumulate (All (a b) (a b -> a) a (Vectorof b) -> (Mutable-Vectorof a))]
- [vector-index (All (a b ...) (a b ... b -> Any) (Vectorof a) (Vectorof b) ... b -> (Option Index))]
- [vector-index-right (All (a b ...) (a b ... b -> Any) (Vectorof a) (Vectorof b) ... b -> (Option Index))]
- [vector-skip (All (a b ...) (a b ... b -> Any) (Vectorof a) (Vectorof b) ... b -> (Option Index))]
- [vector-skip-right (All (a b ...) (a b ... b -> Any) (Vectorof a) (Vectorof b) ... b -> (Option Index))]
- [vector-binary-search (All (a) (->* ((Vectorof a) a (a a -> Integer)) (Integer Integer) (Option Index)))]
- [vector-any (All (a c b ...) (a b ... b -> (Option c)) (Vectorof a) (Vectorof b) ... b -> (Option c))]
- [vector-every (All (a c b ...) (a b ... b -> (Option c)) (Vectorof a) (Vectorof b) ... b -> (Option c))]
- [vector-partition (All (a) (a -> Any) (Vectorof a) -> (Values (Mutable-Vectorof a) Index))]
- [vector-swap! (All (a) (Mutable-Vectorof a) Integer Integer -> Void)]
- [vector-fill! (All (a) (->* ((Mutable-Vectorof a) a) (Integer Integer) Void))]
- [vector-reverse! (All (a) (->* ((Mutable-Vectorof a)) (Integer Integer) Void))]
- [vector-reverse-copy! (All (a) (->* ((Mutable-Vectorof a) Integer (Vectorof a)) (Integer Integer) Void))]
- [vector-unfold! (All (a b ...) (Index b ... b -> (Values a b ... b)) (Mutable-Vectorof a) Integer Integer b ... b -> Void)]
- [vector-unfold-right! (All (a b ...) (Index b ... b -> (Values a b ... b)) (Mutable-Vectorof a) Integer Integer b ... b -> Void)]
- [vector->list (All (a) (->* ((Vectorof a)) (Integer Integer) (Listof a)))]
- [reverse-vector->list (All (a) (->* ((Vectorof a)) (Integer Integer) (Listof a)))]
- [reverse-list->vector (All (a) (Listof a) -> (Mutable-Vectorof a))]
- [string->vector (->* (String) (Integer Integer) (Mutable-Vectorof Char))]
- [vector->string (->* ((Vectorof Char)) (Integer Integer) String)]
- [vector-append-subvectors (All (a) (->* () #:rest-star ((Vectorof a) Integer Integer) (Mutable-Vectorof a)))])
+(module shallow-imports typed/racket/base/shallow
+  (require/typed/provide
+   (submod "../../srfi/133.rkt" unsafe)
+   [vector-unfold (All (a b ...) (Index b ... b -> (Values a b ... b)) Integer b ... b -> (Mutable-Vectorof a))]
+   [vector-unfold-right (All (a b ...) (Index b ... b -> (Values a b ... b)) Integer b ... b -> (Mutable-Vectorof a))]
+   [vector-reverse-copy (All (a) (->* ((Vectorof a)) (Integer Integer) (Mutable-Vectorof a)))]
+   [vector= (All (a) (a a -> Any) (Vectorof a) * -> Boolean)]
+   [vector-fold (All (a b ...) (a b ... b -> a) a (Vectorof b) ... b -> a)]
+   [vector-fold-right (All (a b ...) (a b ... b -> a) a (Vectorof b) ... b -> a)]
+   [vector-map (All (a b c ...) (a c ... c -> b) (Vectorof a) (Vectorof c) ... c -> (Mutable-Vectorof b))]
+   [vector-map! (All (a c ...) (a c ... c -> a) (Mutable-Vectorof a) (Vectorof c) ... c -> Void)]
+   [vector-for-each (All (a b ...) (a b ... b -> Any) (Vectorof a) (Vectorof b) ... b -> Void)]
+   [vector-count (All (a b ...) (a b ... b -> Any) (Vectorof a) (Vectorof b) ... b -> Nonnegative-Integer)]
+   [vector-cumulate (All (a b) (a b -> a) a (Vectorof b) -> (Mutable-Vectorof a))]
+   [vector-index (All (a b ...) (a b ... b -> Any) (Vectorof a) (Vectorof b) ... b -> (Option Index))]
+   [vector-index-right (All (a b ...) (a b ... b -> Any) (Vectorof a) (Vectorof b) ... b -> (Option Index))]
+   [vector-skip (All (a b ...) (a b ... b -> Any) (Vectorof a) (Vectorof b) ... b -> (Option Index))]
+   [vector-skip-right (All (a b ...) (a b ... b -> Any) (Vectorof a) (Vectorof b) ... b -> (Option Index))]
+   [vector-any (All (a c b ...) (a b ... b -> (Option c)) (Vectorof a) (Vectorof b) ... b -> (Option c))]
+   [vector-every (All (a c b ...) (a b ... b -> (Option c)) (Vectorof a) (Vectorof b) ... b -> (Option c))]
+   [vector-unfold! (All (a b ...) (Index b ... b -> (Values a b ... b)) (Mutable-Vectorof a) Integer Integer b ... b -> Void)]
+   [vector-unfold-right! (All (a b ...) (Index b ... b -> (Values a b ... b)) (Mutable-Vectorof a) Integer Integer b ... b -> Void)]
+   [reverse-list->vector (All (a) (Listof a) -> (Mutable-Vectorof a))]
+   [vector-append-subvectors (All (a) (->* () #:rest-star ((Vectorof a) Integer Integer) (Mutable-Vectorof a)))]))
+(require 'shallow-imports)
+(provide (all-from-out 'shallow-imports))
 
 (require/typed/provide
  racket/vector
  [vector-empty? (VectorTop -> Boolean)])
 
 (require (only-in racket/vector vector-append vector-copy))
-(provide vector-append vector-copy)
+(provide vector-append vector-copy vector-concatenate vector-swap! vector-fill! vector-partition vector-binary-search
+         vector-reverse! vector-reverse-copy! vector->list reverse-vector->list vector->string string->vector)
+
+;;; (CHECK-INDEX <vector> <index> <callee>) -> index
+;;;   Ensure that INDEX is a valid index into VECTOR; if not, signal an
+;;;   error stating that it is not and that this happened in a call to
+;;;   CALLEE.  Return INDEX when it is valid.  (Note that this does NOT
+;;;   check that VECTOR is indeed a vector.)
+(: check-index : VectorTop Integer Symbol -> Index)
+(define (check-index vec index callee)
+  (if (or (< index 0) (>= index (vector-length vec)))
+      (raise-range-error callee "vector" "" index vec 0 (- (vector-length vec) 1) #f)
+      index))
+
+(: check-indices : VectorTop Integer Integer Symbol -> Void)
+(define (check-indices vec start end name)
+  (when (or (< start 0) (>= start (vector-length vec)))
+    (raise-range-error name "vector" "starting " start vec 0 (- (vector-length vec) 1) #f))
+  (when (< end start)
+    (raise-range-error name "vector" "ending " end vec start (vector-length vec) 0))
+  (when (> end (vector-length vec))
+    (raise-range-error name "vector" "ending " end vec 0 (vector-length vec) #f)))
+
+(define-syntax-rule (define/check-start+end (name vec arg ... start end) body ...)
+  (define (name vec arg ... [start 0] [end (vector-length vec)])
+    (check-indices vec start end (quote name))
+    body ...))
+
+(: between? : Integer Integer Integer -> Boolean)
+(define (between? x y z)
+  (and (<  x y)
+       (<= y z)))
+
+(: vector-concatenate (All (a) (Listof (Vectorof a)) -> (Mutable-Vectorof a)))
+(define (vector-concatenate lov)
+  (for*/vector #:length (apply + (map vector-length lov))
+    ([vec (in-list lov)]
+     [elem (in-vector vec)]) : a
+    elem))
+
+;;; (VECTOR-BINARY-SEARCH <vector> <value> <cmp> [<start> <end>])
+;;;       -> exact, nonnegative integer or #F
+;;;     (CMP <value1> <value2>) -> integer
+;;;       positive -> VALUE1 > VALUE2
+;;;       zero     -> VALUE1 = VALUE2
+;;;       negative -> VALUE1 < VALUE2
+;;;   Perform a binary search through VECTOR for VALUE, comparing each
+;;;   element to VALUE with CMP.
+(: vector-binary-search (All (a) (->* ((Vectorof a) a (a a -> Integer)) (Integer Integer) (Option Index))))
+(define/check-start+end (vector-binary-search vec value cmp start end)
+  (let loop ((start start) (end end) (j : (Option Integer) #f))
+    (let ((i (assert (quotient (+ start end) 2) index?)))
+      (if (or (= start end) (and j (= i j)))
+          #f
+          (let ([comparison (cmp (vector-ref vec i) value)])
+            (cond ((zero?     comparison) i)
+                  ((positive? comparison) (loop start i i))
+                  (else                   (loop i end i))))))))
+
+(: vector-swap! (All (a) (Mutable-Vectorof a) Integer Integer -> Void))
+(define (vector-swap! vec i j)
+  (let* ([i (check-index vec i 'vector-swap!)]
+         [j (check-index vec j 'vector-swap!)]
+         [tmp (vector-ref vec i)])
+    (vector-set! vec i (vector-ref vec j))
+    (vector-set! vec j tmp)))
+
+;;; (VECTOR-FILL! <vector> <value> [<start> <end>]) -> unspecified
+;;;   [R5RS+] Fill the locations in VECTOR between START, whose default
+;;;   is 0, and END, whose default is the length of VECTOR, with VALUE.
+;;;
+;;; This one can probably be made really fast natively.
+(: vector-fill! (All (a) (->* ((Mutable-Vectorof a) a) (Integer Integer) Void))) 
+(define/check-start+end (vector-fill! vec value start end)
+  (for ([i (in-range start end)])
+    (vector-set! vec i value)))
+
+;;;   Two values are returned, the newly allocated vector and the index
+;;;   of the leftmost element that does not satisfy <pred?>.
+(: vector-partition (All (a) (a -> Any) (Vectorof a) -> (Values (Mutable-Vectorof a) Index)))
+(define (vector-partition pred? vec)
+  (let* ((len (vector-length vec))
+         (cnt (assert (vector-count pred? vec) index?))
+         (result (vector-copy vec)))
+    (let loop ((i 0) (yes 0) (no cnt))
+      (if (= i len)
+        (values result cnt)
+        (let ((elem (vector-ref vec i)))
+          (if (pred? elem)
+            (begin
+              (vector-set! result yes elem)
+              (loop (+ i 1) (+ yes 1) no))
+            (begin
+              (vector-set! result no elem)
+              (loop (+ i 1) yes (+ no 1)))))))))
+
+;;; (%VECTOR-REVERSE! <vector>)
+(: %vector-reverse! (All (a) (Mutable-Vectorof a) Integer Integer -> Void))
+(define (%vector-reverse! vec start end)
+  (let loop ([i start] [j (- end 1)])
+    (when (<= i j)
+      (let ((v (vector-ref vec i)))
+        (vector-set! vec i (vector-ref vec j))
+        (vector-set! vec j v)
+        (loop (+ i 1) (- j 1))))))
+
+(: vector-reverse! (All (a) (->* ((Mutable-Vectorof a)) (Integer Integer) Void)))
+;;; (VECTOR-REVERSE! <vector> [<start> <end>]) -> unspecified
+;;;   Destructively reverse the contents of the sequence of locations
+;;;   in VECTOR between START, whose default is 0, and END, whose
+;;;   default is the length of VECTOR.
+(define/check-start+end (vector-reverse! vec start end)
+    (%vector-reverse! vec start end))
+
+;;; (%VECTOR-REVERSE-COPY! <target> <tstart> <source> <sstart> <send>)
+;;;   Copy elements from SSTART to SEND from SOURCE to TARGET, in the
+;;;   reverse order.
+(: %vector-reverse-copy! (All (a) (Mutable-Vectorof a) Integer (Vectorof a) Integer Integer -> Void))
+(define (%vector-reverse-copy! target tstart source sstart send)
+  (let loop ([i (- send 1)] [j tstart])
+    (when (>= i sstart)
+      (vector-set! target j (vector-ref source i))
+      (loop (- i 1) (+ j 1)))))
+
+;;; (VECTOR-REVERSE-COPY! <target> <tstart> <source> [<sstart> <send>])
+;;; [wdc] Corrected to allow 0 <= sstart <= send <= (vector-length source).
+(: vector-reverse-copy! (All (a) (->* ((Mutable-Vectorof a) Integer (Vectorof a)) (Integer Integer) Void)))
+(define (vector-reverse-copy! target tstart source [sstart 0] [send (vector-length source)])
+  (check-index target tstart 'vector-reverse-copy!)
+  (check-indices source sstart send 'vector-reverse-copy!)
+  (if (and (eq? target source)
+           (or (between? sstart tstart send)
+               (between? tstart sstart
+                         (+ tstart (- send sstart)))))
+      (raise-arguments-error 'vector-reverse-copy! "vector range for self-copying overlaps"
+                             "tstart" tstart
+                             "sstart" sstart
+                             "send" send)
+      (%vector-reverse-copy! target tstart source sstart send)))
+
+;;; (VECTOR->LIST <vector> [<start> <end>]) -> list
+;;;   [R5RS+] Produce a list containing the elements in the locations
+;;;   between START, whose default is 0, and END, whose default is the
+;;;   length of VECTOR, from VECTOR.
+(: vector->list (All (a) (->* ((Vectorof a)) (Integer Integer) (Listof a))))
+(define/check-start+end (vector->list vec start end)
+  (do ((i (- end 1) (- i 1))
+       (result : (Listof a) '() (cons (vector-ref vec i) result)))
+    ((< i start) result)))
+
+;;; (REVERSE-VECTOR->LIST <vector> [<start> <end>]) -> list
+;;;   Produce a list containing the elements in the locations between
+;;;   START, whose default is 0, and END, whose default is the length
+;;;   of VECTOR, from VECTOR, in reverse order.
+(: reverse-vector->list (All (a) (->* ((Vectorof a)) (Integer Integer) (Listof a))))
+(define/check-start+end (reverse-vector->list vec start end)
+  (do ((i start (+ i 1))
+       (result : (Listof a) '() (cons (vector-ref vec i) result)))
+    ((= i end) result)))
+
+;;; (STRING->VECTOR <string> [<start> <end>]) -> vector
+;;;   Produce a vector containing the elements in STRING
+;;;   between START, whose default is 0, & END,
+;;;   whose default is the length of STRING, from STRING.
+(: string->vector (->* (String) (Integer Integer) (Mutable-Vectorof Char)))
+(define (string->vector str [start 0] [end (string-length str)])
+  (cond
+    ((< end start)
+     (raise-range-error 'string->vector "string" "ending " end str start (string-length str) 0))
+    ((> start (string-length str))
+     (raise-range-error 'string->vector "string" "starting " start str 0 (string-length str) #f))
+    ((> end (string-length str))
+     (raise-range-error 'string->vector "string" "ending " end str 0 (string-length str) start))
+    (else
+     (build-vector (- end start) (lambda ([i : Index]) (string-ref str (+ i start)))))))
+
+;;; (VECTOR->STRING <vector> [<start> <end>]) -> string
+;;;   Produce a string containing the elements in the locations
+;;;   between START, whose default is 0, and END, whose default is the
+;;;   length of VECTOR, from VECTOR.
+(: vector->string (->* ((Vectorof Char)) (Integer Integer) String))
+(define/check-start+end (vector->string vec start end)
+  (build-string (- end start) (lambda ([i : Integer]) (vector-ref vec (+ i start)))))
+
 
 (module+ test
   (require typed/rackunit)

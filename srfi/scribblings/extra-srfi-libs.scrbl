@@ -251,7 +251,7 @@ Available as an unsafe module via @code{(require (submod srfi/132 unsafe))}.
 See also @hyperlink["https://srfi.schemers.org/srfi-43/srfi-43.html"]{SRFI-43} included with Racket.
 Notable differences are functions that take callbacks not passing the current index like they do in 43.
 
-Also available in a shallow Typed Racket version and an unsafe version as @code{(require (submod srfi/133 unsafe))}.
+Also available in a Typed Racket version and an unsafe version as @code{(require (submod srfi/133 unsafe))}.
 
 @section{SRFI-134 Immutable Deques}
 
