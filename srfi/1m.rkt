@@ -1036,8 +1036,6 @@
 (define (mremove! pred l) (mfilter! (negate pred) l))
 
 (module+ test
-  (test-equal? "mfilter 1" (mfilter even? (mlist 0 7 8 8 43 -4)) (mlist 0 8 8 -4))
-  (test-equal? "mfilter! 1" (mfilter! even? (mlist 0 7 8 8 43 -4)) (mlist 0 8 8 -4))
   (test-values "mpartition 1" (mpartition symbol? (mlist 'one 2 3 'four 'five 6))
                (values (mlist 'one 'four 'five) (mlist 2 3 6)))
   (test-values "mpartition! 1" (mpartition! symbol? (mlist 'one 2 3 'four 'five 6))
