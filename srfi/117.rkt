@@ -35,6 +35,7 @@
 
 (struct lqueue (first last)
   #:mutable
+  #:sealed
   #:property prop:sequence
   (lambda (s) (in-list-queue s))
   #:methods gen:custom-write

@@ -30,6 +30,7 @@
   (real-hash (mvbox-vals mvb)))
 
 (struct mvbox (vals)
+  #:sealed
   #:name %mvbox
   #:constructor-name make-mvbox
   #:methods gen:equal+hash

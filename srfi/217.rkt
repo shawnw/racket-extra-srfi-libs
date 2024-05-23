@@ -124,6 +124,7 @@
 ;;; This means that the empty trie (#f) never appears as a subtrie.
 
 (struct leaf (prefix bitmap)
+  #:sealed
   #:name <leaf>
   #:constructor-name raw-leaf
   #:transparent)
@@ -150,6 +151,7 @@
          (let*-leaf binds . body))))))
 
 (struct branch (prefix branching-bit left right)
+  #:sealed
   #:name <branch>
   #:constructor-name raw-branch
   #:transparent)
@@ -996,6 +998,7 @@
 (define (not-iset? v) (not (iset? v)))
 
 (struct iset ([trie #:mutable])
+  #:sealed
   #:name <iset>
   #:constructor-name raw-iset
 

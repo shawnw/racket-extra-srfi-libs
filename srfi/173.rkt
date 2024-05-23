@@ -18,6 +18,7 @@
 
 
 (struct hook (arity [funcs #:mutable])
+  #:sealed
   #:transparent
   #:property prop:procedure
   (lambda (h . args) (%hook-run h args)))

@@ -291,8 +291,9 @@
 
 (define (trie-empty? t) (not t))
 
-(struct leaf (key value) #:transparent)
+(struct leaf (key value) #:sealed #:transparent)
 (struct branch (prefix branching-bit left right)
+  #:sealed
   #:name <branch>
   #:constructor-name raw-branch
   #:transparent)
@@ -1205,6 +1206,7 @@
   (cdr (stream-car (fx-dict-iter-stream pos))))
 
 (struct fxmapping (trie)
+  #:sealed
   #:name <fxmapping>
   #:constructor-name raw-fxmapping
   ; Unfortunately you can't combine prop:dict/contract and gen:dict

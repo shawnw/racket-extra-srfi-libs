@@ -22,7 +22,7 @@
   (or (and (symbol? obj) (hash-ref *known-codesets* obj #f) #t)
       (codeset-obj? obj)))
 
-(struct codeset-obj (by-name by-number))
+(struct codeset-obj (by-name by-number) #:sealed)
 
 (define (make-codeset data)
   (let-values ([(name-table number-table)

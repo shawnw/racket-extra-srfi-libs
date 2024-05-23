@@ -108,6 +108,7 @@
   (for/vector #:length (string-length s) ([ch (in-string s)]) ch))
 
 (struct range (start-index length indexer complexity)
+  #:sealed
   #:name <range>
   #:constructor-name raw-range
   #:property prop:sequence
