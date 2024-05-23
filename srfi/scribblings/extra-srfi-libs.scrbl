@@ -263,6 +263,10 @@ Also available in a Typed Racket version and an unsafe version as @code{(require
 
 Deques are @code{equal?} if they are the same length and all corresponding elements are @code{equal?}.
 
+Deques are streams and sequences.
+
+As of Racket 8.13, implemented with treelists instead of the banker's deque reference implementation.
+
 @bold{Extra functions}:
 
 @defproc[(in-ideque [dq ideque?]) sequence?]{
