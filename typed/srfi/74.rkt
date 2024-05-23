@@ -17,7 +17,7 @@
 (module+ test (require typed/rackunit))
 
 (provide
- endianness
+ endianness big little native
  blob? make-blob blob-length blob=? blob-copy blob-copy!
  blob-s8-ref blob-s8-set! blob-u8-ref blob-u8-set!
  blob-uint-ref blob-uint-set!
@@ -34,6 +34,13 @@
 (define *big-endian* (endian #t))
 (define *little-endian* (endian #f))
 (define *native-endian* (if (system-big-endian?) *big-endian* *little-endian*))
+
+(define-syntax big
+  (lambda (stx) (raise-syntax-error #f "Use outside of endianness directive" stx)))
+(define-syntax little
+  (lambda (stx) (raise-syntax-error #f "Use outside of endianness directive" stx)))
+(define-syntax native
+  (lambda (stx) (raise-syntax-error #f "Use outside of endianness directive" stx)))
 
 (define-syntax endianness
   (syntax-rules (big little native)
