@@ -2,7 +2,8 @@
 
 (require racket/contract racket/hash-code (only-in racket/math nan? infinite? exact-round)
          (only-in racket/bool boolean=? symbol=?)
-         (only-in racket/list index-where remove-duplicates))
+         (only-in racket/list index-where remove-duplicates)
+         racket/struct)
 (module+ test (require rackunit))
 (provide
  hash-bound hash-salt with-hash-salt comparator-if<=>
@@ -146,10 +147,22 @@
        0)))
 
 (struct comparator (type-test-predicate equality-predicate ordering-predicate hash-function secondary-hash-function ordered? hashable?)
-  #:sealed
   #:property prop:flat-contract
   (build-flat-contract-property #:name 'comparator
                                 #:first-order (lambda (comp) (comparator-type-test-predicate comp)))
+  #:methods gen:custom-write
+  [(define write-proc
+     (make-constructor-style-printer
+      (lambda (obj) 'comparator)
+      (lambda (obj)
+        `(,(object-name (comparator-type-test-predicate obj))
+          ,(object-name (comparator-equality-predicate obj))
+          ordering: ,(if (comparator-ordered? obj) (object-name (comparator-ordering-predicate obj)) #f)
+          hashes: ,@(if (comparator-hashable? obj)
+                        (list (object-name (comparator-hash-function obj))
+                              (object-name (comparator-secondary-hash-function obj)))
+                        '(#f #f))))))]
+  #:property prop:custom-print-quotable 'always
   #:methods gen:equal+hash
   [(define (equal-proc a b real-equal?)
      (and
@@ -171,6 +184,30 @@
         (else #f))))
    (define (hash-proc cmp hash-fun) (apply-hash cmp hash-fun))
    (define (hash2-proc cmp hash-fun) (apply-hash cmp hash-fun))])
+
+(struct pair-comparator-struct comparator (car cdr)
+  #:sealed
+  #:methods gen:custom-write
+  [(define write-proc
+     (make-constructor-style-printer
+      (lambda (obj) 'pair-comparator)
+      (lambda (obj) (list (pair-comparator-struct-car obj) (pair-comparator-struct-cdr obj)))))])
+
+(struct vector-comparator-struct comparator (cmp)
+  #:sealed
+  #:methods gen:custom-write
+  [(define write-proc
+     (make-constructor-style-printer
+      (lambda (obj) 'vector-comparator)
+      (lambda (obj) (list (vector-comparator-struct-cmp obj)))))])
+
+(struct list-comparator-struct comparator (cmp)
+  #:sealed
+  #:methods gen:custom-write
+  [(define write-proc
+     (make-constructor-style-printer
+      (lambda (obj) 'list-comparator)
+      (lambda (obj) (list (list-comparator-struct-cmp obj)))))])
 
 (define (default-type-test x) #t)
 (define (default-ordering-func a b) (error "ordering not supported"))
@@ -320,11 +357,16 @@
 
 ;;; Pair comparator
 (define (make-pair-comparator car-comparator cdr-comparator)
-   (make-comparator
+   (pair-comparator-struct
      (make-pair-type-test car-comparator cdr-comparator)
      (make-pair=? car-comparator cdr-comparator)
      (make-pair<? car-comparator cdr-comparator)
-     (make-pair-hash car-comparator cdr-comparator)))
+     (make-pair-hash car-comparator cdr-comparator)
+     (make-pair-secondary-hash car-comparator cdr-comparator)
+     #t
+     #t
+     car-comparator
+     cdr-comparator))
 
 (define (make-pair-type-test car-comparator cdr-comparator)
   (lambda (obj)
@@ -333,22 +375,27 @@
          (comparator-test-type cdr-comparator (cdr obj)))))
 
 (define (make-pair=? car-comparator cdr-comparator)
-   (lambda (a b)
-     (and ((comparator-equality-predicate car-comparator) (car a) (car b))
-          ((comparator-equality-predicate cdr-comparator) (cdr a) (cdr b)))))
+  (lambda (a b)
+    (and ((comparator-equality-predicate car-comparator) (car a) (car b))
+         ((comparator-equality-predicate cdr-comparator) (cdr a) (cdr b)))))
 
 (define (make-pair<? car-comparator cdr-comparator)
-   (lambda (a b)
-      (if (=? car-comparator (car a) (car b))
+  (lambda (a b)
+    (if (=? car-comparator (car a) (car b))
         (<? cdr-comparator (cdr a) (cdr b))
         (<? car-comparator (car a) (car b)))))
 
 (define (make-pair-hash car-comparator cdr-comparator)
-   (lambda (obj)
-     (let ((acc (make-hasher)))
-       (acc (comparator-hash car-comparator (car obj)))
-       (acc (comparator-hash cdr-comparator (cdr obj)))
-       (acc))))
+  (lambda (obj)
+    (let ((acc (make-hasher)))
+      (acc (comparator-hash car-comparator (car obj)))
+      (acc (comparator-hash cdr-comparator (cdr obj)))
+      (acc))))
+
+(define (make-pair-secondary-hash car-comparator cdr-comparator)
+  (lambda (obj)
+    (hash-code-combine (comparator-secondary-hash car-comparator (car obj))
+                       (comparator-secondary-hash cdr-comparator (car obj)))))
 
 ;;; List comparator
 
@@ -356,12 +403,15 @@
 (define (norp? obj) (or (null? obj) (pair? obj)))
 
 (define (make-list-comparator element-comparator type-test empty? head tail)
-   (make-comparator
-     (make-list-type-test element-comparator type-test empty? head tail)
-     (make-list=? element-comparator type-test empty? head tail)
-     (make-list<? element-comparator type-test empty? head tail)
-     (make-list-hash element-comparator type-test empty? head tail)))
-
+  (list-comparator-struct
+   (make-list-type-test element-comparator type-test empty? head tail)
+   (make-list=? element-comparator type-test empty? head tail)
+   (make-list<? element-comparator type-test empty? head tail)
+   (make-list-hash element-comparator type-test empty? head tail)
+   (make-list-secondary-hash element-comparator type-test empty? head tail)
+   #t
+   #t
+   element-comparator))
 
 (define (make-list-type-test element-comparator type-test empty? head tail)
   (lambda (obj)
@@ -407,15 +457,28 @@
           ((empty? obj) (acc))
           (else (acc (elem-hash (head obj))) (loop (tail obj))))))))
 
+(define (make-list-secondary-hash element-comparator type-test empty? head tail)
+  (define elem-hash (comparator-secondary-hash-function element-comparator))
+  (lambda (obj)
+    (hash-code-combine*
+     (let loop ([obj obj]
+                [hashes '()])
+       (if (empty? obj)
+           (reverse hashes)
+           (loop (tail obj) (cons (elem-hash (head obj)) hashes)))))))
 
 ;;; Vector comparator
 
 (define (make-vector-comparator element-comparator type-test length ref)
-     (make-comparator
-       (make-vector-type-test element-comparator type-test length ref)
-       (make-vector=? element-comparator type-test length ref)
-       (make-vector<? element-comparator type-test length ref)
-       (make-vector-hash element-comparator type-test length ref)))
+  (vector-comparator-struct
+   (make-vector-type-test element-comparator type-test length ref)
+   (make-vector=? element-comparator type-test length ref)
+   (make-vector<? element-comparator type-test length ref)
+   (make-vector-hash element-comparator type-test length ref)
+   (make-vector-secondary-hash element-comparator type-test length ref)
+   #t
+   #t
+   element-comparator))
 
 (define (make-vector-type-test element-comparator type-test length ref)
   (lambda (obj)
@@ -466,6 +529,16 @@
         (cond
           ((= n len) (acc))
           (else (acc (elem-hash (ref obj n))) (loop (+ n 1))))))))
+
+(define (make-vector-secondary-hash element-comparator type-test length ref)
+  (define elem-hash (comparator-secondary-hash-function element-comparator))
+  (lambda (obj)
+    (hash-code-combine*
+     (let loop ([n (sub1 (length obj))]
+                [hashes '()])
+       (if (< n 0)
+           hashes
+           (loop (sub1 n) (cons (elem-hash (ref obj n)) hashes)))))))
 
 (define (string-hash obj)
   (let ((acc (make-hasher))
