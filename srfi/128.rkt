@@ -148,7 +148,7 @@
 
 (struct comparator (type-test-predicate equality-predicate ordering-predicate hash-function secondary-hash-function ordered? hashable?)
   #:property prop:flat-contract
-  (build-flat-contract-property #:name 'comparator
+  (build-flat-contract-property #:name (lambda (obj) 'comparator)
                                 #:first-order (lambda (comp) (comparator-type-test-predicate comp)))
   #:methods gen:custom-write
   [(define write-proc
