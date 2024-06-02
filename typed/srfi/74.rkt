@@ -165,29 +165,37 @@
 (: blob-uint-set! : Positive-Integer Endianness Bytes Integer Integer -> Void)
 (define (blob-uint-set! size endness blob index val)
   (void
-   (index-iterate index size (eq? (endianness little) endness)
-                  val
-                  (lambda ([index : Integer] [acc : Integer]) : Integer
-                    (let-values ([(quo rem) (quotient/remainder acc 256)])
-                      (bytes-set! blob index rem)
-                      quo)))))
+   (case size
+     [(1 2 4 8)
+      (integer->integer-bytes val size #f (eq? (endianness big) endness) blob index)]
+     [else
+      (index-iterate index size (eq? (endianness little) endness)
+                     val
+                     (lambda ([index : Integer] [acc : Integer]) : Integer
+                       (let-values ([(quo rem) (quotient/remainder acc 256)])
+                         (bytes-set! blob index rem)
+                         quo)))])))
 
 (: blob-sint-set! : Positive-Integer Endianness Bytes Integer Integer -> Void)
 (define (blob-sint-set! size endness blob index val)
   (void
-   (if (negative? val)
-       (index-iterate index size (eq? (endianness little) endness)
-                      (- -1 val)
-                      (lambda ([index : Integer] [acc : Integer]) : Integer
-                        (let-values ([(quo rem) (quotient/remainder acc 256)])
-                          (bytes-set! blob index (- 255 rem))
-                          quo)))
-       (index-iterate index size (eq? (endianness little) endness)
-                      val
-                      (lambda ([index : Integer] [acc : Integer]) : Integer
-                        (let-values ([(quo rem) (quotient/remainder acc 256)])
-                          (bytes-set! blob index rem)
-                          quo))))))
+   (case size
+     [(1 2 4 8)
+      (integer->integer-bytes val size #t (eq? (endianness big) endness) blob index)]
+     [else
+      (if (negative? val)
+          (index-iterate index size (eq? (endianness little) endness)
+                         (- -1 val)
+                         (lambda ([index : Integer] [acc : Integer]) : Integer
+                           (let-values ([(quo rem) (quotient/remainder acc 256)])
+                             (bytes-set! blob index (- 255 rem))
+                             quo)))
+          (index-iterate index size (eq? (endianness little) endness)
+                         val
+                         (lambda ([index : Integer] [acc : Integer]) : Integer
+                           (let-values ([(quo rem) (quotient/remainder acc 256)])
+                             (bytes-set! blob index rem)
+                             quo))))])))
 
 ;; Back to original code
 
