@@ -124,35 +124,43 @@
 
 (: blob-uint-ref : Positive-Integer Endianness Bytes Integer -> Nonnegative-Integer)
 (define (blob-uint-ref size endness blob index)
-  (let ([num (index-iterate index size
-                            (eq? (endianness big) endness)
-                            0
-                            (lambda ([index : Integer] [acc : Integer]) : Integer
-                              (+ (bytes-ref blob index) (arithmetic-shift acc 8))))])
-    (if (>= num 0)
-        num
-        (error "Invalid negative result"))))
+  (case size
+    [(1 2 4 8)
+     (integer-bytes->integer blob #f (eq? (endianness big) endness) index (+ index size))]
+    [else
+     (let ([num (index-iterate index size
+                               (eq? (endianness big) endness)
+                               0
+                               (lambda ([index : Integer] [acc : Integer]) : Integer
+                                 (+ (bytes-ref blob index) (arithmetic-shift acc 8))))])
+       (if (>= num 0)
+           num
+           (error "Invalid negative result")))]))
 
 (: blob-sint-ref : Positive-Integer Endianness Bytes Integer -> Integer)
 (define (blob-sint-ref size endness blob index)
-  (let ((high-byte (bytes-ref blob
-                              (if (eq? endness (endianness big))
-                                  index
-                                  (- (+ index size) 1)))))
+  (case size
+    [(1 2 4 8)
+     (integer-bytes->integer blob #t (eq? (endianness big) endness) index (+ index size))]
+    [else
+     (let ((high-byte (bytes-ref blob
+                                 (if (eq? endness (endianness big))
+                                     index
+                                     (- (+ index size) 1)))))
 
-    (if (> high-byte 127)
-        (- (+ 1
-              (index-iterate index size
-                             (eq? (endianness big) endness)
-			     0
-			     (lambda ([index : Integer] [acc : Integer]) : Integer
-                               (+ (- 255 (bytes-ref blob index))
-				  (arithmetic-shift acc 8))))))
-        (index-iterate index size
-                       (eq? (endianness big) endness)
-                       0
-		       (lambda ([index : Integer] [acc : Integer]) : Integer
-			 (+ (bytes-ref blob index) (arithmetic-shift acc 8)))))))
+       (if (> high-byte 127)
+           (- (+ 1
+                 (index-iterate index size
+                                (eq? (endianness big) endness)
+                                0
+                                (lambda ([index : Integer] [acc : Integer]) : Integer
+                                  (+ (- 255 (bytes-ref blob index))
+                                     (arithmetic-shift acc 8))))))
+           (index-iterate index size
+                          (eq? (endianness big) endness)
+                          0
+                          (lambda ([index : Integer] [acc : Integer]) : Integer
+                            (+ (bytes-ref blob index) (arithmetic-shift acc 8))))))]))
 
 (: blob-uint-set! : Positive-Integer Endianness Bytes Integer Integer -> Void)
 (define (blob-uint-set! size endness blob index val)
