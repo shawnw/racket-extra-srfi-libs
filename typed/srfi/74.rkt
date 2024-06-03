@@ -13,7 +13,7 @@
            [bytes-copy blob-copy]
            [bytes->list blob->u8-list]
            [list->bytes u8-list->blob])
-  (for-syntax typed/racket/base racket/syntax))
+  (for-syntax typed/racket/base racket/syntax syntax/parse))
 (module+ test (require typed/rackunit))
 
 (provide
@@ -42,11 +42,12 @@
 (define-syntax native
   (lambda (stx) (raise-syntax-error #f "Use outside of endianness directive" stx)))
 
-(define-syntax endianness
-  (syntax-rules (big little native)
-    ((_ big) *big-endian*)
-    ((_ little) *little-endian*)
-    ((_ native) *native-endian*)))
+(define-syntax (endianness stx)
+  (syntax-parse stx
+    #:datum-literals (big little native)
+    ((_ big) #'*big-endian*)
+    ((_ little) #'*little-endian*)
+    ((_ native) #'*native-endian*)))
 
 (: blob-s8-ref : Bytes Integer -> Integer)
 (define (blob-s8-ref blob k)
