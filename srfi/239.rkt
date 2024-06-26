@@ -18,7 +18,9 @@
              (~alt (~optional [() null-body:expr ...+]
                               #:name "null case"
                               #:defaults ([(null-body 1) (list #'(raise (make-exn:fail:list-case "list-case: no matching null case" (current-continuation-marks))))]))
-                   (~optional [(kar:id . kdr:id) pair-body:expr ...+]
+                   (~optional (~and [(kar:id . kdr:id) pair-body:expr ...+] ~!
+                                    (~fail #:when (and (not (free-identifier=? #'kar #'_)) (not (free-identifier=? #'kdr #'_)) (check-duplicate-identifier (list #'kar #'kdr)))
+                                           "duplicate identifiers in cons case"))
                               #:name "cons case"
                               #:defaults ([kar #'_] [kdr #'_] [(pair-body 1) (list #'(raise (make-exn:fail:list-case "list-case: no matching cons case" (current-continuation-marks))))]))
                    (~optional [var:id alt-body:expr ...+]
@@ -45,8 +47,10 @@
              (~alt (~optional [() null-body:expr ...+]
                               #:name "null case"
                               #:defaults ([(null-body 1) (list #'(raise (make-exn:fail:list-case "mlist-case: no matching null case" (current-continuation-marks))))]))
-                   (~optional [(kar:id . kdr:id) pair-body:expr ...+]
-                              #:name "cons case"
+                   (~optional (~and [(kar:id . kdr:id) pair-body:expr ...+] ~!
+                                    (~fail #:when (and (not (free-identifier=? #'kar #'_)) (not (free-identifier=? #'kdr #'_)) (check-duplicate-identifier (list #'kar #'kdr)))
+                                           "duplicate identifiers in mcons case"))
+                              #:name "mcons case"
                               #:defaults ([kar #'_] [kdr #'_] [(pair-body 1) (list #'(raise (make-exn:fail:list-case "mlist-case: no matching mcons case" (current-continuation-marks))))]))
                    (~optional [var:id alt-body:expr ...+]
                               #:name "atom case"
