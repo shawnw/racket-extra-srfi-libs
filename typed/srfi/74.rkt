@@ -30,21 +30,36 @@
 (define (make-blob n)
   (make-bytes n 0))
 
-(struct endian ([big : Boolean]) #:type-name Endianness)
-(define *big-endian* (endian #t))
-(define *little-endian* (endian #f))
-(define *native-endian* (if (system-big-endian?) *big-endian* *little-endian*))
+(module endian-macros typed/racket/base
+  (require (for-syntax typed/racket/base))
+  (provide big little native *big-endian* *little-endian* *native-endian* Endianness)
 
-(define-syntax big
-  (lambda (stx) (raise-syntax-error #f "Use outside of endianness directive" stx)))
-(define-syntax little
-  (lambda (stx) (raise-syntax-error #f "Use outside of endianness directive" stx)))
-(define-syntax native
-  (lambda (stx) (raise-syntax-error #f "Use outside of endianness directive" stx)))
+  (module endian-type racket/base
+    (require racket/struct)
+    (provide (struct-out endian))
+    (struct endian (big)
+      #:sealed
+      #:methods gen:custom-write
+      [(define (write-proc obj out style)
+         (fprintf out "(endianness ~A)" (if (endian-big obj) 'big 'little)))]))
+  (require/typed 'endian-type
+                 [#:struct endian ([big : Boolean]) #:type-name Endianness])
+
+  (define *big-endian* (endian #t))
+  (define *little-endian* (endian #f))
+  (define *native-endian* (if (system-big-endian?) *big-endian* *little-endian*))
+
+  (define-syntax big
+    (lambda (stx) (raise-syntax-error #f "Use outside of endianness directive" stx)))
+  (define-syntax little
+    (lambda (stx) (raise-syntax-error #f "Use outside of endianness directive" stx)))
+  (define-syntax native
+    (lambda (stx) (raise-syntax-error #f "Use outside of endianness directive" stx))))
+(require 'endian-macros)
 
 (define-syntax (endianness stx)
   (syntax-parse stx
-    #:datum-literals (big little native)
+    #:literals (big little native)
     ((_ big) #'*big-endian*)
     ((_ little) #'*little-endian*)
     ((_ native) #'*native-endian*)))
