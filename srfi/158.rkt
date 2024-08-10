@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/contract (only-in racket/list make-list) racket/format data/gvector
+(require racket/contract (only-in racket/list make-list) racket/format racket/mutability data/gvector
          srfi/13 srfi/41 "133.rkt" "160/u8.rkt"
          (only-in racket/generator [generator? rkt-generator?] [generator-state rkt-generator-state]))
 (module+ test (require rackunit))
@@ -50,7 +50,7 @@
   [generator->list (->* ((-> any/c)) (exact-nonnegative-integer?) list?)]
   [generator->reverse-list (->* ((-> any/c)) (exact-nonnegative-integer?) list?)]
   [generator->vector (->* ((-> any/c)) (exact-nonnegative-integer?) vector?)]
-  [generator->vector! (-> vector? exact-nonnegative-integer? (-> any/c) any)]
+  [generator->vector! (-> mutable-vector? exact-nonnegative-integer? (-> any/c) exact-nonnegative-integer?)]
   [generator->string (->* ((-> (or/c char? eof-object?))) (exact-nonnegative-integer?) string?)]
   [generator-fold (->i ([proc (gens) (and/c (unconstrained-domain-> any/c)
                                             (lambda (f) (procedure-arity-includes? f (+ (length gens) 2))))]
@@ -85,10 +85,10 @@
   [reverse-list-accumulator (-> procedure?)]
   [vector-accumulator (-> procedure?)]
   [reverse-vector-accumulator (-> procedure?)]
-  [vector-accumulator! (-> (and/c vector? (not/c immutable?)) exact-nonnegative-integer? procedure?)]
+  [vector-accumulator! (-> mutable-vector? exact-nonnegative-integer? procedure?)]
   [string-accumulator (-> procedure?)]
   [bytevector-accumulator (-> procedure?)]
-  [bytevector-accumulator! (-> (and/c bytes? (not/c immutable?)) exact-nonnegative-integer? procedure?)]
+  [bytevector-accumulator! (-> mutable-bytes? exact-nonnegative-integer? procedure?)]
   [sum-accumulator (-> procedure?)]
   [product-accumulator (-> procedure?)]
   ;; SRFI-221

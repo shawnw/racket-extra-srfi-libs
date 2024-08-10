@@ -1,9 +1,7 @@
 #lang racket/base
 
-(require racket/contract racket/list racket/vector racket/unsafe/ops)
+(require racket/contract racket/list racket/mutability racket/vector racket/unsafe/ops)
 (module+ test (require rackunit))
-
-(define mutable-vector? (and/c vector? (not/c immutable?)))
 
 (define (rest-star/c . contracts)
   (define ncontracts (length contracts))
