@@ -23,6 +23,7 @@ Passing those functions invalid or out of range arguments can have unpredictable
 @subsection{Typed Racket}
 
 @defmodule[typed/srfi/1]
+@defmodule[typed/srfi/lists]
 
 @hyperlink["https://srfi.schemers.org/srfi-1/srfi-1.html"]{Reference documentation}.
 
@@ -40,6 +41,7 @@ The type of a homogeneous circular list as returned by @code{circular-list}.
 @subsection{Mutable lists}
 
 @defmodule[srfi/1m]
+@defmodule[srfi/mlists]
 
 SRFI-1 for mutable lists. Procedures have the same name with an @tt{m} prepended, except ones with @tt{list} or @tt{pair} in the name, which turns into @tt{mlist} or @tt{mpair}.
 So, for example, @code{make-mlist}, @code{not-mpair?} and @code{mxcons}.
@@ -64,6 +66,7 @@ Also available in an unsafe module with @code{(require (submod srfi/1m unsafe))}
 @section{SRFI-13 String Libraries}
 
 @defmodule[typed/srfi/13]
+@defmodule[typed/srfi/strings]
 
 @hyperlink["https://srfi.schemers.org/srfi-13/srfi-13.html"]{Reference documentation}.
 
@@ -75,6 +78,7 @@ that you might need in Typed Racket.
 @section{SRFI-27 Sources of Random Bits}
 
 @defmodule[typed/srfi/27]
+@defmodule[typed/srfi/random-bits]
 
 @hyperlink["https://srfi.schemers.org/srfi-27/srfi-27.html"]{Reference
 documentation}.
@@ -87,6 +91,7 @@ Typed Racket.
 @section{SRFI-74 Octet-Addressed Binary Blocks}
 
 @defmodule[typed/srfi/74]
+@defmodule[typed/srfi/blobs]
 
 @hyperlink["https://srfi.schemers.org/srfi-74/srfi-74.html"]{Reference documentation}.
 
@@ -122,6 +127,7 @@ Racket natively supports SRFI-111 single-valued boxes, but this module re-export
 @section{SRFI-117 Queues based on (mutable) lists}
 
 @defmodule[srfi/117]
+@defmodule[srfi/list-queues]
 
 @hyperlink["https://srfi.schemers.org/srfi-117/srfi-117.html"]{Reference documentation}.
 
@@ -141,6 +147,7 @@ Return a sequence that iterates over the elements of the queue. List queues can 
 @section{SRFI-127 Lazy Sequences}
 
 @defmodule[srfi/127]
+@defmodule[srfi/lazy-sequences]
 
 @hyperlink["https://srfi.schemers.org/srfi-127/srfi-127.html"]{Reference documentation}.
 
@@ -171,6 +178,7 @@ Create a Racket sequence that iterates over the lseq.
 @section{SRFI-128 Comparators (reduced)}
 
 @defmodule[srfi/128]
+@defmodule[srfi/comparators]
 
 @hyperlink["https://srfi.schemers.org/srfi-128/srfi-128.html"]{Reference
 documentation}. Also includes
@@ -223,7 +231,8 @@ A comparator returned by @code{make-equal-always-comparator}.
 
 @section{SRFI-132 Sort Libraries}
 
-@defmodule[srif/132]
+@defmodule[srfi/132]
+@defmodule[srfi/sorting]
 
 @hyperlink["https://srfi.schemers.org/srfi-132/srfi-132.html"]{Reference
 documentation}.
@@ -244,7 +253,9 @@ Available as an unsafe module via @code{(require (submod srfi/132 unsafe))}.
 @section{SRFI-133 Vector Library (R7RS-compatible)}
 
 @defmodule[srfi/133]
+@defmodule[srfi/vectors]
 @defmodule[typed/srfi/133]
+@defmodule[typed/srfi/vectors]
 
 @hyperlink["https://srfi.schemers.org/srfi-133/srfi-133.html"]{Reference documentation}.
 
@@ -296,8 +307,9 @@ As of Racket 8.13, implemented with treelists instead of the banker's deque refe
 @section{SRFI-141 Integer division}
 
 @defmodule[srfi/141]
-
+@defmodule[srfi/integer-division]
 @defmodule[typed/srfi/141]
+@defmodule[typed/srfi/integer-division]
 
 @hyperlink["https://srfi.schemers.org/srfi-141/srfi-141.html"]{Reference documentation}.
 
@@ -311,14 +323,16 @@ integers. The typed module also has @code{Fixnum} versions with a
 @section{SRFI-143 Fixnums}
 
 @defmodule[srfi/143]
-
+@defmodule[srfi/fixnums]
 @defmodule[typed/srfi/143]
+@defmodule[typed/srfi/fixnums]
 
 @hyperlink["https://srfi.schemers.org/srfi-143/srfi-143.html"]{Reference documentation}.
 
 @section{SRFI-145 Assumptions}
 
 @defmodule[srfi/145]
+@defmodule[srfi/assume]
 
 @hyperlink["https://srfi.schemers.org/srfi-145/srfi-145.html"]{Reference documentation}.
 
@@ -381,6 +395,7 @@ uses Racket's immutable hash tables, but also support mutable side-effect functi
 @section{SRFI-151 Bitwise Operations}
 
 @defmodule[srfi/151]
+@defmodule[srfi/bitwise-operations]
 
 @hyperlink["https://srfi.schemers.org/srfi-151/srfi-151.html"]{Reference documentation}.
 
@@ -393,6 +408,7 @@ routines should also be written in Typed Racket.
 @section{SRFI-158 Generators and Accumulators}
 
 @defmodule[srfi/158]
+@defmodule[srfi/generators-and-accumulators]
 
 @hyperlink["https://srfi.schemers.org/srfi-158/srfi-158.html"]{Reference
 documentation}. Also includes
@@ -500,6 +516,7 @@ Implemented as a distinct type (A transparent structure), with the range of the 
 @section{SRFI-175 ASCII character library}
 
 @defmodule[srfi/175]
+@defmodule[srfi/ascii]
 
 @hyperlink["https://srfi.schemers.org/srfi-175/srfi-175.html"]{Reference documentation}.
 
@@ -622,6 +639,7 @@ Uses @code{match} style pattern matching.
 @section{SRFI-207 String-notated bytevectors}
 
 @defmodule[srfi/207]
+@defmodule[srfi/bytestrings]
 
 @hyperlink["https://srfi.schemers.org/srfi-207/srfi-207.html"]{Reference documentation}.
 
@@ -755,6 +773,7 @@ Available as an unsafe module via @code{(require (submod srfi/217 unsafe))}.
 @section{SRFI-223 Generalized binary search procedures}
 
 @defmodule[srfi/223]
+@defmodule[srfi/bisect]
 
 @hyperlink["https://srfi.schemers.org/srfi-223/srfi-223.html"]{Reference documentation}.
 This and the following modules are written in Typed Racket.
@@ -851,6 +870,7 @@ Procedures that take or return procedures that take arbitary arguments will work
 @section{SRFI-238 Codesets}
 
 @defmodule[srfi/238]
+@defmodule[srfi/codesets]
 
 @hyperlink["https://srfi.schemers.org/srfi-238/srfi-238.html"]{Reference documentation}.
 
@@ -867,6 +887,7 @@ Define and register a new codeset with the given names, numbers and messages. Th
 @section{SRFI-239 Destructuring Lists}
 
 @defmodule[srfi/239]
+@defmodule[srfi/list-case]
 
 @hyperlink["https://srfi.schemers.org/srfi-239/srfi-239.html"]{Reference documentation}.
 
