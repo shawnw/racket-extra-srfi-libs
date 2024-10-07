@@ -113,7 +113,7 @@
 ;;; the file for further notes on porting & performance tuning.)
 
 (require (for-syntax typed/racket/base)
-         typed/srfi/14 racket/fixnum
+         typed/srfi/14 racket/fixnum "141.rkt"
          (only-in typed/racket/base
                   [string-upcase rkt-string-upcase]
                   [string-downcase rkt-string-downcase]
@@ -1656,9 +1656,8 @@
 ;;; It is an error if START=END -- although this is allowed by special
 ;;; dispensation when FROM=TO.
 
-(: xsubstring (->* (String Index) (Index Index Index) String))
+(: xsubstring (->* (String Integer) (Integer Index Index) String))
 (define (xsubstring s from [to (+ (string-length s) 1)] [start 0] [end (string-length s)])
-  (check-string-range 'xsubstring s from)
   (check-string-range 'xsubstring s start end)
   (let* ([to (assert (if (= to (+ (string-length s) 1)) (+ from (- end start)) to) index?)]
          [slen   (- end start)]
@@ -1671,7 +1670,7 @@
            (make-string anslen (string-ref s start)))
 
           ;; Selected text falls entirely within one span.
-          ((= (floor (/ from slen)) (floor (/ to slen)))
+          ((= (floor-quotient from slen) (floor-quotient to slen))
            (substring s (+ start (modulo from slen))
                       (+ start (modulo to   slen))))
 
@@ -1688,10 +1687,9 @@
 ;;; This operation is not defined if (EQ? TARGET S) -- you cannot copy
 ;;; a string on top of itself.
 
-(: string-xcopy! (->* (String Index String Index) (Index Index Index) Void))
+(: string-xcopy! (->* (String Index String Integer) (Integer Index Index) Void))
 (define (string-xcopy! target tstart s sfrom [sto (+ (string-length s) 1)] [start 0] [end (string-length s)])
   (check-string-range 'string-xcopy! target tstart)
-  (check-string-range 'string-xcopy! s sfrom)
   (check-string-range 'string-xcopy! s start end)
   (let* ([sto (assert (if (= sto (+ (string-length s) 1)) (+ sfrom (- end start)) sto) index?)]
          [tocopy (- sto sfrom)]
@@ -1707,7 +1705,7 @@
            (string-fill! target (string-ref s start) tstart tend))
 
           ;; Selected text falls entirely within one span.
-          ((= (floor (/ sfrom slen)) (floor (/ sto slen)))
+          ((= (floor-quotient sfrom slen) (floor-quotient sto slen))
            (string-copy! target tstart s
                          (+ start (modulo sfrom slen))
                          (+ start (modulo sto   slen))))
@@ -1717,7 +1715,7 @@
 
 ;;; This is the core copying loop for XSUBSTRING and STRING-XCOPY!
 ;;; Internal -- not exported, no careful arg checking.
-(: %multispan-repcopy! (String Index String Index Index Index Index -> Void))
+(: %multispan-repcopy! (String Index String Integer Integer Index Index -> Void))
 (define (%multispan-repcopy! target tstart s sfrom sto start end)
   (let* ((slen (- end start))
 	 (i0 (+ start (modulo sfrom slen)))
