@@ -304,6 +304,43 @@ As of Racket 8.13, implemented with treelists instead of the banker's deque refe
 
 }
 
+@section{SRFI-140 Immutable Strings}
+
+@defmodule[srfi/140]
+
+@hyperlink["https://srfi.schemers.org/srfi-140/srfi-140.html"]{Reference documentation}.
+
+@bold{Notes}:
+
+This module is equivalent to the R7RS @code{(srfi 140 istrings)} library. The other variations laid out in the SRFI are not present.
+The mutable string functions @code{string-append!} and @code{string-replace!}, which require resizable strings, are not provided.
+
+@bold{Extra functions}:
+
+Stuff used by the UTF-16 conversion routines that might be more broadly useful.
+
+@defproc[(string-utf-16-length [s string?] [start exact-nonnegative-integer? 0] [end exact-nonnegative-integer? (string-length s)]) exact-nonnegative-integer?]{
+
+Returns the number of bytes it takes to encode @code{s} as UTF-16. This length does not include a Byte Order Mark (BOM).
+
+}
+
+@defproc[(bytes-utf-16-length [b bytes?] [start exact-nonnegative-integer? 0] [end exact-nonnegative-integer? (bytes-length b)] [#:big-endian? big-endian? (or/c boolean? 'check-bom) 'check-bom])
+         exact-nonnegative-integer?]{
+
+ Returns the number of codepoints in the UTF-16 data in @code{b}. The length includes the BOM if present.
+
+ If @code{big-endian?} is @code{'check-bom} and there is no BOM present, the native system endianness is used.
+
+}
+
+@defproc[(bytes-utf-16-endianness [b bytes?] [start exact-nonnegative-integer? 0] [end exact-nonnegative-integer? (bytes-length b)]) (values boolean? boolean?)]{
+
+Attempts to discover the endianness of the UTF-16 data in @code{b}. Returns two values; if it's big endian or not, and if a BOM was present. If there is no BOM, the
+ endianness is the native system one.
+
+}
+
 @section{SRFI-141 Integer division}
 
 @defmodule[srfi/141]
