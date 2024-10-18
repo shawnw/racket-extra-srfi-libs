@@ -6,7 +6,7 @@
          "../128.rkt"
          (for-syntax racket/base)
          (filtered-in (lambda (name) (regexp-replace #rx"mapping" name "hashmap")) "private/common.rkt"))
-(module+ test (require rackunit))
+(module+ test (require "../private/testwrappers.rkt"))
 
 (provide
  comparator?
@@ -392,14 +392,6 @@
   ;; CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
   ;; SOFTWARE.
   (require srfi/1 srfi/8)
-  (define-syntax-rule (test-group name tests ...)
-    (let () tests ...))
-  (define-syntax-rule (test-assert name test-expr)
-    (test-not-false name test-expr))
-  (define-syntax-rule (test-equal name expected test-expr)
-    (test-equal? name test-expr expected))
-  (define-syntax-rule (test-error name test-expr)
-    (test-exn name exn:fail? (lambda () test-expr)))
 
   (define comparator (make-default-comparator))
 

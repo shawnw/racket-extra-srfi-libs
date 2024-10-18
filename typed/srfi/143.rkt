@@ -15,7 +15,7 @@
   [(fxpopcount fxbit-count) (Fixnum -> Fixnum)]
   [most-positive-fixnum (-> Fixnum)]
   [most-negative-fixnum (-> Fixnum)])
-(module+ test (require typed/rackunit))
+(module+ test (require "private/testwrappers.rkt"))
 
 (provide fixnum?
          fx-width fx-greatest fx-least
@@ -202,15 +202,6 @@
 
 
 (module+ test
-
-  (define-syntax-rule (test-group name tests ...)
-    (let () tests ...))
-  (define-syntax test
-    (syntax-rules ()
-      ((_ expected expr)
-       (check-equal? expr expected))
-      ((_ name expected expr)
-       (test-equal? name expr expected))))
 
   (test-group "fixnum"
               (test-group "fixnum/arithmetic"

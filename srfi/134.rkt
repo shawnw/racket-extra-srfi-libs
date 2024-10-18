@@ -5,7 +5,7 @@
 
 (require racket/contract racket/sequence racket/struct racket/stream racket/treelist syntax/parse/define (for-syntax racket/base syntax/for-body)
          (only-in srfi/1 unfold list= zip append-map iota take drop split-at) (only-in "158.rkt" generator generator->list))
-(module+ test (require rackunit srfi/8))
+(module+ test (require "private/testwrappers.rkt" srfi/8))
 
 (provide
  (contract-out
@@ -32,7 +32,7 @@
   [ideque-drop (-> ideque? exact-nonnegative-integer? ideque?)]
   [ideque-drop-right (-> ideque? exact-nonnegative-integer? ideque?)]
   [ideque-split-at (-> ideque? exact-nonnegative-integer? (values ideque? ideque?))]
-  
+
   [ideque-length (-> ideque? exact-nonnegative-integer?)]
   [ideque-append (-> ideque? ... ideque?)]
   [ideque-reverse (-> ideque? ideque?)]
@@ -253,7 +253,7 @@
   (for/foldr ([r knil])
     ([elem (in-ideque dq)])
     (proc elem r)))
-  
+
 (define (ideque-append-map proc dq)
   ;; can be cleverer, but for now...
   (list->ideque (append-map proc (ideque->list dq))))
@@ -267,7 +267,7 @@
   (make-ideque (for/treelist ([elem (in-ideque dq)]
                               #:unless (pred elem))
                  elem)))
-  
+
 (define (ideque-partition pred dq)
   (for/fold ([satisfies empty-treelist]
              [fails empty-treelist]
@@ -285,7 +285,7 @@
       [(= i len) (failure)]
       [(pred (treelist-ref tl i)) (treelist-ref tl i)]
       [else (loop (add1 i))])))
-  
+
 (define (ideque-find-right pred dq [failure (lambda () #f)])
   (define tl (ideque-tl dq))
   (let loop ([i (sub1 (treelist-length tl))])
@@ -324,7 +324,7 @@
       [(pred (treelist-ref tl i))
        (loop (add1 i))]
       [else (make-ideque (treelist-sublist tl i len))])))
-  
+
 (define (ideque-drop-while-right pred dq)
   (define tl (ideque-tl dq))
   (let loop ([i (sub1 (treelist-length tl))])
@@ -333,7 +333,7 @@
       [(pred (treelist-ref tl i))
        (loop (sub1 i))]
       [else (make-ideque (treelist-sublist tl 0 (add1 i)))])))
-  
+
 (define (ideque-span pred dq)
   (define tl (ideque-tl dq))
   (define len (treelist-length tl))
@@ -396,7 +396,7 @@
       #:next-pos sub1
       #:init-pos (sub1 (ideque-length dq))
       #:continue-with-pos? exact-nonnegative-integer?))))
-   
+
 (define-syntax-parse-rule (for/ideque clauses body ... tail-expr)
   #:with original this-syntax
   #:with ((pre-body ...) (post-body ...)) (split-for-body this-syntax #'(body ... tail-expr))
@@ -414,19 +414,7 @@
     (ideque-add-back dq (let () post-body ...))))
 
 (module+ test
-  (define-syntax-rule (test-group name exprs ...)
-    (let () exprs ...))
-  (define-syntax test
-    (syntax-rules ()
-      ((test expected actual)
-       (check-equal? actual expected))
-      ((test name expected actual)
-       (test-equal? name actual expected))))
-  (define-syntax-rule (test-assert test-case)
-    (check-true test-case))
-  (define-syntax-rule (test-error expr)
-    (check-exn exn:fail? (lambda () expr)))
-  
+
   (test-group "ideque/constructors"
               (test '() (ideque->list (ideque)))
               (test '() (ideque->list (list->ideque '())))
@@ -446,7 +434,7 @@
                          (ideque-unfold-right (lambda (n) #t) values (lambda (n) (+ n 1)) 0)))
               (test '() (ideque->list (ideque-tabulate 0 values)))
               )
-  
+
   (test-group "ideque/predicates"
               (test-assert (ideque? (ideque)))
               (test-assert (not (ideque? 1)))
@@ -463,7 +451,7 @@
               (test-assert (not (ideque= char-ci=? (ideque #\a #\b) (ideque #\A) (ideque #\a #\B))))
               (test-assert (not (ideque= char-ci=? (ideque #\a #\b) (ideque #\A #\B) (ideque #\A #\B #\c))))
               )
-  
+
   (test-group "ideque/queue-operations"
               (test-error (ideque-front (ideque)))
               (test-error (ideque-back (ideque)))
@@ -484,7 +472,7 @@
                 (set! id (ideque-remove-front (ideque-add-back id 1)))
                 (test #f (ideque-front (ideque-take-right id 12))))
               )
-  
+
   (test-group "ideque/other-accessors"
               (define (check name ideque-op list-op n)
                 (let* ((lis (iota n))
@@ -508,12 +496,12 @@
               (test-error (ideque->list (ideque-take (ideque 1 2 3 4 5 6 7) 10)))
               (test-error (ideque->list (ideque-take-right (ideque 1 2 3 4 5 6 7) 10)))
               (test-error (ideque-split-at (ideque 1 2 3 4 5 6 7) 10))
-              
+
               (test '(3 2 1) (map (lambda (n) (ideque-ref (ideque 3 2 1) n)) '(0 1 2)))
               (test-error (ideque-ref (ideque 3 2 1) -1))
               (test-error (ideque-ref (ideque 3 2 1) 3))
               )
-  
+
   (test-group "ideque/whole-ideque"
               (test 7 (ideque-length (ideque 1 2 3 4 5 6 7)))
               (test 0 (ideque-length (ideque)))
@@ -539,7 +527,7 @@
               (test '()
                     (ideque->list (ideque-zip (ideque 1 2 3) (ideque))))
             )
-  
+
   (test-group "ideque/mapping"
               (test-assert (ideque-empty? (ideque-map list (ideque))))
               (test '(-1 -2 -3 -4 -5) (ideque->list (ideque-map - (ideque 1 2 3 4 5))))
@@ -564,7 +552,7 @@
                     (ideque->list (ideque-append-map (lambda (x) (list x x))
                                                      (ideque 'a 'b 'c))))
               )
-  
+
   (test-group "ideque/filtering"
               (test '(1 3 5)
                     (ideque->list (ideque-filter odd? (ideque 1 2 3 4 5))))
@@ -574,7 +562,7 @@
                     (receive xs (ideque-partition odd? (ideque 1 2 3 4 5))
                              (map ideque->list xs)))
               )
-  
+
   (test-group "ideque/searching"
               (test 3 (ideque-find number? (ideque 'a 3 'b 'c 4 'd) (lambda () 'boo)))
               (test 'boo (ideque-find number? (ideque 'a 'b 'c 'd) (lambda () 'boo)))
@@ -629,7 +617,7 @@
                                   (ideque 2 1 'a 'b 'c 'd)))
               (test #f (ideque-every (lambda (x) (and (odd? x) x))
                                      (ideque 1 2 'a 'b 'c 'd)))
-              
+
               (test '(1 2 3) (generator->list (ideque->generator (ideque 1 2 3))))
               (test '() (generator->list (ideque->generator (ideque))))
               (test '(1 2 3) (ideque->list (generator->ideque (generator 1 2 3))))
@@ -642,6 +630,6 @@
               (test '(0 1 2 3) (ideque->list (for/ideque ((n (in-range 4))) n))))
 
   (test-group "equality"
-              (check-true (equal? (ideque 1 2 3) (ideque 1 2 3)))
-              (check-false (equal? (ideque 1 2 3) (ideque 1 2 #\c))))
+              (test-true (equal? (ideque 1 2 3) (ideque 1 2 3)))
+              (test-false (equal? (ideque 1 2 3) (ideque 1 2 #\c))))
   )

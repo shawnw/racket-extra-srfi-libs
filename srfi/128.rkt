@@ -4,7 +4,7 @@
          (only-in racket/bool boolean=? symbol=?)
          (only-in racket/list index-where remove-duplicates)
          racket/struct)
-(module+ test (require rackunit))
+(module+ test (require "132.rkt" "private/testwrappers.rkt"))
 (provide
  hash-bound hash-salt with-hash-salt comparator-if<=>
  (contract-out
@@ -883,19 +883,6 @@
            #f))))
 
 (module+ test
-  (require "132.rkt")
-  (define-syntax-rule (test-assert tst)
-    (check-true tst))
-  (define-syntax-rule (test expected tst)
-    (check-equal? tst expected))
-  (define-syntax-rule (test-error tst)
-    (check-exn exn:fail? (lambda () tst)))
-  (define-syntax-rule (test-group name tests ...)
-    (begin tests ...))
-  (define-syntax-rule (test-eq expected tst)
-    (check-eq? tst expected))
-  (define-syntax-rule (test-equal expected tst)
-    (check-equal? tst expected))
   (define (print msg) (void))
 
   (test-group "comparators"
@@ -1260,8 +1247,8 @@
                         revolver)))))
 
   (test-group "contracts"
-              (test-assert (flat-contract? char-comparator))
-              (test-assert (char-comparator #\a))
-              (check-false (char-comparator 1)))
+              (test-true (flat-contract? char-comparator))
+              (test-true (char-comparator #\a))
+              (test-false (char-comparator 1)))
 
   ) ; end comparators

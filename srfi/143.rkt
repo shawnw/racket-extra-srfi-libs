@@ -17,7 +17,7 @@
          (only-in "141.rkt" balanced/))
 (require (filtered-in (lambda (name) (and (regexp-match? #rx"^unsafe-fx" name) name)) racket/unsafe/ops))
 
-(module+ test (require rackunit))
+(module+ test (require "private/testwrappers.rkt"))
 
 (provide fixnum?
          fx=? fx<? fx<=? fx>? fx>=?
@@ -151,16 +151,6 @@
 
 
 (module+ test
-
-  (define-syntax-rule (test-group name tests ...)
-    (let () tests ...))
-  (define-syntax test
-    (syntax-rules ()
-      ((_ expected expr)
-       (check-equal? expr expected))
-      ((_ name expected expr)
-       (test-equal? name expr expected))))
-
   (test-group "fixnum"
               (test-group "fixnum/arithmetic"
                           (test #t (fixnum? 32767))

@@ -14,7 +14,7 @@
          (only-in racket/symbol [symbol->immutable-string symbol->string])
          (only-in srfi/1 append-reverse) srfi/74 "141.rkt"
          )
-(module+ test (require rackunit))
+(module+ test (require "private/testwrappers.rkt"))
 
 (provide
  string? string-length string-ref
@@ -48,7 +48,7 @@
   [string-utf-16-length (->* (string?) (exact-nonnegative-integer? exact-nonnegative-integer?) exact-nonnegative-integer?)]
   [bytes-utf-16-length (->* (bytes?) (exact-nonnegative-integer? exact-nonnegative-integer? #:big-endian? (or/c boolean? 'check-bom)) exact-nonnegative-integer?)]
   [bytes-utf-16-endianness (->* (bytes?) (exact-nonnegative-integer? exact-nonnegative-integer?) (values boolean? boolean?))]
-  
+
   [string (-> char? ... immutable-string?)]
   [string-tabulate (-> (-> exact-nonnegative-integer? char?) exact-nonnegative-integer? immutable-string?)]
   [string-unfold (->* ((-> any/c any/c) (-> any/c (or/c char? string?)) (-> any/c any/c) any/c) ((or/c char? string?) (-> any/c (or/c char? string?))) immutable-string?)]
@@ -806,12 +806,6 @@
                                      (error "as-string: illegal argument" x))))
                             args)))
 |#
-
-
-  (define-syntax-rule (test-equal expected test)
-    (check-equal? test expected))
-  (define-syntax-rule (test-assert test)
-    (check-true test))
 
   ;;; Unicode is a strong motivation for immutable strings, so we ought
   ;;; to use at least some non-ASCII strings for testing.
@@ -3134,18 +3128,18 @@
   (test-equal "" (string-join '() ":"))
   (test-equal "" (string-join '("") ":"))
   (test-equal "" (string-join '()  ":" 'infix))
-  (check-exn exn? (lambda () (string-join '()  ":" 'strict-infix)))
+  (test-error (string-join '()  ":" 'strict-infix))
   (test-equal "A" (string-join '("A")  ":" 'strict-infix))
   (test-equal "A:B" (string-join '("A" "B")  ":" 'strict-infix))
   (test-equal "" (string-join '()  ":" 'suffix))
   (test-equal ":" (string-join '("") ":" 'suffix))
 
-  (check-exn exn? (lambda () (string-join '() "" 'strict-infix)))
+  (test-error (string-join '() "" 'strict-infix))
 
   (test-equal "abcdef"
               (string-join '("" "ab" "cd" "" "e" "f" "") "" 'strict-infix))
 
-  (check-exn exn? (lambda () (string-join '() "xyz" 'strict-infix)))
+  (test-error (string-join '() "xyz" 'strict-infix))
 
   (test-equal "xyzabxyzcdxyzxyzexyzfxyz"
               (string-join '("" "ab" "cd" "" "e" "f" "") "xyz" 'strict-infix))
@@ -3400,7 +3394,7 @@
   (test-equal '("" "there" "ya" "go" "")
               (string-split "***there***ya***go***" "***" 'infix))
 
-  (check-exn exn? (lambda () (string-split "" "" 'strict-infix)))
+  (test-error (string-split "" "" 'strict-infix))
 
   (test-equal '("a" "b" "c")
               (string-split "abc" "" 'strict-infix))
@@ -3446,7 +3440,7 @@
   (test-equal '("" "there" "ya" "go" "")
               (string-split "***there***ya***go***" "***" 'infix #f))
 
-  (check-exn exn? (lambda () (string-split "" "" 'strict-infix #f)))
+  (test-error (string-split "" "" 'strict-infix #f))
 
   (test-equal '("a" "b" "c")
               (string-split "abc" "" 'strict-infix #f))
@@ -3481,7 +3475,7 @@
               (string-split "***there***ya***go***" "***" 'suffix #f))
 
 
-  (check-exn exn? (lambda () (string-split "" "" 'strict-infix 3)))
+  (test-error (string-split "" "" 'strict-infix 3))
 
   (test-equal '("a" "b" "c")
               (string-split "abc" "" 'strict-infix 3))
@@ -3516,7 +3510,7 @@
   (test-equal '("" "there" "ya" "go***")
               (string-split "***there***ya***go***" "***" 'suffix 3))
 
-  (check-exn exn? (lambda () (string-split "" "" 'strict-infix 3 0)))
+  (test-error (string-split "" "" 'strict-infix 3 0))
 
   (test-equal '("b" "c")
               (string-split "abc" "" 'strict-infix 3 1))
@@ -3552,7 +3546,7 @@
               (string-split "***there***ya***go***" "***" 'suffix 3 1))
 
 
-  (check-exn exn? (lambda () (string-split "" "" 'strict-infix 3 0 0)))
+  (test-error (string-split "" "" 'strict-infix 3 0 0))
 
   (test-equal '("b")
               (string-split "abc" "" 'strict-infix 3 1 2))

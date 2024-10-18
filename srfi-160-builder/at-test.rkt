@@ -1,19 +1,5 @@
 (module+ test
-  (require rackunit "../128.rkt")
-  (define-syntax test
-    (syntax-rules ()
-      ((_ name expect expr)
-       (test-equal? name expr expect))
-      ((_ expect expr)
-       (check-equal? expr expect))))
-  (define-syntax test-assert
-    (syntax-rules ()
-      ((_ name expr)
-       (test-not-false name expr))
-      ((_ expr)
-       (check-not-false expr))))
-  (define-syntax-rule (test-group name tests ...)
-    (begin tests ...))
+  (require "../private/testwrappers.rkt" "../128.rkt")
 
   (define (times2 x) (* x 2))
   (define s5 (@vector 1 2 3 4 5))

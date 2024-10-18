@@ -27,7 +27,7 @@
 
 (require (for-syntax racket/base syntax/parse)
          syntax/parse/define)
-(module+ test (require rackunit))
+(module+ test (require "private/testwrappers.rkt"))
 
 (provide curried define-curried)
 
@@ -110,13 +110,6 @@
   (define hdr.name (curried hdr.params exp ...)))
 
 (module+ test
-  (define-syntax-rule (test-group name test ...)
-    (begin test ...))
-  (define-syntax-rule (test-eqv expected test-expr)
-    (check-eqv? test-expr expected))
-  (define-syntax-rule (test-equal expected test-expr)
-    (check-equal? test-expr expected))
-
   (define-curried (add-curry x y) (+ x y))
 
   (test-group "Simple currying"

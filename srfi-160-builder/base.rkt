@@ -24,7 +24,7 @@
          "private/c128-vector2list.rkt"
          "private/fl-vector2list.rkt"
          "private/fx-vector2list.rkt")
-(module+ test (require rackunit))
+(module+ test (require "../private/testwrappers.rkt"))
 
 (provide
  (all-from-out ffi/vector)
@@ -105,12 +105,8 @@
   ;;;; Shared tests
   ;;; Hvector = homogeneous vector
 
-  (define-syntax-rule (test-assert test-expr)
-    (check-not-false test-expr))
-  (define-syntax-rule (test-not test-expr)
-    (check-false test-expr))
   (define-syntax-rule (is-same? expr1 expr2)
-    (check-true (same? expr1 expr2)))
+    (test-true (same? expr1 expr2)))
 
   ;; Test for sameness
 

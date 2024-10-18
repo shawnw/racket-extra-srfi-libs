@@ -74,11 +74,7 @@
      ((inst bisect-right (Vectorof α) α) vec elem vector-ref less? 0 (vector-length vec))]))
 
 (module* test racket/base
-  (require rackunit (submod "..") srfi/9 "141.rkt")
-  (define-syntax-rule (test name expected funccall)
-    (test-equal? name funccall expected))
-  (define-syntax-rule (test-group name tests ...)
-    (begin tests ...))
+  (require "private/testwrappers.rkt" (submod "..") srfi/9 "141.rkt")
 
   ;; OEIS A003056
   (define (nth-inverted-triangular n)

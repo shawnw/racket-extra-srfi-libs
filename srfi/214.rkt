@@ -165,7 +165,7 @@
                                            (-> flexvector? any/c (-> any/c any/c any/c) integer? integer? integer?))]
 
           ))
-(module+ test (require rackunit))
+(module+ test (require "private/testwrappers.rkt"))
 
 ;; Fundamental building blocks directly using gvector functions or otherwise different from the reference version
 
@@ -726,8 +726,6 @@
     (values left right)))
 
 (module+ test
-  (define-syntax-rule (test-equal name expected tst)
-    (test-equal? name tst expected))
 
   (test-equal "flexvector?" #t (flexvector? (flexvector)))
   (test-equal "flexvector-length" 3 (flexvector-length (make-flexvector 3 #f)))

@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require racket/contract racket/list racket/mutability racket/vector racket/unsafe/ops)
-(module+ test (require rackunit))
+(module+ test (require "private/testwrappers.rkt"))
 
 (define (rest-star/c . contracts)
   (define ncontracts (length contracts))
@@ -975,11 +975,6 @@
      (build-vector (- end start) (lambda (i) (unsafe-string-ref str (+ i start)))))))
 
 (module+ test
-
-  (define-syntax-rule (test-group name tests ...)
-    (let () tests ...))
-  (define-syntax-rule (test-assert expr) (check-not-false expr))
-  (define-syntax-rule (test expected expr) (check-equal? expr expected))
   
 (test-group "vectors"
   (test-group "vectors/basics"

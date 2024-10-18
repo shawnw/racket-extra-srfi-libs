@@ -3,7 +3,7 @@
 (require racket/contract (only-in racket/list make-list) racket/format racket/mutability data/gvector
          srfi/13 srfi/41 "133.rkt" "160/u8.rkt"
          (only-in racket/generator [generator? rkt-generator?] [generator-state rkt-generator-state]))
-(module+ test (require rackunit))
+(module+ test (require "private/testwrappers.rkt"))
 (provide
  (contract-out
   #:unprotected-submodule unsafe
@@ -816,17 +816,6 @@
           (else
            (void))))))
 
-  (define-syntax-rule (test expected tst)
-    (check-equal? tst expected))
-  (define-syntax-rule (test-equal expected tst)
-    (check-equal? tst expected))
-  (define-syntax-rule (test-assert condition)
-    (check-not-false condition))
-  (define-syntax-rule (test-group name tests ...)
-    (begin ;(printf "Starting ~A...~%" name)
-      tests ...
-      #;(displayln "Done.")))
-
   (test-group "generators"
               (test-group "generators/constructors"
                           (test '() (generator->list (generator)))
@@ -1222,14 +1211,14 @@
                                    (rkt-yield (car lst))
                                    (loop (cdr lst))))))
 
-  (test-equal? "racket to srfi generator conversion"
-               (generator->list (rkt-generator->srfi-generator rkt-g))
-               '(1 2 3))
+  (test-equal "racket to srfi generator conversion"
+              '(1 2 3)
+               (generator->list (rkt-generator->srfi-generator rkt-g)))
 
+  (test-equal "sequence to generator conversion"
+              '(0 1 2 3 4 5 6 7 8 9)
+              (generator->list (sequence->generator (in-range 10))))
 
-  (test-equal? "sequence to generator conversion"
-               (generator->list (sequence->generator (in-range 10)))
-               '(0 1 2 3 4 5 6 7 8 9))
 
   (test-true "generator? random" (generator? random))
   (test-false "generator? cons" (generator? cons)))

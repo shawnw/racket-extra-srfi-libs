@@ -11,7 +11,7 @@
                     [negate complement])
          (rename-in racket/list [group-by rkt:group-by])
          (only-in srfi/1 map-in-order))
-(module+ test (require rackunit))
+(module+ test (require "private/testwrappers.rkt"))
 
 (provide
  constantly
@@ -273,12 +273,6 @@
 
 (module+ test
   (require srfi/1)
-
-  (define-syntax-rule (test-begin name) (void))
-  (define-syntax-rule (test-end) (void))
-  (define-syntax-rule (test-group name tests ...) (let () tests ...))
-  (define-syntax-rule (test-equal expected expr) (check-equal? expr expected))
-  (define-syntax-rule (test-assert expr) (check-not-false expr))
 
 (test-begin "Combinators")
 

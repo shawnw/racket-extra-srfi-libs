@@ -3,7 +3,7 @@
 ;;; SRFI-174 for Racket.
 
 (require racket/contract)
-(module+ test (require rackunit))
+(module+ test (require "private/testwrappers.rkt"))
 
 (provide
  (struct-out timespec)
@@ -51,11 +51,6 @@
     (timespec quo (inexact->exact (truncate (* (abs rem) #e1e9))))))
 
 (module+ test
-  (define-syntax-rule (test-assert name expr)
-    (test-not-false name expr))
-  (define-syntax-rule (test name expected expr)
-    (test-equal? name expr expected))
-  
   (define ts1 (timespec 1 2))
   (define ts2 (timespec 1 2))
   (define ts3 (timespec 1 3))

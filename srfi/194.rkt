@@ -913,10 +913,10 @@
                                (fl* (flvector-ref els i) (flvector-ref dim-sizes i)))))))
 
 (module* test racket/base
-  (require (submod "..") "158.rkt"
-           rackunit math/flonum (only-in racket/list argmin)
+  (require (submod "..") "133.rkt" "158.rkt" "private/testwrappers.rkt"
+           math/flonum (only-in racket/list argmin)
            srfi/1 srfi/27
-           (only-in srfi/43 vector-for-each vector-fold vector-unfold))
+           #;(only-in srfi/43 vector-for-each vector-fold vector-unfold))
 
   ;(require feature-profile)
 
@@ -928,14 +928,6 @@
                   (lambda (i)
                     (apply func (map (lambda (v) (vector-ref v i)) vecs)))))
 
-  (define-syntax-rule (test-group name tests ...)
-    (begin tests ...))
-  (define-syntax-rule (test-assert expr)
-    (check-not-false expr))
-  (define-syntax-rule (test-equal expected expr)
-    (check-equal? expr expected))
-  (define-syntax-rule (test-approximate target value max-delta)
-    (check-= target value max-delta))
 
   ;; syntax just we can plop it at top and still allow internal `define`s
   (define-syntax reset-source!
@@ -1224,7 +1216,7 @@
                  (vector-set! result-vec i (+ 1 (vector-ref result-vec i))))
                (gtake g2 10000))
               (vector-for-each
-               (lambda (i result expect)
+               (lambda (result expect)
                  (define ratio (exact->inexact (/ result expect)))
                  (test-approximate 1.0 ratio 0.1))
                result-vec
@@ -1368,7 +1360,7 @@
 
     (define (l2-norm VEC)
       (sqrt (vector-fold
-             (lambda (i sum x l) (+ sum (/ (* x x)
+             (lambda (sum x l) (+ sum (/ (* x x)
                                            (* l l))))
              0
              VEC
@@ -1747,7 +1739,7 @@
     ; Hurwicz harmonic number sum_1..NVOCAB 1/(k+QUE)^ESS
     (define hnorm
       (vector-fold
-       (lambda (i sum cnt) (+ sum cnt)) 0 inv-pow))
+       (lambda (sum cnt) (+ sum cnt)) 0 inv-pow))
 
     ; The expected distribution
     (define expect
@@ -1775,22 +1767,22 @@
     ; Maximum deviation from expected distribution (l_0 norm)
     (define l0-norm
       (vector-fold
-       (lambda (i sum x) (if (< sum (abs x)) (abs x) sum)) 0 norm-dist))
+       (lambda (sum x) (if (< sum (abs x)) (abs x) sum)) 0 norm-dist))
 
     ; The mean.
     (define mean (/
-                  (vector-fold (lambda (i sum x) (+ sum x)) 0 norm-dist)
+                  (vector-fold (lambda (sum x) (+ sum x)) 0 norm-dist)
                   NVOCAB))
 
     (define root-mean-square (sqrt (/
-                                    (vector-fold (lambda (i sum x) (+ sum (* x x))) 0 norm-dist)
+                                    (vector-fold (lambda (sum x) (+ sum (* x x))) 0 norm-dist)
                                     NVOCAB)))
 
     ; The total counts in the bins should be equal to REPS
     (test-assert
      (equal? REPS
              (vector-fold
-              (lambda (i sum cnt) (+ sum cnt)) 0 bin-counts)))
+              (lambda (sum cnt) (+ sum cnt)) 0 bin-counts)))
 
     ; Test for uniform convergence.
     #;(unless (<= l0-norm TOL)

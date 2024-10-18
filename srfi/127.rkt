@@ -7,7 +7,7 @@
          (only-in compatibility/mlist [list->mlist list->lseq])
          "1m.rkt"
          (only-in "158.rkt" gappend generator->list generator?) "190.rkt")
-(module+ test (require rackunit))
+(module+ test (require "private/testwrappers.rkt"))
 (provide
  list->lseq
  (contract-out
@@ -272,16 +272,6 @@
       #f))))
 
 (module+ test
-  (define-syntax-rule (test-group name tests ...)
-    (let ()
-      #;(printf "Running ~A~%" name)
-      tests ...))
-  (define-syntax-rule (test expected test-expr)
-    (check-equal? test-expr expected))
-  (define-syntax-rule (test-assert test-expr)
-    (check-not-false test-expr))
-  (define-syntax-rule (test-error test-expr)
-    (check-exn exn:fail? (lambda () test-expr)))
 
   (test-group "lseqs"
               (test-group "lseqs/constructor"
@@ -461,9 +451,9 @@
                           )) ; end lseqs/searching
 
   (test-group "in-lseq"
-              (test-equal? "in-lseq populated"
+              (test-equal "in-lseq populated"
                            '(a b c d)
                            (for/list ([elem (in-lseq (make-lseq 'a 'b 'c 'd))]) elem))
-              (test-equal? "in-lseq empty"
+              (test-equal "in-lseq empty"
                            '()
                            (for/list ([elem (in-lseq (make-lseq))]) elem))))

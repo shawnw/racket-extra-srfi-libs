@@ -12,7 +12,7 @@
             (and (string-prefix? name "unsafe-fx")
                  (substring name 7)))
           racket/unsafe/ops))
-(module+ test (require rackunit))
+(module+ test (require "private/testwrappers.rkt"))
 
 (provide
  (contract-out
@@ -1557,31 +1557,11 @@
   ;;; TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
   ;;; SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-  (define-syntax test-assert
-    (syntax-rules ()
-      ((_ expr)
-       (check-not-false expr))))
-
-  (define-syntax test-not
-    (syntax-rules ()
-      ((_ expr)
-       (check-false expr))))
-
-  (define-syntax test
-    (syntax-rules ()
-      ((_ expected expr)
-       (check-equal? expr expected))))
-
-  (define-syntax test-equal
-    (syntax-rules ()
-      ((_ equal expected expr)
-       (check-not-false (equal expr expected)))))
-
   (define-syntax test-values
     (syntax-rules ()
       ((test-values expected expr)
-       (check-equal? (call-with-values (lambda () expr) list)
-                     (call-with-values (lambda () expected) list)))))
+       (test-equal (call-with-values (lambda () expr) list)
+                   (call-with-values (lambda () expected) list)))))
 
   ;;;; Utility
 
@@ -1647,8 +1627,8 @@
     (test mixed-seq (iset->list mixed-set))
     (test sparse-seq (iset->list sparse-set))
 
-    (test-equal iset=? (iset 1) (list->iset! (iset) '(1)))
-    (test-equal iset=?
+    (test-with-= iset=? (iset 1) (list->iset! (iset) '(1)))
+    (test-with-= iset=?
                 (iset-adjoin pos-set 2 4 6)
                 (list->iset! (iset-copy pos-set) '(2 4 6)))
     )
@@ -1656,17 +1636,17 @@
   (define (check-constructors)
     (print-header "Constructors")
 
-    (test-equal iset=?
+    (test-with-= iset=?
                 (list->iset (iota 10 0 4))
                 (iset-unfold (lambda (i) (> i 36))
                              values
                              (lambda (i) (+ i 4))
                              0))
 
-    (test-equal iset=?
+    (test-with-= iset=?
                 (list->iset (iota 20 -10))
                 (make-range-iset -10 10))
-    (test-equal iset=?
+    (test-with-= iset=?
                 (list->iset (iota 10 -10 2))
                 (make-range-iset -10 10 2))
     )
@@ -1716,7 +1696,7 @@
     (test-assert (iset-contains? (iset-adjoin neg-set 10) 10))
     (test-assert (iset-contains? (iset-adjoin dense-set 100) 100))
     (test-assert (iset-contains? (iset-adjoin sparse-set 100) 100))
-    (test-equal iset=?
+    (test-with-= iset=?
                 (list->iset (cons -3 (iota 20 100 3)))
                 (iset-adjoin pos-set -3))
 
@@ -1724,13 +1704,13 @@
     (test-not (iset-contains? (iset-delete neg-set 10) 10))
     (test-not (iset-contains? (iset-delete dense-set 1033) 1033))
     (test-not (iset-contains? (iset-delete sparse-set 30) 30))
-    (test-equal iset=?
+    (test-with-= iset=?
                 (list->iset (cdr (iota 20 100 3)))
                 (iset-delete pos-set 100))
 
     (test-assert (iset-empty? (iset-delete-all (iset) '())))
-    (test-equal iset=? pos-set (iset-delete-all pos-set '()))
-    (test-equal iset=?
+    (test-with-= iset=? pos-set (iset-delete-all pos-set '()))
+    (test-with-= iset=?
                 (iset 100 103 106)
                 (iset-delete-all pos-set (iota 17 109 3)))
 
@@ -1855,11 +1835,11 @@
     ;;; iset-map
 
     (test-assert (iset-empty? (iset-map values (iset))))
-    (test-equal iset=? pos-set (iset-map values pos-set))
-    (test-equal iset=?
+    (test-with-= iset=? pos-set (iset-map values pos-set))
+    (test-with-= iset=?
                 (list->iset (map (lambda (n) (* n 2)) mixed-seq))
                 (iset-map (lambda (n) (* n 2)) mixed-set))
-    (test-equal iset=? (iset 1) (iset-map (constantly 1) pos-set))
+    (test-with-= iset=? (iset 1) (iset-map (constantly 1) pos-set))
 
     ;;; iset-for-each
 
@@ -1879,17 +1859,17 @@
     ;;; filter, remove, & partition
 
     (test-assert (iset-empty? (iset-filter (constantly #f) pos-set)))
-    (test-equal iset=?
+    (test-with-= iset=?
                 pos-set
                 (iset-filter (constantly #t) pos-set))
-    (test-equal iset=?
+    (test-with-= iset=?
                 (list->iset (filter even? mixed-seq))
                 (iset-filter even? mixed-set))
     (test-assert (iset-empty? (iset-remove (constantly #t) pos-set)))
-    (test-equal iset=?
+    (test-with-= iset=?
                 pos-set
                 (iset-remove (constantly #f) pos-set))
-    (test-equal iset=?
+    (test-with-= iset=?
                 (list->iset (filter-not even? mixed-seq))
                 (iset-remove even? mixed-set))
     (test-assert
@@ -1937,51 +1917,51 @@
   (define (check-set-theory)
     (print-header "Set theory")
 
-    (test-equal iset=? mixed-set (iset-union! (iset) mixed-set))
-    (test-equal iset=?
+    (test-with-= iset=? mixed-set (iset-union! (iset) mixed-set))
+    (test-with-= iset=?
                 (list->iset (append (iota 20 100 3) (iota 20 -100 3)))
                 (iset-union pos-set neg-set))
-    (test-equal iset=? pos-set (iset-union pos-set pos-set))
-    (test-equal iset=?
+    (test-with-= iset=? pos-set (iset-union pos-set pos-set))
+    (test-with-= iset=?
                 (list->iset (iota 30 100 3))
                 (iset-union pos-set (list->iset (iota 20 130 3))))
-    (test-equal iset=?
+    (test-with-= iset=?
                 (list->iset (iota 10))
                 (iset-union (iset 0 1 2) (iset 3 5 8) (iset 4 6 7 9)))
 
     ;; iset-intersection
     (test-assert (iset-empty? (iset-intersection (iset) mixed-set)))
-    (test-equal iset=? neg-set (iset-intersection neg-set neg-set))
-    (test-equal iset=? (iset -97) (iset-intersection (iset -97) neg-set))
-    (test-equal iset=? (iset) (iset-intersection pos-set neg-set))
-    (test-equal iset=?
+    (test-with-= iset=? neg-set (iset-intersection neg-set neg-set))
+    (test-with-= iset=? (iset -97) (iset-intersection (iset -97) neg-set))
+    (test-with-= iset=? (iset) (iset-intersection pos-set neg-set))
+    (test-with-= iset=?
                 (list->iset (drop-while negative? mixed-seq))
                 (iset-intersection mixed-set dense-set))
-    (test-equal iset=?
+    (test-with-= iset=?
                 (iset 0 1)
                 (iset-intersection (iset 0 1 2) (iset 0 1 3 4) (iset 10 7 0 1)))
 
     ;; iset-difference
     (test-assert (iset-empty? (iset-difference neg-set neg-set)))
-    (test-equal iset=? pos-set (iset-difference pos-set neg-set))
-    (test-equal iset=? pos-set (iset-difference pos-set neg-set))
-    (test-equal iset=?
+    (test-with-= iset=? pos-set (iset-difference pos-set neg-set))
+    (test-with-= iset=? pos-set (iset-difference pos-set neg-set))
+    (test-with-= iset=?
                 (iset 100)
                 (iset-difference pos-set (list->iset (cdr pos-seq))))
-    (test-equal iset=?
+    (test-with-= iset=?
                 (list->iset (take-while negative? mixed-seq))
                 (iset-difference mixed-set dense-set))
-    (test-equal iset=?
+    (test-with-= iset=?
                 (iset 0 1)
                 (iset-intersection (iset 0 1 2 5) (iset 0 1 3 4) (iset 10 7 0 1)))
 
     ;; iset-xor
-    (test-equal iset=? mixed-set (iset-xor (iset) mixed-set))
-    (test-equal iset=?
+    (test-with-= iset=? mixed-set (iset-xor (iset) mixed-set))
+    (test-with-= iset=?
                 (list->iset (append (iota 20 100 3) (iota 20 -100 3)))
                 (iset-xor pos-set neg-set))
-    (test-equal iset=? (iset) (iset-xor pos-set pos-set))
-    (test-equal iset=?
+    (test-with-= iset=? (iset) (iset-xor pos-set pos-set))
+    (test-with-= iset=?
                 (list->iset '(100 103 106))
                 (iset-xor pos-set (list->iset (iota 17 109 3))))
     )
@@ -1990,25 +1970,25 @@
     (print-header "Subsets")
 
     (test-assert (iset-empty? (iset-open-interval (iset) 0 10)))
-    (test-equal iset=?
+    (test-with-= iset=?
                 (iset 103 106)
                 (iset-open-interval pos-set 100 109))
     (test-assert (iset-empty? (iset-open-interval neg-set 0 50)))
 
     (test-assert (iset-empty? (iset-closed-interval (iset) 0 10)))
-    (test-equal iset=?
+    (test-with-= iset=?
                 (iset 100 103 106 109)
                 (iset-closed-interval pos-set 100 109))
     (test-assert (iset-empty? (iset-closed-interval neg-set 0 50)))
 
     (test-assert (iset-empty? (iset-open-closed-interval (iset) 0 10)))
-    (test-equal iset=?
+    (test-with-= iset=?
                 (iset 103 106 109)
                 (iset-open-closed-interval pos-set 100 109))
     (test-assert (iset-empty? (iset-open-closed-interval neg-set 0 50)))
 
     (test-assert (iset-empty? (iset-closed-open-interval (iset) 0 10)))
-    (test-equal iset=?
+    (test-with-= iset=?
                 (iset 100 103 106)
                 (iset-closed-open-interval pos-set 100 109))
     (test-assert (iset-empty? (iset-closed-open-interval neg-set 0 50)))
@@ -2016,40 +1996,40 @@
     ;;; isubset*
 
     (test-assert (iset-empty? (isubset= pos-set 90)))
-    (test-equal iset=? (iset 100) (isubset= pos-set 100))
+    (test-with-= iset=? (iset 100) (isubset= pos-set 100))
 
     (test-assert (iset-empty? (isubset< (iset) 10)))
-    (test-equal iset=?
+    (test-with-= iset=?
                 (iset 100 103 106)
                 (isubset< pos-set 109))
-    (test-equal iset=?
+    (test-with-= iset=?
                 (iset -10 -7)
                 (isubset< mixed-set -4))
     (test-assert (iset-empty? (isubset< mixed-set -15)))
 
     (test-assert (iset-empty? (isubset<= (iset) 10)))
-    (test-equal iset=?
+    (test-with-= iset=?
                 (iset 100 103 106 109)
                 (isubset<= pos-set 109))
-    (test-equal iset=?
+    (test-with-= iset=?
                 (iset -10 -7 -4)
                 (isubset<= mixed-set -4))
     (test-assert (iset-empty? (isubset<= mixed-set -15)))
 
     (test-assert (iset-empty? (isubset> (iset) 10)))
-    (test-equal iset=?
+    (test-with-= iset=?
                 (iset 151 154 157)
                 (isubset> pos-set 148))
-    (test-equal iset=?
+    (test-with-= iset=?
                 (iset 41 44 47)
                 (isubset> mixed-set 38))
     (test-assert (iset-empty? (isubset> mixed-set 50)))
 
     (test-assert (iset-empty? (isubset>= (iset) 10)))
-    (test-equal iset=?
+    (test-with-= iset=?
                 (iset 148 151 154 157)
                 (isubset>= pos-set 148))
-    (test-equal iset=?
+    (test-with-= iset=?
                 (iset 38 41 44 47)
                 (isubset>= mixed-set 38))
     (test-assert (iset-empty? (isubset>= mixed-set 50)))

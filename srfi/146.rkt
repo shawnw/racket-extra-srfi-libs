@@ -7,7 +7,7 @@
 
 (require racket/contract racket/dict racket/match data/order
          "128.rkt" "146/private/scapegoat.rkt" "146/private/common.rkt")
-(module+ test (require rackunit))
+(module+ test (require "private/testwrappers.rkt"))
 
 (provide
  comparator?
@@ -586,18 +586,6 @@
   ;; SOFTWARE.
 
   (require srfi/1 srfi/8)
-  (define-syntax-rule (test-group name tests ...)
-    (let () tests ...))
-  (define-syntax-rule (test-assert name test-expr)
-    (test-not-false name test-expr))
-  (define-syntax test-equal
-    (syntax-rules ()
-      ((_ name expected test-expr)
-       (test-equal? name test-expr expected))
-      ((_ expected test-expr)
-       (check-equal? test-expr expected))))
-  (define-syntax-rule (test-error name test-expr)
-    (test-exn name exn:fail? (lambda () test-expr)))
 
   (define comparator (make-default-comparator))
 
