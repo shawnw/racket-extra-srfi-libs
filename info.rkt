@@ -8,6 +8,6 @@
 (define compile-omit-paths '(#rx"srfi-160-builder")) ; This doesn't seem to actually work as advertised
 (define test-omit-paths '(#rx"srfi-160-builder" #rx"160/[^bs]" #rx"private"))
 (define pkg-desc "Ports of more SRFIs to Racket")
-(define version "0.11")
+(define version "0.12")
 (define pkg-authors '(shawnw))
 (define license '(Apache-2.0 OR MIT))
