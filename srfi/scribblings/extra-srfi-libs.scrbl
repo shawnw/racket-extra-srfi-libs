@@ -536,7 +536,7 @@ Sequence constructor that iterates over the given range of the numeric vector.
 
 @hyperlink["https://srfi.schemers.org/srfi-171/srfi-171.html"]{Reference documentation}.
 
-@bold{Notes}: The @code[bytevector-u8-*] functions have been renamed @code{bytes-*} to better match Racket conventions, though the original names
+@bold{Notes}: The @racket[bytevector-u8-*] functions have been renamed @racket[bytes-*] to better match Racket conventions, though the original names
 are still available as aliases.
 
 @section{SRFI-173 Hooks}
