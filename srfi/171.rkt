@@ -14,7 +14,7 @@
 
 ;;; Ported to Racket by Shawn Wagner 2024
 
-(require racket/contract racket/dict racket/undefined "133.rkt" (only-in "158.rkt" generator?) "171/meta.rkt")
+(require racket/contract racket/dict racket/set racket/undefined "133.rkt" (only-in "158.rkt" generator?) "171/meta.rkt")
 (module+ test (require "private/testwrappers.rkt" srfi/1))
 
 (provide
@@ -66,6 +66,12 @@
   [tadd-between (-> any/c transducer-any/c)]
   [tenumerate (->* () (exact-integer?) transducer-any/c)]
   [tlog (->* () ((-> any/c any/c any/c)) transducer-any/c)]
+
+  ;; extra functions
+  [set-transduce (case->
+                  (-> transducer-any/c reducer-any/c set? any/c)
+                  (-> transducer-any/c reducer-any/c any/c set? any/c))]
+
   ))
 
 (define nothing undefined)
@@ -177,6 +183,16 @@
      (let* ((xf (xform f))
             (result (generator-reduce xf init gen)))
        (xf result)))))
+
+
+(define set-transduce
+  (case-lambda
+    [(xform f set)
+     (set-transduce xform f (f) set)]
+    [(xform f init set)
+     (let* ((xf (xform f))
+            (result (set-reduce xf init set)))
+       (xf result))]))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -483,6 +499,9 @@
   (test-equal '(0 and 1 and 2 and 3 and 4) (list-transduce (tadd-between 'and) rcons numeric-list))
 
   (test-equal '((-1 . 0) (0 . 1) (1 . 2) (2 . 3) (3 . 4)) (list-transduce (tenumerate (- 1)) rcons numeric-list))
+
+
+  (test-equal 5 (set-transduce (tfilter integer?) rcount (list->set numeric-list)))
 
   (test-end "transducers")
 

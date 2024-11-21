@@ -17,7 +17,7 @@
 
 ;;; Ported to Racket by Shawn Wagner
 
-(require racket/contract racket/contract/combinator (only-in "../158.rkt" generator?))
+(require racket/contract racket/contract/combinator racket/set (only-in "../158.rkt" generator?))
 
 (provide
  reducer/c reducer-any/c reduced/c
@@ -36,6 +36,10 @@
   [bytes-reduce (-> reducer/c any/c bytes? any/c)]
   [port-reduce (-> reducer/c any/c (-> any/c any/c) any/c any/c)]
   [generator-reduce (-> reducer/c any/c generator? any/c)]
+
+  ;; Additional functions
+  [set-reduce (-> reducer/c any/c set? any/c)]
+
   ))
 
 (define (reducer/c result/c [input/c any/c])
@@ -137,3 +141,14 @@
           (if (reduced? acc)
               (unreduce acc)
               (loop (gen) acc))))))
+
+(define (set-reduce f identity set)
+  (let loop ([set set]
+             [acc identity])
+    (if (set-empty? set)
+        acc
+        (let* ([val (set-first set)]
+               [acc (f acc val)])
+          (if (reduced? acc)
+              (unreduce acc)
+              (loop (set-rest set) acc))))))

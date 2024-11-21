@@ -539,6 +539,15 @@ Sequence constructor that iterates over the given range of the numeric vector.
 @bold{Notes}: The @racket[bytevector-u8-*] functions have been renamed @racket[bytes-*] to better match Racket conventions, though the original names
 are still available as aliases.
 
+Additional functions:
+
+@defproc*[([(set-transduce [xform procedure?] [f procedure?] [set set?]) any/c]
+           [(set-transduce [xform procedure?] [f procedure?] [identity any/c] [set set?]) any/c])]{
+
+ Transducer that reduces over the elements of a set, in unspecified order.
+
+}
+
 @section{SRFI-173 Hooks}
 
 @defmodule[srfi/173]
