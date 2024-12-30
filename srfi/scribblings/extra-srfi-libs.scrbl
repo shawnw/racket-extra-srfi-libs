@@ -90,13 +90,15 @@ Typed Racket.
 
 @section{SRFI-74 Octet-Addressed Binary Blocks}
 
+@defmodule[srfi/74x]
+@defmodule[srfi/blobs]
 @defmodule[typed/srfi/74]
 @defmodule[typed/srfi/blobs]
 
 @hyperlink["https://srfi.schemers.org/srfi-74/srfi-74.html"]{Reference documentation}.
 
-@bold{Notes}: The untyped version of this module in @code{srfi-lib} is just the reference implementation and has, as of Racket 8.8,
-a serious bug in that the "native" endianness is always big-endian. This version, besides being written in Typed Racket, fixes that,
+@bold{Notes}: The version of this module in @code{srfi-lib} is just the reference implementation and has, as of Racket 8.15,
+a serious bug in that the "native" endianness is always big-endian. This, besides being having a version written in Typed Racket, fixes that,
 and uses a more Racket-specific implementation. You should probably use always use this one, at least until the bug is fixed.
 
 @section{SRFI-87 => in case clauses}

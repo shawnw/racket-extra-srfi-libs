@@ -12,7 +12,7 @@
                   [read-line rkt:read-line] [read-string rkt:read-string] [number->string rkt:number->string])
          (only-in racket/string string-append* [string-join rkt:string-join])
          (only-in racket/symbol [symbol->immutable-string symbol->string])
-         (only-in srfi/1 append-reverse) srfi/74 "141.rkt"
+         (only-in srfi/1 append-reverse) "74x.rkt" "141.rkt"
          )
 (module+ test (require "private/testwrappers.rkt"))
 
