@@ -5,7 +5,7 @@
 (require racket/contract
          racket/unsafe/ops
          (only-in racket/flonum
-                  flvector? flvector make-flvector flvector-ref flvector-set! flvector-length for/flvector)
+                  flvector? flvector make-flvector flvector-ref flvector-set! flvector-length for/flvector flsingle)
          (only-in ffi/vector
                   f32vector? make-f32vector f32vector-ref f32vector-set! f32vector-length
                   f64vector? make-f64vector f64vector-ref f64vector-set! f64vector-length))
@@ -36,7 +36,7 @@
     (do ([i start (+ i 1)]
          [j 0 (unsafe-fx+ j 1)])
         ((= i end) f32)
-      (f32vector-set! f32 j (flvector-ref fv i)))))
+      (f32vector-set! f32 j (flsingle (flvector-ref fv i))))))
 
 (define (flvector->f64vector fv [start 0] [end (flvector-length fv)])
   (let ([f64 (make-f64vector (- end start))])
