@@ -14,7 +14,7 @@
 
 ;;; Ported to Racket by Shawn Wagner 2024
 
-(require racket/contract racket/dict racket/set racket/undefined "133.rkt" (only-in "158.rkt" generator?) "171/meta.rkt")
+(require racket/contract racket/dict racket/set racket/treelist racket/undefined "133.rkt" (only-in "158.rkt" generator?) "171/meta.rkt")
 (module+ test (require "private/testwrappers.rkt" srfi/1))
 
 (provide
@@ -71,7 +71,9 @@
   [set-transduce (case->
                   (-> transducer-any/c reducer-any/c set? any/c)
                   (-> transducer-any/c reducer-any/c any/c set? any/c))]
-
+  [treelist-transduce (case->
+                  (-> transducer-any/c reducer-any/c treelist? any/c)
+                  (-> transducer-any/c reducer-any/c any/c treelist? any/c))]
   ))
 
 (define nothing undefined)
@@ -184,7 +186,6 @@
             (result (generator-reduce xf init gen)))
        (xf result)))))
 
-
 (define set-transduce
   (case-lambda
     [(xform f set)
@@ -194,6 +195,14 @@
             (result (set-reduce xf init set)))
        (xf result))]))
 
+(define treelist-transduce
+  (case-lambda
+    [(xform f set)
+     (treelist-transduce xform f (f) set)]
+    [(xform f init set)
+     (let* ((xf (xform f))
+            (result (treelist-reduce xf init set)))
+       (xf result))]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Transducers!
@@ -502,6 +511,7 @@
 
 
   (test-equal 5 (set-transduce (tfilter integer?) rcount (list->set numeric-list)))
+  (test-equal 5 (treelist-transduce (tfilter integer?) rcount (list->treelist numeric-list)))
 
   (test-end "transducers")
 

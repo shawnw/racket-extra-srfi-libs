@@ -1,6 +1,6 @@
 #lang scribble/manual
 @require[@for-label[racket/base racket/contract racket/generator racket/dict racket/set racket/unsafe/ops
-                    racket/fixnum racket/flonum racket/fixnum racket/extflonum racket/match
+                    racket/fixnum racket/flonum racket/extflonum racket/match racket/treelist
                     data/order data/gvector ffi/vector]]
 
 @title{Extra SRFI Libraries}
@@ -547,6 +547,13 @@ Additional functions:
            [(set-transduce [xform procedure?] [f procedure?] [identity any/c] [set set?]) any/c])]{
 
  Transducer that reduces over the elements of a set, in unspecified order.
+
+}
+
+@defproc*[([(treelist-transduce [xform procedure?] [f procedure?] [tl treelist?]) any/c]
+           [(treelist-transduce [xform procedure?] [f procedure?] [identity any/c] [tl treelist?]) any/c])]{
+
+ Transducer that reduces over the elements of a treelist.
 
 }
 

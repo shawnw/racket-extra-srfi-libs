@@ -17,7 +17,7 @@
 
 ;;; Ported to Racket by Shawn Wagner
 
-(require racket/contract racket/contract/combinator racket/set (only-in "../158.rkt" generator?))
+(require racket/contract racket/contract/combinator racket/set racket/treelist (only-in "../158.rkt" generator?))
 
 (provide
  reducer/c reducer-any/c reduced/c
@@ -39,6 +39,7 @@
 
   ;; Additional functions
   [set-reduce (-> reducer/c any/c set? any/c)]
+  [treelist-reduce (-> reducer/c any/c treelist? any/c)]
 
   ))
 
@@ -152,3 +153,13 @@
           (if (reduced? acc)
               (unreduce acc)
               (loop (set-rest set) acc))))))
+
+(define (treelist-reduce f identity tl)
+  (let ((len (treelist-length tl)))
+    (let loop ((i 0) (acc identity))
+      (if (= i len)
+          acc
+          (let ((acc (f acc (treelist-ref tl i))))
+            (if (reduced? acc)
+                (unreduce acc)
+                (loop (+ i 1) acc)))))))
