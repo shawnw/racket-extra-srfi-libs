@@ -19,64 +19,63 @@
 
 (provide
  bytevector-u8-transduce
- rcons reverse-rcons rcount
  (contract-out
   [list-transduce (case->
-                   (-> transducer-any/c reducer-any/c list? any/c)
-                   (-> transducer-any/c reducer-any/c any/c list? any/c))]
+                   (-> transducer/c reducer/c list? any/c)
+                   (-> transducer/c reducer/c any/c list? any/c))]
   [vector-transduce (case->
-                     (-> transducer-any/c reducer-any/c vector? any/c)
-                     (-> transducer-any/c reducer-any/c any/c vector? any/c))]
+                     (-> transducer/c reducer/c vector? any/c)
+                     (-> transducer/c reducer/c any/c vector? any/c))]
   [string-transduce (case->
-                     (-> transducer-any/c reducer-any/c string? any/c)
-                     (-> transducer-any/c reducer-any/c any/c string? any/c))]
+                     (-> transducer/c reducer/c string? any/c)
+                     (-> transducer/c reducer/c any/c string? any/c))]
   [bytes-transduce (case->
-                    (-> transducer-any/c reducer-any/c bytes? any/c)
-                    (-> transducer-any/c reducer-any/c any/c bytes? any/c))]
+                    (-> transducer/c reducer/c bytes? any/c)
+                    (-> transducer/c reducer/c any/c bytes? any/c))]
   [port-transduce (case->
-                   (-> transducer-any/c reducer-any/c (-> any/c any/c) any/c)
-                   (-> transducer-any/c reducer-any/c (-> any/c any/c) any/c any/c)
-                   (-> transducer-any/c reducer-any/c any/c (-> any/c any/c) any/c any/c))]
+                   (-> transducer/c reducer/c (-> any/c any/c) any/c)
+                   (-> transducer/c reducer/c (-> any/c any/c) any/c any/c)
+                   (-> transducer/c reducer/c any/c (-> any/c any/c) any/c any/c))]
   [generator-transduce (case->
-                        (-> transducer-any/c reducer-any/c generator? any/c)
-                        (-> transducer-any/c reducer-any/c any/c generator? any/c))]
+                        (-> transducer/c reducer/c generator? any/c)
+                        (-> transducer/c reducer/c any/c generator? any/c))]
 
-  ;;[rcons (reducer/c list?)]
-  ;;[reverse-rcons (reducer/c list?)]
-  [rany (-> (-> any/c any/c) reducer-any/c)]
-  [revery (-> (-> any/c any/c) reducer-any/c)]
-  ;;[rcount (reducer/c exact-nonnegative-integer?)]
+  [rcons reducer/c]
+  [reverse-rcons reducer/c]
+  [rany (-> (-> any/c any/c) reducer/c)]
+  [revery (-> (-> any/c any/c) reducer/c)]
+  [rcount reducer/c]
 
-  [tmap (-> (-> any/c any/c) transducer-any/c)]
-  [tfilter (-> (-> any/c any/c) transducer-any/c)]
-  [tremove (-> (-> any/c any/c) transducer-any/c)]
-  [tfilter-map (-> (-> any/c any/c) transducer-any/c)]
-  [treplace (-> (or/c dict? (-> any/c any/c)) transducer-any/c)]
-  [tdrop (-> exact-nonnegative-integer? transducer-any/c)]
-  [ttake (-> exact-nonnegative-integer? transducer-any/c)]
-  [tdrop-while (-> (-> any/c any/c) transducer-any/c)]
-  [ttake-while (->* ((-> any/c any/c)) ((-> any/c any/c any/c)) transducer-any/c)]
-  [tconcatenate transducer-any/c]
-  [tappend-map (-> (-> any/c list?) transducer-any/c)]
-  [tflatten transducer-any/c]
-  [tdelete-neighbor-duplicates (->* () ((-> any/c any/c any/c)) transducer-any/c)]
-  [tdelete-duplicates (->* () ((-> any/c any/c any/c)) transducer-any/c)]
-  [tsegment (-> exact-positive-integer? transducer-any/c)]
-  [tpartition (-> (-> any/c any/c) transducer-any/c)]
-  [tadd-between (-> any/c transducer-any/c)]
-  [tenumerate (->* () (exact-integer?) transducer-any/c)]
-  [tlog (->* () ((-> any/c any/c any/c)) transducer-any/c)]
+  [tmap (-> (-> any/c any/c) transducer/c)]
+  [tfilter (-> (-> any/c any/c) transducer/c)]
+  [tremove (-> (-> any/c any/c) transducer/c)]
+  [tfilter-map (-> (-> any/c any/c) transducer/c)]
+  [treplace (-> (or/c dict? (-> any/c any/c)) transducer/c)]
+  [tdrop (-> exact-nonnegative-integer? transducer/c)]
+  [ttake (-> exact-nonnegative-integer? transducer/c)]
+  [tdrop-while (-> (-> any/c any/c) transducer/c)]
+  [ttake-while (->* ((-> any/c any/c)) ((-> any/c any/c any/c)) transducer/c)]
+  [tconcatenate transducer/c]
+  [tappend-map (-> (-> any/c list?) transducer/c)]
+  [tflatten transducer/c]
+  [tdelete-neighbor-duplicates (->* () ((-> any/c any/c any/c)) transducer/c)]
+  [tdelete-duplicates (->* () ((-> any/c any/c any/c)) transducer/c)]
+  [tsegment (-> exact-positive-integer? transducer/c)]
+  [tpartition (-> (-> any/c any/c) transducer/c)]
+  [tadd-between (-> any/c transducer/c)]
+  [tenumerate (->* () (exact-integer?) transducer/c)]
+  [tlog (->* () ((-> any/c any/c any/c)) transducer/c)]
 
   ;; extra functions
   [set-transduce (case->
-                  (-> transducer-any/c reducer-any/c set? any/c)
-                  (-> transducer-any/c reducer-any/c any/c set? any/c))]
+                  (-> transducer/c reducer/c set? any/c)
+                  (-> transducer/c reducer/c any/c set? any/c))]
   [treelist-transduce (case->
-                  (-> transducer-any/c reducer-any/c treelist? any/c)
-                  (-> transducer-any/c reducer-any/c any/c treelist? any/c))]
+                  (-> transducer/c reducer/c treelist? any/c)
+                  (-> transducer/c reducer/c any/c treelist? any/c))]
   [hash-transduce (case->
-                   (-> transducer-any/c reducer-any/c hash? any/c)
-                   (-> transducer-any/c reducer-any/c any/c hash? any/c))]
+                   (-> transducer/c reducer/c hash? any/c)
+                   (-> transducer/c reducer/c any/c hash? any/c))]
 
   ))
 

@@ -17,49 +17,21 @@
 
 ;;; Ported to Racket by Shawn Wagner
 
-(require racket/contract racket/contract/combinator racket/set racket/treelist (only-in "../158.rkt" generator?))
+(require racket/contract racket/set racket/treelist)
 
 (provide
- reducer/c reducer-any/c reduced/c
- transducer/c transducer-any/c
- preserving-reduced
- bytevector-u8-reduce
- (contract-out
-  [reduced? predicate/c]
-  [reduced (-> any/c reduced?)]
-  [unreduce (-> reduced? any/c)]
-  [ensure-reduced (-> any/c reduced?)]
+ reducer/c transducer/c
+ reduced? reduced unreduce ensure-reduced preserving-reduced
+ list-reduce vector-reduce string-reduce bytes-reduce port-reduce generator-reduce
+ bytevector-u8-reduce set-reduce treelist-reduce hash-reduce
+ )
 
-  [list-reduce (-> reducer/c any/c list? any/c)]
-  [vector-reduce (-> reducer/c any/c vector? any/c)]
-  [string-reduce (-> reducer/c any/c string? any/c)]
-  [bytes-reduce (-> reducer/c any/c bytes? any/c)]
-  [port-reduce (-> reducer/c any/c (-> any/c any/c) any/c any/c)]
-  [generator-reduce (-> reducer/c any/c generator? any/c)]
+(define reducer/c
+  (case-> (-> any/c)
+          (-> any/c any/c)
+          (-> any/c any/c any/c)))
 
-  ;; Additional functions
-  [set-reduce (-> reducer/c any/c set? any/c)]
-  [treelist-reduce (-> reducer/c any/c treelist? any/c)]
-  [hash-reduce (-> reducer/c any/c hash? any/c)]
-
-  ))
-
-(define (reducer/c result/c [input/c any/c])
-  (case-> (-> result/c)
-          (-> result/c result/c)
-          (-> result/c input/c result/c)))
-(define reducer-any/c (reducer/c any/c))
-
-(define (transducer/c result/c [input/c any/c])
-  (-> (reducer/c result/c input/c) (reducer/c result/c input/c)))
-(define transducer-any/c (transducer/c any/c))
-
-;; contract to test if value is a reduced value that matches a given contract
-(define (reduced/c raw-contents/c)
-  (define contents/c (coerce-contract 'reduced/c raw-contents/c))
-  (make-contract
-   #:name (build-compound-type-name 'reduced/c contents/c)
-   #:first-order (lambda (obj) (and (reduced? obj) (contract-first-order-passes? contents/c (reduced-value obj))))))
+(define transducer/c (-> reducer/c reducer/c))
 
 (struct reduced (value) #:sealed)
 
