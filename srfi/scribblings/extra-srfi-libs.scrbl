@@ -557,6 +557,13 @@ Additional functions:
 
 }
 
+@defproc*[([(hash-transduce [xform procedure?] [f procedure?] [ht hash?]) any/c]
+           [(hash-transduce [xform procedure?] [f procedure?] [identity any/c] [ht hash?]) any/c])]{
+
+ Transducer that reduces over the elements of a hashtable. Each element is a cons pair where the car is the key and the cdr the value. Iterator order is unspecified.
+
+}
+
 @section{SRFI-173 Hooks}
 
 @defmodule[srfi/173]

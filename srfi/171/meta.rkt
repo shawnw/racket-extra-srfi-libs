@@ -40,6 +40,7 @@
   ;; Additional functions
   [set-reduce (-> reducer/c any/c set? any/c)]
   [treelist-reduce (-> reducer/c any/c treelist? any/c)]
+  [hash-reduce (-> reducer/c any/c hash? any/c)]
 
   ))
 
@@ -163,3 +164,13 @@
             (if (reduced? acc)
                 (unreduce acc)
                 (loop (+ i 1) acc)))))))
+
+(define (hash-reduce f identity ht)
+  (let loop ([it (hash-iterate-first ht)]
+             [acc identity])
+    (if it
+        (let ([acc (f acc (hash-iterate-pair ht it))])
+          (if (reduced? acc)
+              (unreduce acc)
+              (loop (hash-iterate-next ht it) acc)))
+        acc)))

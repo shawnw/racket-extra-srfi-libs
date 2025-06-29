@@ -74,6 +74,10 @@
   [treelist-transduce (case->
                   (-> transducer-any/c reducer-any/c treelist? any/c)
                   (-> transducer-any/c reducer-any/c any/c treelist? any/c))]
+  [hash-transduce (case->
+                   (-> transducer-any/c reducer-any/c hash? any/c)
+                   (-> transducer-any/c reducer-any/c any/c hash? any/c))]
+
   ))
 
 (define nothing undefined)
@@ -197,12 +201,22 @@
 
 (define treelist-transduce
   (case-lambda
-    [(xform f set)
-     (treelist-transduce xform f (f) set)]
-    [(xform f init set)
+    [(xform f tl)
+     (treelist-transduce xform f (f) tl)]
+    [(xform f init tl)
      (let* ((xf (xform f))
-            (result (treelist-reduce xf init set)))
+            (result (treelist-reduce xf init tl)))
        (xf result))]))
+
+(define hash-transduce
+  (case-lambda
+    [(xform f ht)
+     (hash-transduce xform f (f) ht)]
+    [(xform f init ht)
+     (let* ([xf (xform f)]
+            [result (hash-reduce xf init ht)])
+       (xf result))]))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Transducers!
