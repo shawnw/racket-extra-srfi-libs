@@ -55,3 +55,4 @@ Currently includes:
 * [SRFI-235 Combinators](https://srfi.schemers.org/srfi-235/srfi-235.html)
 * [SRFI-238 Codesets](https://srfi.schemers.org/srfi-238/srfi-238.html)
 * [SRFI-239 Destructuring Lists](https://srfi.schemers.org/srfi-239/srfi-239.html)
+* [SRFI-258 Uninterned Symbols](https://srfi.schemers.org/srfi-258/srfi-258.html)

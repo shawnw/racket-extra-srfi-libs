@@ -986,3 +986,10 @@ Normally you'd use @code{match} in Racket, but this is a lightweight alternative
  Predicate for the exceptions raised by @code{list-case} when no matching clause is provided.
 
 }
+
+@section{SRFI-258 Uninterned Symbols}
+@defmodule[srfi/258]
+
+@hyperlink["https://srfi.schemers.org/srfi-258/srfi-258.html"]{Reference documentation}.
+
+Just repackages (And renames) standard Racket functions. Intended to help with porting code to Racket.
