@@ -926,6 +926,12 @@ values stored in such mappings apply.
 
 Available as an unsafe module via @code{(require (submod srfi/224 unsafe))}.
 
+@section{SRFI-229 Tagged procedures}
+
+@defmodule[srfi/229]
+
+@hyperlink["https://srfi.schemers.org/srfi-229/srfi-229.html"]{Reference documentation}.
+
 @section{SRFI-232 Flexible curried procedures}
 
 @defmodule[srfi/232]
@@ -993,3 +999,23 @@ Normally you'd use @code{match} in Racket, but this is a lightweight alternative
 @hyperlink["https://srfi.schemers.org/srfi-258/srfi-258.html"]{Reference documentation}.
 
 Just repackages (And renames) standard Racket functions. Intended to help with porting code to Racket.
+
+@section{SRFI-259 Tagged procedures with type safety}
+
+@defmodule[srfi/259]
+
+@hyperlink["https://srfi.schemers.org/srfi-259/srfi-259.html"]{Reference documentation}.
+
+@subsection{Additional forms}
+
+@defform[(define-procedure-tag name constructor-name predicate-name accessor-name)
+         #:contracts
+         [(name identifier?)
+          (constructor-name identifier?)
+          (predicate-name identifier?)
+          (accessor-name identifier?)]]{
+
+A version with a generic name argument that is used to improve error messages and
+the printed representation of tagged procedures.
+
+}
