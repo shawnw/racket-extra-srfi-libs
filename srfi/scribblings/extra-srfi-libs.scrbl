@@ -564,6 +564,14 @@ Additional functions:
 
 }
 
+@defproc*[([(sequence-transduce [xform procedure?] [f procedure?] [seq sequence?]) any/c]
+           [(sequence-transduce [xform procedure?] [f procedure?] [identity any/c] [seq sequence?]) any/c])]{
+
+ Transducer that reduces over the elements of a single-valued sequence.
+
+}
+
+
 @section{SRFI-173 Hooks}
 
 @defmodule[srfi/173]

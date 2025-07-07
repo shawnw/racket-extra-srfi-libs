@@ -14,7 +14,7 @@
 
 ;;; Ported to Racket by Shawn Wagner 2024
 
-(require racket/contract racket/dict racket/set racket/treelist racket/undefined "133.rkt" (only-in "158.rkt" generator?) "171/meta.rkt")
+(require racket/contract racket/dict racket/sequence racket/set racket/treelist racket/undefined "133.rkt" (only-in "158.rkt" generator?) "171/meta.rkt")
 (module+ test (require "private/testwrappers.rkt" srfi/1))
 
 (provide
@@ -76,7 +76,9 @@
   [hash-transduce (case->
                    (-> transducer/c reducer/c hash? any/c)
                    (-> transducer/c reducer/c any/c hash? any/c))]
-
+  [sequence-transduce (case->
+                        (-> transducer/c reducer/c (sequence/c any/c) any/c)
+                        (-> transducer/c reducer/c any/c (sequence/c any/c) any/c))]
   ))
 
 (define nothing undefined)
@@ -216,6 +218,14 @@
             [result (hash-reduce xf init ht)])
        (xf result))]))
 
+(define sequence-transduce
+  (case-lambda
+    [(xform f seq)
+     (sequence-transduce xform f (f) seq)]
+    [(xform f init seq)
+     (let* ([xf (xform f)]
+            [result (sequence-reduce xf init seq)])
+       (xf result))]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Transducers!

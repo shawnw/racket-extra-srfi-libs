@@ -17,13 +17,13 @@
 
 ;;; Ported to Racket by Shawn Wagner
 
-(require racket/contract racket/set racket/treelist)
+(require racket/contract racket/set racket/treelist "../210.rkt")
 
 (provide
  reducer/c transducer/c
  reduced? reduced unreduce ensure-reduced preserving-reduced
  list-reduce vector-reduce string-reduce bytes-reduce port-reduce generator-reduce
- bytevector-u8-reduce set-reduce treelist-reduce hash-reduce
+ bytevector-u8-reduce set-reduce treelist-reduce hash-reduce sequence-reduce
  )
 
 (define reducer/c
@@ -146,3 +146,13 @@
               (unreduce acc)
               (loop (hash-iterate-next ht it) acc)))
         acc)))
+
+(define (sequence-reduce f identity seq)
+  (define (reducer acc vals next)
+    (if vals
+        (let ([acc (f acc (car vals))])
+          (if (reduced? acc)
+              (unreduce acc)
+              (apply/mv reducer acc (next))))
+        acc))
+  (apply/mv reducer identity (sequence-generate* seq)))
