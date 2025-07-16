@@ -14,12 +14,13 @@
 
 ;;; Ported to Racket by Shawn Wagner 2024
 
-(require racket/contract racket/dict racket/sequence racket/set racket/treelist racket/undefined "133.rkt" (only-in "158.rkt" generator?) "171/meta.rkt")
+(require racket/contract racket/dict racket/sequence racket/set racket/treelist racket/undefined
+         "133.rkt" (only-in "158.rkt" generator?) "171/meta.rkt")
 (module+ test (require "private/testwrappers.rkt" srfi/1))
 
 (provide
- bytevector-u8-transduce
  (contract-out
+  #:unprotected-submodule unsafe
   [list-transduce (case->
                    (-> transducer/c reducer/c list? any/c)
                    (-> transducer/c reducer/c any/c list? any/c))]
@@ -29,6 +30,10 @@
   [string-transduce (case->
                      (-> transducer/c reducer/c string? any/c)
                      (-> transducer/c reducer/c any/c string? any/c))]
+  [bytevector-u8-transduce (case->
+                    (-> transducer/c reducer/c bytes? any/c)
+                    (-> transducer/c reducer/c any/c bytes? any/c))]
+
   [bytes-transduce (case->
                     (-> transducer/c reducer/c bytes? any/c)
                     (-> transducer/c reducer/c any/c bytes? any/c))]

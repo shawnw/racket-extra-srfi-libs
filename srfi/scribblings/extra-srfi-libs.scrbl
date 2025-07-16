@@ -538,8 +538,11 @@ Sequence constructor that iterates over the given range of the numeric vector.
 
 @hyperlink["https://srfi.schemers.org/srfi-171/srfi-171.html"]{Reference documentation}.
 
-@bold{Notes}: The @racket[bytevector-u8-*] functions have been renamed @racket[bytes-*] to better match Racket conventions, though the original names
+@bold{Notes}: The @racket[bytevector-u8-*] functions have been renamed @racket[bytes-*] to better
+match Racket conventions, though the original names
 are still available as aliases.
+
+Available as an unsafe module via @code{(require (submod srfi/171 unsafe))}.
 
 Additional functions:
 
@@ -551,7 +554,8 @@ Additional functions:
 }
 
 @defproc*[([(treelist-transduce [xform procedure?] [f procedure?] [tl treelist?]) any/c]
-           [(treelist-transduce [xform procedure?] [f procedure?] [identity any/c] [tl treelist?]) any/c])]{
+           [(treelist-transduce [xform procedure?] [f procedure?] [identity any/c] [tl treelist?])
+            any/c])]{
 
  Transducer that reduces over the elements of a treelist.
 
@@ -560,12 +564,14 @@ Additional functions:
 @defproc*[([(hash-transduce [xform procedure?] [f procedure?] [ht hash?]) any/c]
            [(hash-transduce [xform procedure?] [f procedure?] [identity any/c] [ht hash?]) any/c])]{
 
- Transducer that reduces over the elements of a hashtable. Each element is a cons pair where the car is the key and the cdr the value. Iterator order is unspecified.
+ Transducer that reduces over the elements of a hashtable. Each element is a cons pair where the car
+ is the key and the cdr the value. Iterator order is unspecified.
 
 }
 
 @defproc*[([(sequence-transduce [xform procedure?] [f procedure?] [seq sequence?]) any/c]
-           [(sequence-transduce [xform procedure?] [f procedure?] [identity any/c] [seq sequence?]) any/c])]{
+           [(sequence-transduce [xform procedure?] [f procedure?] [identity any/c] [seq sequence?])
+            any/c])]{
 
  Transducer that reduces over the elements of a single-valued sequence.
 
