@@ -1025,3 +1025,9 @@ A version with a generic name argument that is used to improve error messages an
 the printed representation of tagged procedures.
 
 }
+
+@section{SRFI-260 Generated Symbols}
+@defmodule[srfi/260]
+
+@hyperlink["https://srfi.schemers.org/srfi-260/srfi-260.html"]{Reference documentation}.
+

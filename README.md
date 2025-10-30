@@ -58,3 +58,4 @@ Currently includes:
 * [SRFI-239 Destructuring Lists](https://srfi.schemers.org/srfi-239/srfi-239.html)
 * [SRFI-258 Uninterned Symbols](https://srfi.schemers.org/srfi-258/srfi-258.html)
 * [SRFI-259 Tagged procedures with type safety](https://srfi.schemers.org/srfi-259/srfi-259.html)
+* [SRFI-260 Generated Symbols](https://srfi.schemers.org/srfi-260/srfi-260.html)
